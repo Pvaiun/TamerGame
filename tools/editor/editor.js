@@ -12,7 +12,7 @@ const S = {
   status: null,    // selected status key
   pat: '', branch: 'main',
   statusMsg: '', statusError: false,
-  search: { monsters: '', abilities: '', passives: '', statuses: '', abilityKind: '' },
+  search: { monsters: '', abilities: '', passives: '', statuses: '', abilityKind: '', abilitySort: 'name' },
 };
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -193,16 +193,26 @@ const KIND_FILTERS = [
 ];
 
 function abilitiesTabHTML() {
-  const q = S.search.abilities.toLowerCase();
-  const kf = S.search.abilityKind;
+  const q   = S.search.abilities.toLowerCase();
+  const kf  = S.search.abilityKind;
+  const srt = S.search.abilitySort;
   const entries = Object.entries(S.abilities)
     .filter(([k, a]) => (!kf || a.kind === kf) && (!q || a.name.toLowerCase().includes(q) || k.includes(q)))
-    .sort((a, b) => a[1].name.localeCompare(b[1].name));
+    .sort((a, b) => {
+      if (srt === 'element') {
+        const ea = a[1].element || '', eb = b[1].element || '';
+        return ea.localeCompare(eb) || a[1].name.localeCompare(b[1].name);
+      }
+      if (srt === 'power') {
+        return (b[1].power ?? -1) - (a[1].power ?? -1);
+      }
+      return a[1].name.localeCompare(b[1].name);
+    });
   const listHTML = entries.map(([k, a]) => `
     <div class="list-item ${S.ability === k ? 'selected' : ''}" data-ability="${k}">
       <div>
         <div class="list-item-name">${a.name}</div>
-        <div class="list-item-sub">${a.kind}${a.element ? ' · ' + a.element : ''}</div>
+        <div class="list-item-sub">${a.kind}${a.element ? ' · ' + a.element : ''}${a.power ? ' · ' + a.power : ''}</div>
       </div>
     </div>`).join('');
 
@@ -210,10 +220,16 @@ function abilitiesTabHTML() {
     `<button class="kind-filter-btn ${kf === f.key ? 'active' : ''}" data-kind="${f.key}">${f.label}</button>`
   ).join('');
 
+  const sortOpts = [['name','Name'],['element','Element'],['power','Power']]
+    .map(([v, l]) => `<option value="${v}" ${srt === v ? 'selected' : ''}>${l}</option>`).join('');
+
   const ab = S.ability ? S.abilities[S.ability] : null;
   return `
     <div class="list-panel">
-      <div class="list-search"><input id="search-abilities" placeholder="Search…" value="${S.search.abilities}"></div>
+      <div class="list-search">
+        <input id="search-abilities" placeholder="Search…" value="${S.search.abilities}">
+        <select id="sort-abilities">${sortOpts}</select>
+      </div>
       <div class="kind-filter">${filterBtns}</div>
       <div class="list-items">${listHTML}</div>
     </div>
@@ -472,6 +488,10 @@ function bindContentEvents() {
     const inp = document.getElementById(`search-${t}`);
     if (inp) inp.addEventListener('input', e => { S.search[t] = e.target.value; renderContent(); });
   });
+
+  // Ability sort dropdown
+  const sortSel = document.getElementById('sort-abilities');
+  if (sortSel) sortSel.addEventListener('change', e => { S.search.abilitySort = e.target.value; renderContent(); });
 
   // Kind filter buttons (Abilities tab)
   content.querySelectorAll('.kind-filter-btn').forEach(btn =>
