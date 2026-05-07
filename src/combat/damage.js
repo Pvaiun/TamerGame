@@ -15,7 +15,7 @@ export function effectiveStat(f, stat) {
 export function calculateDamage(attacker, defender, ability) {
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  if (ability.effect === 'pierce') def = Math.round(def * 0.5);
+  if ((ability.additionalEffects || []).includes('pierce')) def = Math.round(def * 0.5);
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   let power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
@@ -42,7 +42,7 @@ export function estimateDamage(attacker, defender, ability) {
   if (ability.kind !== 'attack' && ability.kind !== 'charge_attack') return 0;
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  if (ability.effect === 'pierce') def = Math.round(def * 0.5);
+  if ((ability.additionalEffects || []).includes('pierce')) def = Math.round(def * 0.5);
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   const power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
