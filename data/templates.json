@@ -30,7 +30,7 @@
 
   { "species": "Tidewhelp",  "type": "water", "starter": true, "primaryPassive": "tide_guard", "secondaryPassive": "second_wind",
     "baseStats": { "hp": 34, "atk": 5, "def": 8, "spd": 4 },
-    "growth":    { "hp": 1.9, "atk": 0.5, "def": 1.7, "spd": 0.4 },
+    "growth":    { "hp": 1.9, "atk": 1.0, "def": 1.7, "spd": 0.4 },
     "abilityPool": ["strike", "surge", "drench", "mend", "aegis_swap", "tactical_retreat", "vapor_cloak"] },
   { "species": "Rivergeist", "type": "water", "primaryPassive": "aquaveil", "secondaryPassive": "serene",
     "baseStats": { "hp": 22, "atk": 4, "def": 5, "spd": 6 },
@@ -88,7 +88,7 @@
 
   { "species": "Lumenpup",   "type": "light", "starter": true, "primaryPassive": "lightbearer", "secondaryPassive": "vanguard",
     "baseStats": { "hp": 26, "atk": 7, "def": 6, "spd": 7 },
-    "growth":    { "hp": 1.7, "atk": 1.9, "def": 1.7, "spd": 1.9 },
+    "growth":    { "hp": 1.7, "atk": 1.7, "def": 1.7, "spd": 1.7 },
     "abilityPool": ["strike", "radiance", "mend", "focus", "sunbeam", "aegis_swap", "dawn_strike", "vanguard_call"] },
   { "species": "Aurabeast",  "type": "light", "primaryPassive": "slow_burn", "secondaryPassive": "zealot",
     "baseStats": { "hp": 21, "atk": 6, "def": 4, "spd": 6 },
