@@ -3,31 +3,34 @@ import { ART_GENERATORS } from '../../src/art.js';
 // ─── State ───────────────────────────────────────────────────────────────────
 
 const S = {
-  abilities: {}, passives: {}, templates: [], types: [], typePalette: {},
-  dirty: { abilities: false, passives: false, templates: false },
+  abilities: {}, passives: {}, statuses: {}, templates: [], types: [], typePalette: {},
+  dirty: { abilities: false, passives: false, templates: false, statuses: false },
   tab: 'monsters',
   monster: null,   // selected template index
   ability: null,   // selected ability key
   passive: null,   // selected passive key
+  status: null,    // selected status key
   pat: '', branch: 'main',
   statusMsg: '', statusError: false,
-  search: { monsters: '', abilities: '', passives: '', abilityKind: '' },
+  search: { monsters: '', abilities: '', passives: '', statuses: '', abilityKind: '' },
 };
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 
 async function init() {
   try {
-    const [types, passives, abilities, templates] = await Promise.all([
+    const [types, passives, abilities, statuses, templates] = await Promise.all([
       fetch('../../data/types.json').then(r => r.json()),
       fetch('../../data/passives.json').then(r => r.json()),
       fetch('../../data/abilities.json').then(r => r.json()),
+      fetch('../../data/statuseffects.json').then(r => r.json()),
       fetch('../../data/templates.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
     S.typePalette = types.TYPE_PALETTE;
     S.passives = passives;
     S.abilities = abilities;
+    S.statuses = statuses;
     S.templates = templates;
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
@@ -65,9 +68,10 @@ function renderHeader() {
 function renderTabs() {
   const el = document.getElementById('tabs');
   const tabs = [
-    { key: 'monsters',  label: 'Monsters',  dirty: S.dirty.templates },
-    { key: 'abilities', label: 'Abilities', dirty: S.dirty.abilities },
-    { key: 'passives',  label: 'Passives',  dirty: S.dirty.passives },
+    { key: 'monsters',  label: 'Monsters',        dirty: S.dirty.templates },
+    { key: 'abilities', label: 'Abilities',        dirty: S.dirty.abilities },
+    { key: 'passives',  label: 'Passives',         dirty: S.dirty.passives },
+    { key: 'statuses',  label: 'Status Effects',   dirty: S.dirty.statuses },
   ];
   el.innerHTML = tabs.map(t =>
     `<button class="tab ${S.tab === t.key ? 'active' : ''} ${t.dirty ? 'dirty' : ''}" data-tab="${t.key}">
@@ -84,6 +88,7 @@ function renderContent() {
   if (S.tab === 'monsters')  el.innerHTML = monstersTabHTML();
   if (S.tab === 'abilities') el.innerHTML = abilitiesTabHTML();
   if (S.tab === 'passives')  el.innerHTML = passivesTabHTML();
+  if (S.tab === 'statuses')  el.innerHTML = statusEffectsTabHTML();
   bindContentEvents();
 }
 
@@ -215,51 +220,77 @@ function abilitiesTabHTML() {
     <div class="detail-panel">${ab ? abilityFormHTML(S.ability, ab) : '<div class="empty">Select an ability to edit.</div>'}</div>`;
 }
 
-const EFFECTS = {
-  burn:             'Apply Burn (4t · 5%/t)',
-  burn_stacking:    'Apply Burn (stacking · +2t each)',
-  burn_long:        'Apply Burn (6t · 5%/t)',
-  burn_both:        'Apply Burn — target + own bench',
-  soaking:          'Apply Soaking (1 stack)',
-  soaking_double:   'Apply Soaking (2 stacks)',
-  dazed:            'Apply Dazed (2t)',
-  dazed_long:       'Apply Dazed (4t)',
-  cursed:           'Apply Cursed (30% on-swap)',
-  cursed_synergy:   'Apply Cursed + bonus dmg if already cursed',
-  cursed_both:      'Apply Cursed — target + own bench',
-  wither_combo:     'Apply Cursed + Soaking',
-  lifesteal_strong: 'Lifesteal 50% of damage dealt',
-  lifesteal_full:   'Lifesteal 100% of damage dealt',
-  bloom_self:       'Apply Bloom to self (4t · 5%/t)',
-  bloom_self_long:  'Apply Bloom to self (6t · 6%/t)',
-  bloom_both:       'Apply Bloom — self + own bench',
-  execute_scale:    'Scale damage by target missing HP',
-  pierce:           'Ignore 50% of target Defense',
-  force_swap:       'Force-swap target active creature',
-  thorn_soaking:    'Apply Soaking to attackers that hit you',
-  cleanse_self:     'Cleanse self — all statuses + stat penalties',
-  bench_bloom:      'Apply Bloom to bench ally (4t · 6%/t)',
-  bench_buff_atk:   'Buff bench ally ATK +25%',
-  bench_buff_def:   'Buff bench ally DEF +30%',
+// Additional (non-status) effects that live in additionalEffects[]
+const ADDITIONAL_EFFECTS = [
+  { key: 'execute_scale',    label: 'Scale damage by target missing HP' },
+  { key: 'pierce',           label: 'Ignore 50% of target Defense' },
+  { key: 'lifesteal_strong', label: 'Lifesteal 50% of damage dealt' },
+  { key: 'lifesteal_full',   label: 'Lifesteal 100% of damage dealt' },
+  { key: 'cleanse_self',     label: 'Cleanse self — all statuses + stat penalties' },
+  { key: 'force_swap',       label: 'Force-swap target active creature' },
+  { key: 'thorn_soaking',    label: 'Apply Soaking to attackers that hit you' },
+  { key: 'burn_stacking',    label: 'Burn (stacking) — extends duration by +2t each use' },
+  { key: 'soaking_double',   label: 'Apply 2 stacks of Soaking' },
+  { key: 'cursed_synergy',   label: '+50% damage if target is already Cursed' },
+];
+
+// Bench-support effects still read from ability.effect (handled separately in battle.js)
+const BENCH_EFFECTS = {
+  bench_bloom:    'Apply Bloom to bench ally',
+  bench_buff_atk: 'Buff bench ally ATK +25%',
+  bench_buff_def: 'Buff bench ally DEF +30%',
 };
 
-const EFFECTS_BY_KIND = {
-  attack:        ['burn','burn_stacking','burn_long','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_synergy','cursed_both','wither_combo','lifesteal_strong','lifesteal_full','bloom_self','bloom_self_long','bloom_both','execute_scale','pierce','force_swap','thorn_soaking','cleanse_self'],
-  charge_attack: ['burn','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_both','wither_combo','lifesteal_strong','lifesteal_full','bloom_both','execute_scale','force_swap'],
-  debuff:        ['burn','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_both','wither_combo','force_swap'],
-  apply_heal:    ['bloom_self','bloom_both','cleanse_self'],
-  bench_support: ['bench_bloom','bench_buff_atk','bench_buff_def'],
-  buff:          ['cleanse_self'],
-  swap_self:     [],
-};
+function statusEffectsFormHTML(ab) {
+  const seList = (ab.statusEffects || []);
+  const statusOpts = Object.entries(S.statuses)
+    .map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
+  const TARGETS = ['self', 'bench', 'enemy', 'enemy_bench'];
+  const TARGET_LABELS = { self: 'Self', bench: 'Bench', enemy: 'Enemy', enemy_bench: 'Enemy Bench' };
 
-function effectSelectHTML(ab) {
-  const allowed = EFFECTS_BY_KIND[ab.kind] || [];
-  if (allowed.length === 0) return '';
-  const opts = allowed.map(k =>
-    `<option value="${k}" ${ab.effect === k ? 'selected' : ''}>${EFFECTS[k]}</option>`
-  ).join('');
-  return `<div class="form-row"><label>Effect</label><select data-ab-field="effect"><option value="">(no effect)</option>${opts}</select></div>`;
+  const rows = seList.map((se, i) => `
+    <div class="se-row" data-se-idx="${i}">
+      <select data-se-status="${i}">${Object.entries(S.statuses).map(([k, s]) =>
+        `<option value="${k}" ${se.status === k ? 'selected' : ''}>${s.name}</option>`
+      ).join('')}</select>
+      <div class="se-targets">
+        ${TARGETS.map(t => `
+          <label class="se-target-label">
+            <input type="checkbox" data-se-target="${i}" data-tgt="${t}" ${(se.targets||[]).includes(t) ? 'checked' : ''}>
+            ${TARGET_LABELS[t]}
+          </label>`).join('')}
+      </div>
+      <button class="btn-icon" data-se-remove="${i}">✕</button>
+    </div>`).join('');
+
+  const addDisabled = Object.keys(S.statuses).length === 0 ? 'disabled' : '';
+  return `
+    <div class="form-section">
+      <div class="form-section-title">Status Effects</div>
+      <div id="se-list">${rows}</div>
+      <button class="btn btn-secondary btn-sm" id="se-add" ${addDisabled}>+ Add status effect</button>
+    </div>`;
+}
+
+function additionalEffectsFormHTML(ab) {
+  const active = new Set(ab.additionalEffects || []);
+  const checks = ADDITIONAL_EFFECTS.map(({ key, label }) => `
+    <label class="ae-label">
+      <input type="checkbox" data-ae-key="${key}" ${active.has(key) ? 'checked' : ''}>
+      ${label}
+    </label>`).join('');
+  return `
+    <div class="form-section">
+      <div class="form-section-title">Additional Effects</div>
+      <div class="ae-list">${checks}</div>
+    </div>`;
+}
+
+function benchEffectSelectHTML(ab) {
+  const opts = Object.entries(BENCH_EFFECTS)
+    .map(([k, label]) => `<option value="${k}" ${ab.effect === k ? 'selected' : ''}>${label}</option>`)
+    .join('');
+  return `<div class="form-row"><label>Bench Effect</label><select data-ab-field="effect"><option value="">(none)</option>${opts}</select></div>`;
 }
 
 function abilityFormHTML(key, ab) {
@@ -288,7 +319,6 @@ function abilityFormHTML(key, ab) {
       <div class="form-row"><label>Power</label><input type="number" data-ab-field="power" value="${ab.power ?? 0}" min="0"></div>
       <div class="form-row"><label>Hits</label><input type="number" data-ab-field="hits" value="${ab.hits ?? 1}" min="1"></div>
       <div class="form-row"><label>HP Cost %</label><input type="number" data-ab-field="hpCost" value="${Math.round((ab.hpCost ?? 0) * 100)}" min="0" max="100"></div>
-      ${effectSelectHTML(ab)}
     </div>` : ''}
     ${isBuff ? `
     <div class="form-section">
@@ -302,7 +332,6 @@ function abilityFormHTML(key, ab) {
       <div class="form-section-title">Heal</div>
       <div class="form-row"><label>Heal %</label><input type="number" data-ab-field="healPercent" value="${Math.round((ab.healPercent ?? 0) * 100)}" min="0" max="100"></div>
       <div class="form-row"><label>Heal Turns</label><input type="number" data-ab-field="healTurns" value="${ab.healTurns ?? 0}" min="0"></div>
-      ${effectSelectHTML(ab)}
     </div>` : ''}
     ${isSwap ? `
     <div class="form-section">
@@ -313,10 +342,8 @@ function abilityFormHTML(key, ab) {
         ${['atk','def','spd'].map(s => `<div class="stat-cell"><label>${s.toUpperCase()}</label><input type="number" data-ab-buffswap="${s}" value="${bos[s] ?? 0}" step="0.05"></div>`).join('')}
       </div>
     </div>` : ''}
-    ${!isAttack && !isBuff && !isHeal && !isSwap ? `
-    <div class="form-section">
-      ${effectSelectHTML(ab)}
-    </div>` : ''}`;
+    ${ab.kind === 'bench_support' ? benchEffectSelectHTML(ab) : ''}
+    ${ab.kind !== 'bench_support' && ab.kind !== 'swap_self' ? statusEffectsFormHTML(ab) + additionalEffectsFormHTML(ab) : ''}`;
 }
 
 // ─── Passives Tab ────────────────────────────────────────────────────────────
@@ -371,6 +398,56 @@ function passiveFormHTML(key, pv) {
     ${paramRows ? `<div class="form-section"><div class="form-section-title">Balance Params</div>${paramRows}</div>` : ''}`;
 }
 
+// ─── Status Effects Tab ──────────────────────────────────────────────────────
+
+function statusEffectsTabHTML() {
+  const q = S.search.statuses.toLowerCase();
+  const entries = Object.entries(S.statuses)
+    .filter(([k, s]) => !q || s.name.toLowerCase().includes(q) || k.includes(q))
+    .sort((a, b) => a[1].name.localeCompare(b[1].name));
+  const listHTML = entries.map(([k, s]) => `
+    <div class="list-item ${S.status === k ? 'selected' : ''}" data-status="${k}">
+      <div>
+        <div class="list-item-name">${s.name}</div>
+        <div class="list-item-sub">${k} · ${s.tickKind}</div>
+      </div>
+    </div>`).join('');
+
+  const sv = S.status ? S.statuses[S.status] : null;
+  return `
+    <div class="list-panel">
+      <div class="list-search"><input id="search-statuses" placeholder="Search…" value="${S.search.statuses}"></div>
+      <div class="list-items">${listHTML}</div>
+    </div>
+    <div class="detail-panel">${sv ? statusFormHTML(S.status, sv) : '<div class="empty">Select a status to edit.</div>'}</div>`;
+}
+
+function statusFormHTML(key, sv) {
+  const tickKinds = ['damage', 'heal', 'none'];
+  const tickOpts = tickKinds.map(k => `<option ${sv.tickKind === k ? 'selected' : ''}>${k}</option>`).join('');
+  const stackOpts = ['refresh', 'extend', 'stack'].map(k =>
+    `<option ${sv.stacking === k ? 'selected' : ''}>${k}</option>`).join('');
+  const showPpt   = sv.tickKind === 'damage' || sv.tickKind === 'heal';
+  const showSwap  = sv.percentOnSwap !== undefined;
+  const showStacks = sv.stacks !== undefined;
+
+  return `
+    <div class="form-section">
+      <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
+      <div class="form-row"><label>Display name</label><input type="text" data-sv-field="name" value="${sv.name}"></div>
+      <div class="form-row"><label>Description</label><textarea data-sv-field="desc">${sv.desc || ''}</textarea></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Mechanics</div>
+      <div class="form-row"><label>Tick kind</label><select data-sv-field="tickKind">${tickOpts}</select></div>
+      <div class="form-row"><label>Duration (turns)</label><input type="number" data-sv-num="turns" value="${sv.turns ?? 0}" min="0"></div>
+      ${showPpt ? `<div class="form-row"><label>% per turn</label><input type="number" data-sv-pct="percentPerTurn" value="${Math.round((sv.percentPerTurn ?? 0) * 1000) / 10}" step="0.1" min="0" max="100"></div>` : ''}
+      ${showSwap ? `<div class="form-row"><label>% on swap-out</label><input type="number" data-sv-pct="percentOnSwap" value="${Math.round((sv.percentOnSwap ?? 0) * 1000) / 10}" step="0.1" min="0" max="100"></div>` : ''}
+      ${showStacks ? `<div class="form-row"><label>Default stacks</label><input type="number" data-sv-num="stacks" value="${sv.stacks ?? 1}" min="1"></div>` : ''}
+      <div class="form-row"><label>Stacking rule</label><select data-sv-field="stacking">${stackOpts}</select></div>
+    </div>`;
+}
+
 // ─── Event Binding ───────────────────────────────────────────────────────────
 
 function bindContentEvents() {
@@ -386,9 +463,12 @@ function bindContentEvents() {
   content.querySelectorAll('.list-item[data-passive]').forEach(el =>
     el.addEventListener('click', () => { S.passive = el.dataset.passive; renderAll(); })
   );
+  content.querySelectorAll('.list-item[data-status]').forEach(el =>
+    el.addEventListener('click', () => { S.status = el.dataset.status; renderAll(); })
+  );
 
   // Search inputs
-  ['monsters','abilities','passives'].forEach(t => {
+  ['monsters','abilities','passives','statuses'].forEach(t => {
     const inp = document.getElementById(`search-${t}`);
     if (inp) inp.addEventListener('input', e => { S.search[t] = e.target.value; renderContent(); });
   });
@@ -401,6 +481,7 @@ function bindContentEvents() {
   if (S.tab === 'monsters' && S.monster !== null) bindMonsterFormEvents();
   if (S.tab === 'abilities' && S.ability) bindAbilityFormEvents();
   if (S.tab === 'passives' && S.passive) bindPassiveFormEvents();
+  if (S.tab === 'statuses' && S.status) bindStatusFormEvents();
 }
 
 function bindMonsterFormEvents() {
@@ -504,6 +585,90 @@ function bindAbilityFormEvents() {
       S.dirty.abilities = true; renderHeader(); renderTabs();
     });
   });
+
+  // Status effects — add row
+  const seAdd = document.getElementById('se-add');
+  if (seAdd) {
+    seAdd.addEventListener('click', () => {
+      if (!ab.statusEffects) ab.statusEffects = [];
+      const firstKey = Object.keys(S.statuses)[0] || '';
+      ab.statusEffects.push({ status: firstKey, targets: [] });
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  }
+
+  // Status effects — remove row
+  document.querySelectorAll('[data-se-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.seRemove;
+      (ab.statusEffects || []).splice(i, 1);
+      if (ab.statusEffects && ab.statusEffects.length === 0) delete ab.statusEffects;
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  });
+
+  // Status effects — status select
+  document.querySelectorAll('[data-se-status]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.seStatus;
+      ab.statusEffects[i].status = sel.value;
+      S.dirty.abilities = true; renderHeader(); renderTabs();
+    });
+  });
+
+  // Status effects — target checkboxes
+  document.querySelectorAll('[data-se-target]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const i = +cb.dataset.seTarget;
+      const tgt = cb.dataset.tgt;
+      const se = ab.statusEffects[i];
+      if (!se.targets) se.targets = [];
+      if (cb.checked) { if (!se.targets.includes(tgt)) se.targets.push(tgt); }
+      else { se.targets = se.targets.filter(t => t !== tgt); }
+      S.dirty.abilities = true; renderHeader(); renderTabs();
+    });
+  });
+
+  // Additional effects — checkboxes
+  document.querySelectorAll('[data-ae-key]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (!ab.additionalEffects) ab.additionalEffects = [];
+      if (cb.checked) { if (!ab.additionalEffects.includes(cb.dataset.aeKey)) ab.additionalEffects.push(cb.dataset.aeKey); }
+      else { ab.additionalEffects = ab.additionalEffects.filter(k => k !== cb.dataset.aeKey); }
+      if (ab.additionalEffects.length === 0) delete ab.additionalEffects;
+      S.dirty.abilities = true; renderHeader(); renderTabs();
+    });
+  });
+}
+
+function bindStatusFormEvents() {
+  const sv = S.statuses[S.status];
+
+  document.querySelectorAll('[data-sv-field]').forEach(el => {
+    el.addEventListener('change', () => {
+      sv[el.dataset.svField] = el.value;
+      if (el.dataset.svField === 'tickKind') renderContent(); // refresh % fields visibility
+      else { S.dirty.statuses = true; renderHeader(); renderTabs(); }
+      S.dirty.statuses = true; renderHeader(); renderTabs();
+    });
+  });
+
+  document.querySelectorAll('[data-sv-num]').forEach(el => {
+    el.addEventListener('change', () => {
+      sv[el.dataset.svNum] = +el.value;
+      S.dirty.statuses = true; renderHeader(); renderTabs();
+    });
+  });
+
+  // pct fields are stored as 0.0–1.0 but displayed as 0–100
+  document.querySelectorAll('[data-sv-pct]').forEach(el => {
+    el.addEventListener('change', () => {
+      sv[el.dataset.svPct] = parseFloat((parseFloat(el.value) / 100).toFixed(4));
+      S.dirty.statuses = true; renderHeader(); renderTabs();
+    });
+  });
 }
 
 function bindPassiveFormEvents() {
@@ -576,9 +741,10 @@ async function doCommit(message) {
   if (!S.pat) { showStatus('Enter a GitHub PAT first.', true); overlay.classList.add('hidden'); return; }
 
   const toCommit = [
-    S.dirty.templates  && { file: 'templates.json',  data: S.templates },
-    S.dirty.abilities  && { file: 'abilities.json',   data: S.abilities },
-    S.dirty.passives   && { file: 'passives.json',    data: S.passives },
+    S.dirty.templates  && { file: 'templates.json',      data: S.templates },
+    S.dirty.abilities  && { file: 'abilities.json',       data: S.abilities },
+    S.dirty.passives   && { file: 'passives.json',        data: S.passives },
+    S.dirty.statuses   && { file: 'statuseffects.json',   data: S.statuses },
   ].filter(Boolean);
 
   try {
@@ -586,7 +752,7 @@ async function doCommit(message) {
       const sha = await getFileSha(file);
       await putFile(file, data, sha, message);
     }
-    S.dirty = { abilities: false, passives: false, templates: false };
+    S.dirty = { abilities: false, passives: false, templates: false, statuses: false };
     showStatus('Committed! Pages will rebuild shortly.', false);
   } catch (e) {
     showStatus(`Commit failed: ${e.message}`, true);

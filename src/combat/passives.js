@@ -63,10 +63,10 @@ export function applyPowerMult(attacker, defender, ability, power, { attackerSpd
   if (hasPassive(attacker, 'cornered') && (attacker.hp / attacker.creature.maxHp) < p('cornered').selfHpThreshold) {
     power *= p('cornered').powerMult;
   }
-  if (ability.effect === 'execute_scale') {
+  if ((ability.additionalEffects || []).includes('execute_scale')) {
     power *= 1 + 0.5 * (1 - (defender.hp / defender.creature.maxHp));
   }
-  if (ability.effect === 'cursed_synergy' && defender.statuses && defender.statuses.cursed) {
+  if ((ability.additionalEffects || []).includes('cursed_synergy') && defender.statuses && defender.statuses.cursed) {
     power *= 1.5;
   }
   if (hasPassive(attacker, 'tempo') && attackerSpd > defenderSpd) {
@@ -156,7 +156,12 @@ export function applyBattleStartPassive(f, opponent, cbs) {
     opponent.hp = Math.max(1, opponent.hp - Math.round(opponent.creature.maxHp * p('dreadful').damagePct));
   }
   if (hasPassive(f, 'prepared')) {
-    applyStatus(opponent, p('prepared').appliesStatus, {});
+    for (const se of (p('prepared').statusEffects || [])) {
+      for (const tk of (se.targets || [])) {
+        const target = tk === 'enemy' ? opponent : f;
+        applyStatus(target, se.status, {});
+      }
+    }
   }
 }
 

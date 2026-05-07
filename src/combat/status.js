@@ -2,29 +2,29 @@ import { pushLog } from '../state.js';
 import { displayName } from '../creature.js';
 import { blocksStatus, modifyHeal, applyBenchPassives, applyTurnStartPassives } from './passives.js';
 import { spawnFloat } from '../ui/animations.js';
+import { STATUSES } from '../data.js';
 
-// Apply or refresh a status. Passives with blocksStatuses block matching types.
+// Apply or refresh a status. Params fall back to canonical defaults in statuseffects.json.
 export function applyStatus(f, type, opts) {
   opts = opts || {};
   if (blocksStatus(f, type)) return false;
-  if (type === 'burn') {
-    f.statuses.burn = { turns: opts.turns || 4, percentPerTurn: opts.pct || 0.05 };
-    return true;
-  }
-  if (type === 'bloom') {
-    f.statuses.bloom = { turns: opts.turns || 4, percentPerTurn: opts.pct || 0.05 };
+  const def = STATUSES[type];
+  if (!def) return false;
+  const turns = opts.turns ?? def.turns;
+  if (type === 'burn' || type === 'bloom') {
+    f.statuses[type] = { turns, percentPerTurn: opts.pct ?? def.percentPerTurn };
     return true;
   }
   if (type === 'soaking') {
-    f.statuses.soaking = { turns: opts.turns || 4 };
+    f.statuses.soaking = { turns, stacks: opts.stacks ?? def.stacks ?? 1 };
     return true;
   }
   if (type === 'cursed') {
-    f.statuses.cursed = { turns: opts.turns || 99, percentOnSwap: opts.pct || 0.30 };
+    f.statuses.cursed = { turns, percentOnSwap: opts.pct ?? def.percentOnSwap };
     return true;
   }
   if (type === 'dazed') {
-    f.statuses.dazed = { turns: opts.turns || 2 };
+    f.statuses.dazed = { turns };
     return true;
   }
   return false;

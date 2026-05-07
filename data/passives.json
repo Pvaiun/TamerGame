@@ -178,7 +178,7 @@
                         "damagePct": 0.15,
                         "codeRef": "applyBattleStartPassive" },
   "prepared":         { "name": "Prepared",         "desc": "Enter battle with +1 stack of soaking on the enemy active.",
-                        "appliesStatus": "soaking",
+                        "statusEffects": [{ "status": "soaking", "targets": ["enemy"] }],
                         "codeRef": "applyBattleStartPassive" },
   "serene":           { "name": "Serene",           "desc": "Immune to dazed.",
                         "blocksStatuses": ["dazed"],

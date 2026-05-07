@@ -118,3 +118,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Status effects rows (in abilities form) ── */
+.se-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.se-row:last-child { border-bottom: none; }
+.se-row select { flex: 0 0 auto; }
+.se-targets { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.se-target-label { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text-dim); cursor: pointer; white-space: nowrap; }
+.se-target-label input { cursor: pointer; }
+.btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; padding: 0 4px; line-height: 1; }
+.btn-icon:hover { color: var(--danger, #d94a3a); }
+.btn-sm { padding: 3px 10px; font-size: 11px; margin-top: 6px; }
+#se-list { min-height: 8px; }
+
+/* ── Additional effects (in abilities form) ── */
+.ae-list { display: flex; flex-direction: column; gap: 4px; }
+.ae-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); cursor: pointer; }
+.ae-label input { cursor: pointer; }

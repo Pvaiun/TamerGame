@@ -1,4 +1,4 @@
-import { PASSIVES } from '../data.js';
+import { PASSIVES, STATUSES } from '../data.js';
 import { state, pushLog } from '../state.js';
 import { displayName } from '../creature.js';
 import { hasPassive, applyPostHitPassives } from './passives.js';
@@ -24,21 +24,60 @@ export function processPostHit(side, oside, attacker, defender, ability, result)
   });
 }
 
-// Resolve the named ability `effect` (status applications, healing, etc.) — only after a damaging hit lands.
+// Returns the fighters that correspond to a target key from the attacker's perspective.
+function resolveTargets(targetKey, side, attacker, defender) {
+  const ownBench   = side === 'player' ? state.bf  : state.ebf;
+  const enemyBench = side === 'player' ? state.ebf : state.bf;
+  if (targetKey === 'self')        return attacker.hp > 0 ? [attacker] : [];
+  if (targetKey === 'bench')       return ownBench && ownBench.hp > 0 ? [ownBench] : [];
+  if (targetKey === 'enemy')       return defender.hp > 0 ? [defender] : [];
+  if (targetKey === 'enemy_bench') return enemyBench && enemyBench.hp > 0 ? [enemyBench] : [];
+  return [];
+}
+
+// Returns status apply opts, overriding defaults for passives that modify a specific status.
+function statusOptsFor(attacker, statusName) {
+  if (statusName === 'burn' && hasPassive(attacker, 'pyromancer')) {
+    const p = PASSIVES.pyromancer;
+    return { turns: p.burnTurns, pct: p.burnPct };
+  }
+  return {};
+}
+
+// Resolve statusEffects[] and additionalEffects[] on an ability after a hit lands.
 export function resolveAbilityEffect(side, oside, attacker, defender, ability, result) {
-  const effect = ability.effect;
-  if (!effect || defender.hp <= 0) return;
-  const burnTurns = (hasPassive(attacker, 'pyromancer') ? PASSIVES.pyromancer.burnTurns : 4);
-  const burnPct   = (hasPassive(attacker, 'pyromancer') ? PASSIVES.pyromancer.burnPct   : 0.05);
-  switch (effect) {
-    case 'burn':
-      applyStatus(defender, 'burn', { turns: burnTurns, pct: burnPct });
-      pushLog(`${displayName(defender.creature)} is burning.`);
-      break;
-    case 'burn_long':
-      applyStatus(defender, 'burn', { turns: 6, pct: 0.05 });
-      pushLog(`${displayName(defender.creature)} is burning (long).`);
-      break;
+  if (defender.hp <= 0) return;
+
+  // ── Status effect applications ──────────────────────────────────────────
+  for (const se of (ability.statusEffects || [])) {
+    const opts = statusOptsFor(attacker, se.status);
+    const def  = STATUSES[se.status];
+    const log  = def ? def.name : se.status;
+    for (const tk of (se.targets || [])) {
+      const fighters = resolveTargets(tk, side, attacker, defender);
+      for (const f of fighters) {
+        applyStatus(f, se.status, opts);
+      }
+    }
+    // Collect names for log line
+    const names = (se.targets || [])
+      .flatMap(tk => resolveTargets(tk, side, attacker, defender))
+      .map(f => displayName(f.creature));
+    if (names.length === 1) {
+      pushLog(`${names[0]} is afflicted with ${log}.`);
+    } else if (names.length > 1) {
+      pushLog(`${names.join(' and ')} are afflicted with ${log}!`, 'eff');
+    }
+  }
+
+  // ── Additional (non-status) effects ─────────────────────────────────────
+  for (const eff of (ability.additionalEffects || [])) {
+    handleAdditionalEffect(eff, side, oside, attacker, defender, result);
+  }
+}
+
+function handleAdditionalEffect(eff, side, oside, attacker, defender, result) {
+  switch (eff) {
     case 'burn_stacking': {
       const cur = defender.statuses.burn ? defender.statuses.burn.turns : 0;
       applyStatus(defender, 'burn', { turns: Math.max(4, cur + 2), pct: 0.05 });
@@ -46,35 +85,14 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
       break;
     }
     case 'cursed_synergy':
-      applyStatus(defender, 'cursed', { turns: 99, pct: 0.30 });
-      pushLog(`${displayName(defender.creature)} is cursed.`);
-      break;
-    case 'execute_scale':
-      break;
-    case 'soaking':
-      applyStatus(defender, 'soaking', { stacks: 1, turns: 4 });
-      pushLog(`${displayName(defender.creature)} is soaked.`);
+      // Bonus damage if target is already cursed — handled in damage.js; no status apply here.
       break;
     case 'soaking_double':
       applyStatus(defender, 'soaking', { stacks: 2, turns: 4 });
       pushLog(`${displayName(defender.creature)} is heavily soaked.`);
       break;
-    case 'cursed':
-      applyStatus(defender, 'cursed', { turns: 99, pct: 0.30 });
-      pushLog(`${displayName(defender.creature)} is cursed.`);
-      break;
-    case 'dazed':
-      applyStatus(defender, 'dazed', { turns: 2 });
-      pushLog(`${displayName(defender.creature)} is dazed.`);
-      break;
-    case 'dazed_long':
-      applyStatus(defender, 'dazed', { turns: 4 });
-      pushLog(`${displayName(defender.creature)} is dazed (long).`);
-      break;
-    case 'cleanse_self':
-      cleanseStatuses(attacker);
-      attacker.statMods = { atk: 0, def: 0, spd: 0 };
-      pushLog(`${displayName(attacker.creature)} is cleansed.`);
+    case 'execute_scale':
+      // Damage scaling by missing HP is handled upstream in damage calculation.
       break;
     case 'lifesteal_strong': {
       const healed = applyHeal(attacker, Math.round(result.dmg * 0.5));
@@ -92,52 +110,11 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
       }
       break;
     }
-    case 'bloom_self':
-      applyStatus(attacker, 'bloom', { turns: 4, pct: 0.05 });
-      pushLog(`${displayName(attacker.creature)} blooms.`);
+    case 'cleanse_self':
+      cleanseStatuses(attacker);
+      attacker.statMods = { atk: 0, def: 0, spd: 0 };
+      pushLog(`${displayName(attacker.creature)} is cleansed.`);
       break;
-    case 'bloom_self_long':
-      applyStatus(attacker, 'bloom', { turns: 6, pct: 0.06 });
-      pushLog(`${displayName(attacker.creature)} blooms (long).`);
-      break;
-    case 'wither_combo':
-      applyStatus(defender, 'cursed', { turns: 99, pct: 0.30 });
-      applyStatus(defender, 'soaking', { stacks: 1, turns: 4 });
-      pushLog(`${displayName(defender.creature)} withers.`);
-      break;
-    case 'burn_both': {
-      applyStatus(defender, 'burn', { turns: burnTurns, pct: burnPct });
-      const ownBench = side === 'player' ? state.bf : state.ebf;
-      if (ownBench && ownBench.hp > 0) {
-        applyStatus(ownBench, 'burn', { turns: burnTurns, pct: burnPct });
-        pushLog(`${displayName(defender.creature)} and ${displayName(ownBench.creature)} are both burning!`, 'eff');
-      } else {
-        pushLog(`${displayName(defender.creature)} is burning.`);
-      }
-      break;
-    }
-    case 'cursed_both': {
-      applyStatus(defender, 'cursed', { turns: 99, pct: 0.30 });
-      const ownBench = side === 'player' ? state.bf : state.ebf;
-      if (ownBench && ownBench.hp > 0) {
-        applyStatus(ownBench, 'cursed', { turns: 99, pct: 0.30 });
-        pushLog(`${displayName(defender.creature)} and ${displayName(ownBench.creature)} are both cursed!`, 'eff');
-      } else {
-        pushLog(`${displayName(defender.creature)} is cursed.`);
-      }
-      break;
-    }
-    case 'bloom_both': {
-      applyStatus(attacker, 'bloom', { turns: 4, pct: 0.05 });
-      const ownBench = side === 'player' ? state.bf : state.ebf;
-      if (ownBench && ownBench.hp > 0) {
-        applyStatus(ownBench, 'bloom', { turns: 4, pct: 0.05 });
-        pushLog(`${displayName(attacker.creature)} and ${displayName(ownBench.creature)} are both blooming!`, 'eff');
-      } else {
-        pushLog(`${displayName(attacker.creature)} blooms.`);
-      }
-      break;
-    }
     case 'force_swap': {
       const oppBench = side === 'player' ? state.ebf : state.bf;
       if (!oppBench || oppBench.hp <= 0) {
@@ -165,6 +142,9 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
     case 'thorn_soaking':
       attacker.thornSoaking = true;
       pushLog(`${displayName(attacker.creature)} cloaks itself in vapor.`);
+      break;
+    case 'pierce':
+      // Handled upstream in damage calculation.
       break;
   }
 }

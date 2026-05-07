@@ -270,22 +270,15 @@ export async function resolveAction(side, attacker, defender, ability) {
       const perTurn = Math.max(1, Math.round(attacker.creature.maxHp * ability.healPercent));
       attacker.healing = { perTurn, turnsLeft: ability.healTurns };
       pushLog(`${displayName(attacker.creature)} begins healing (+${perTurn}/turn for ${ability.healTurns}).`);
-    } else {
-      applyStatus(attacker, 'bloom', { turns: 4, pct: 0.05 });
-      pushLog(`${displayName(attacker.creature)} releases ${ability.name.toLowerCase()}.`);
     }
+    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
     sfx('heal');
   } else if (ability.kind === 'buff') {
-    if (ability.effect === 'cleanse_self') {
-      cleanseStatuses(attacker);
-      attacker.statMods = { atk: 0, def: 0, spd: 0 };
-      pushLog(`${displayName(attacker.creature)} is cleansed.`);
-      sfx('heal');
-      return;
-    }
     for (const [k, v] of Object.entries(ability.statMult || {})) attacker.statMods[k] += v;
-    pushLog(`${displayName(attacker.creature)} channels ${ability.name}.`);
-    sfx('select');
+    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
+    const hasCleanse = (ability.additionalEffects || []).includes('cleanse_self');
+    if (!hasCleanse) pushLog(`${displayName(attacker.creature)} channels ${ability.name}.`);
+    sfx(hasCleanse ? 'heal' : 'select');
   } else if (ability.kind === 'debuff') {
     pushLog(`${displayName(attacker.creature)} casts ${ability.name}.`);
     sfx('select');
