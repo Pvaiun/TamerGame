@@ -11,7 +11,7 @@ const S = {
   passive: null,   // selected passive key
   pat: '', branch: 'main',
   statusMsg: '', statusError: false,
-  search: { monsters: '', abilities: '', passives: '' },
+  search: { monsters: '', abilities: '', passives: '', abilityKind: '' },
 };
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -176,10 +176,22 @@ function monsterFormHTML(t) {
 
 // ─── Abilities Tab ───────────────────────────────────────────────────────────
 
+const KIND_FILTERS = [
+  { key: '',               label: 'All' },
+  { key: 'attack',         label: 'Attack' },
+  { key: 'charge_attack',  label: 'Charge' },
+  { key: 'buff',           label: 'Buff' },
+  { key: 'debuff',         label: 'Debuff' },
+  { key: 'apply_heal',     label: 'Heal' },
+  { key: 'bench_support',  label: 'Bench' },
+  { key: 'swap_self',      label: 'Swap' },
+];
+
 function abilitiesTabHTML() {
   const q = S.search.abilities.toLowerCase();
+  const kf = S.search.abilityKind;
   const entries = Object.entries(S.abilities)
-    .filter(([k, a]) => !q || a.name.toLowerCase().includes(q) || k.includes(q))
+    .filter(([k, a]) => (!kf || a.kind === kf) && (!q || a.name.toLowerCase().includes(q) || k.includes(q)))
     .sort((a, b) => a[1].name.localeCompare(b[1].name));
   const listHTML = entries.map(([k, a]) => `
     <div class="list-item ${S.ability === k ? 'selected' : ''}" data-ability="${k}">
@@ -189,13 +201,65 @@ function abilitiesTabHTML() {
       </div>
     </div>`).join('');
 
+  const filterBtns = KIND_FILTERS.map(f =>
+    `<button class="kind-filter-btn ${kf === f.key ? 'active' : ''}" data-kind="${f.key}">${f.label}</button>`
+  ).join('');
+
   const ab = S.ability ? S.abilities[S.ability] : null;
   return `
     <div class="list-panel">
       <div class="list-search"><input id="search-abilities" placeholder="Search…" value="${S.search.abilities}"></div>
+      <div class="kind-filter">${filterBtns}</div>
       <div class="list-items">${listHTML}</div>
     </div>
     <div class="detail-panel">${ab ? abilityFormHTML(S.ability, ab) : '<div class="empty">Select an ability to edit.</div>'}</div>`;
+}
+
+const EFFECTS = {
+  burn:             'Apply Burn (4t · 5%/t)',
+  burn_stacking:    'Apply Burn (stacking · +2t each)',
+  burn_long:        'Apply Burn (6t · 5%/t)',
+  burn_both:        'Apply Burn — target + own bench',
+  soaking:          'Apply Soaking (1 stack)',
+  soaking_double:   'Apply Soaking (2 stacks)',
+  dazed:            'Apply Dazed (2t)',
+  dazed_long:       'Apply Dazed (4t)',
+  cursed:           'Apply Cursed (30% on-swap)',
+  cursed_synergy:   'Apply Cursed + bonus dmg if already cursed',
+  cursed_both:      'Apply Cursed — target + own bench',
+  wither_combo:     'Apply Cursed + Soaking',
+  lifesteal_strong: 'Lifesteal 50% of damage dealt',
+  lifesteal_full:   'Lifesteal 100% of damage dealt',
+  bloom_self:       'Apply Bloom to self (4t · 5%/t)',
+  bloom_self_long:  'Apply Bloom to self (6t · 6%/t)',
+  bloom_both:       'Apply Bloom — self + own bench',
+  execute_scale:    'Scale damage by target missing HP',
+  pierce:           'Ignore 50% of target Defense',
+  force_swap:       'Force-swap target active creature',
+  thorn_soaking:    'Apply Soaking to attackers that hit you',
+  cleanse_self:     'Cleanse self — all statuses + stat penalties',
+  bench_bloom:      'Apply Bloom to bench ally (4t · 6%/t)',
+  bench_buff_atk:   'Buff bench ally ATK +25%',
+  bench_buff_def:   'Buff bench ally DEF +30%',
+};
+
+const EFFECTS_BY_KIND = {
+  attack:        ['burn','burn_stacking','burn_long','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_synergy','cursed_both','wither_combo','lifesteal_strong','lifesteal_full','bloom_self','bloom_self_long','bloom_both','execute_scale','pierce','force_swap','thorn_soaking','cleanse_self'],
+  charge_attack: ['burn','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_both','wither_combo','lifesteal_strong','lifesteal_full','bloom_both','execute_scale','force_swap'],
+  debuff:        ['burn','burn_both','soaking','soaking_double','dazed','dazed_long','cursed','cursed_both','wither_combo','force_swap'],
+  apply_heal:    ['bloom_self','bloom_both','cleanse_self'],
+  bench_support: ['bench_bloom','bench_buff_atk','bench_buff_def'],
+  buff:          ['cleanse_self'],
+  swap_self:     [],
+};
+
+function effectSelectHTML(ab) {
+  const allowed = EFFECTS_BY_KIND[ab.kind] || [];
+  if (allowed.length === 0) return '';
+  const opts = allowed.map(k =>
+    `<option value="${k}" ${ab.effect === k ? 'selected' : ''}>${EFFECTS[k]}</option>`
+  ).join('');
+  return `<div class="form-row"><label>Effect</label><select data-ab-field="effect"><option value="">(no effect)</option>${opts}</select></div>`;
 }
 
 function abilityFormHTML(key, ab) {
@@ -224,7 +288,7 @@ function abilityFormHTML(key, ab) {
       <div class="form-row"><label>Power</label><input type="number" data-ab-field="power" value="${ab.power ?? 0}" min="0"></div>
       <div class="form-row"><label>Hits</label><input type="number" data-ab-field="hits" value="${ab.hits ?? 1}" min="1"></div>
       <div class="form-row"><label>HP Cost %</label><input type="number" data-ab-field="hpCost" value="${Math.round((ab.hpCost ?? 0) * 100)}" min="0" max="100"></div>
-      <div class="form-row"><label>Effect</label><input type="text" data-ab-field="effect" value="${ab.effect || ''}"></div>
+      ${effectSelectHTML(ab)}
     </div>` : ''}
     ${isBuff ? `
     <div class="form-section">
@@ -238,7 +302,7 @@ function abilityFormHTML(key, ab) {
       <div class="form-section-title">Heal</div>
       <div class="form-row"><label>Heal %</label><input type="number" data-ab-field="healPercent" value="${Math.round((ab.healPercent ?? 0) * 100)}" min="0" max="100"></div>
       <div class="form-row"><label>Heal Turns</label><input type="number" data-ab-field="healTurns" value="${ab.healTurns ?? 0}" min="0"></div>
-      <div class="form-row"><label>Effect</label><input type="text" data-ab-field="effect" value="${ab.effect || ''}"></div>
+      ${effectSelectHTML(ab)}
     </div>` : ''}
     ${isSwap ? `
     <div class="form-section">
@@ -251,7 +315,7 @@ function abilityFormHTML(key, ab) {
     </div>` : ''}
     ${!isAttack && !isBuff && !isHeal && !isSwap ? `
     <div class="form-section">
-      <div class="form-row"><label>Effect</label><input type="text" data-ab-field="effect" value="${ab.effect || ''}"></div>
+      ${effectSelectHTML(ab)}
     </div>` : ''}`;
 }
 
@@ -328,6 +392,11 @@ function bindContentEvents() {
     const inp = document.getElementById(`search-${t}`);
     if (inp) inp.addEventListener('input', e => { S.search[t] = e.target.value; renderContent(); });
   });
+
+  // Kind filter buttons (Abilities tab)
+  content.querySelectorAll('.kind-filter-btn').forEach(btn =>
+    btn.addEventListener('click', () => { S.search.abilityKind = btn.dataset.kind; renderContent(); })
+  );
 
   if (S.tab === 'monsters' && S.monster !== null) bindMonsterFormEvents();
   if (S.tab === 'abilities' && S.ability) bindAbilityFormEvents();
