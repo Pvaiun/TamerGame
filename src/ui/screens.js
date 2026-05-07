@@ -45,7 +45,11 @@ export function renderStart() {
   panel.appendChild(el('p', { style: 'color: var(--text-dim); font-size: 12px; line-height: 1.5; margin-bottom: 16px;' },
     'Each creature has a passive ability that defines its identity. Breeding inherits one passive from each parent.'
   ));
-  panel.appendChild(el('button', { class: 'primary', style: 'display: block; margin: 0 auto;', onclick: () => { state.screen = 'starter_pick'; render(); } }, 'Begin'));
+  panel.appendChild(el('button', { class: 'primary', style: 'display: block; margin: 0 auto;', onclick: () => {
+    state.starterPool = TEMPLATES.filter(t => t.starter).map(t => makeCreature(t, 1));
+    state.screen = 'starter_pick';
+    render();
+  } }, 'Begin'));
   app().appendChild(panel);
 }
 
@@ -56,11 +60,9 @@ export function renderStarterPick() {
     state.party.length === 0 ? 'Pick your first companion.' : 'Pick your second companion.'
   ));
 
-  const starters = TEMPLATES.filter(t => t.starter);
   const grid = el('div', { class: 'roster-grid' });
-  for (const t of starters) {
-    if (state.party.find(c => c.species === t.species)) continue;
-    const preview = makeCreature(t, 1);
+  for (const preview of state.starterPool) {
+    if (state.party.find(c => c.species === preview.species)) continue;
     grid.appendChild(creatureCardEl(preview, {
       selectable: true,
       onclick: () => {
