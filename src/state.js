@@ -44,6 +44,7 @@ export function resetGame() {
   state.log = [];
   state.breedState = null;
   state.postBattleEvents = null;
+  state.starterPool = null;
   state.acting = false;
   state.screen = 'start';
 }
