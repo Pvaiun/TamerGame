@@ -1,4 +1,5 @@
 import { el, app } from './dom.js';
+import { VERSION } from '../version.js';
 import { TEMPLATES, ABILITIES, PASSIVES } from '../data.js';
 import { state, BREED_WAVES, TOTAL_WAVES, resetGame } from '../state.js';
 import { sfx } from '../audio.js';
@@ -35,6 +36,7 @@ export function renderHeader() {
 }
 
 export function renderStart() {
+  app().appendChild(el('div', { style: 'position: fixed; top: 8px; right: 10px; font-size: 10px; color: var(--text-dim); opacity: 0.5;' }, `v${VERSION}`));
   const panel = el('div', { class: 'panel' });
   panel.appendChild(el('div', { class: 'panel-title' }, 'The Bloodline Awaits'));
   panel.appendChild(el('p', { style: 'color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 12px;' },
