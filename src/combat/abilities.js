@@ -1,6 +1,7 @@
+import { PASSIVES } from '../data.js';
 import { state, pushLog } from '../state.js';
 import { displayName } from '../creature.js';
-import { hasPassive } from './passives.js';
+import { hasPassive, applyPostHitPassives } from './passives.js';
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
 
@@ -18,58 +19,20 @@ export function applyCursedOnSwap(f, side) {
 // Process all post-hit consequences after a damaging hit landed.
 // Used by both single-hit and multi-hit attacks so each hit independently rolls effects.
 export function processPostHit(side, oside, attacker, defender, ability, result) {
-  if (hasPassive(defender, 'adrenal_surge') && defender.hp > 0) {
-    if (result.dmg >= defender.creature.maxHp * 0.3) {
-      if (!defender.adrenalTurns) {
-        defender.statMods.atk += 0.3;
-        defender.adrenalAtkDelta = 0.3;
-      }
-      defender.adrenalTurns = 3;
-      pushLog(`${displayName(defender.creature)}'s Adrenal Surge triggers (+30% ATK)!`, 'eff');
-    }
-  }
-  if (hasPassive(attacker, 'soul_drain')) {
-    const healed = applyHeal(attacker, Math.round(result.dmg * 0.25));
-    if (healed > 0) spawnFloat(side, `+${healed}`, 'heal');
-  }
-  if (hasPassive(defender, 'riposte') && defender.hp > 0) {
-    const back = Math.round(result.dmg * 0.25);
-    attacker.hp = Math.max(0, attacker.hp - back);
-    spawnFloat(side, String(back), 'dmg');
-    pushLog(`${displayName(defender.creature)}'s Riposte deals ${back} back.`);
-  }
-  if (hasPassive(defender, 'counterstance') && defender.bracingThisTurn && defender.hp > 0) {
-    const back = Math.round(result.dmg * 0.5);
-    attacker.hp = Math.max(0, attacker.hp - back);
-    spawnFloat(side, String(back), 'dmg');
-    pushLog(`${displayName(defender.creature)}'s Counterstance reflects ${back}!`, 'eff');
-  }
-  if (hasPassive(defender, 'aquaveil') && !defender.aquaveilUsed) {
-    const halfHp = Math.round(defender.creature.maxHp * 0.5);
-    if (defender.hp < halfHp && defender.hp > 0) {
-      defender.hp = halfHp;
-      defender.aquaveilUsed = true;
-      spawnFloat(oside, `+${halfHp}`, 'heal');
-      pushLog(`${displayName(defender.creature)}'s Aquaveil triggers!`, 'eff');
-    }
-  }
-  if (hasPassive(attacker, 'frostbite') && defender.hp > 0) {
-    if (!hasPassive(defender, 'iron_will')) {
-      defender.statMods.spd -= 0.10;
-    }
-  }
-  if (defender.thornSoaking && defender.hp > 0 && attacker.hp > 0) {
-    applyStatus(attacker, 'soaking', { stacks: 1, turns: 4 });
-  }
+  applyPostHitPassives(side, oside, attacker, defender, result, {
+    applyHeal, applyStatus, spawnFloat, pushLog, displayName,
+  });
 }
 
 // Resolve the named ability `effect` (status applications, healing, etc.) — only after a damaging hit lands.
 export function resolveAbilityEffect(side, oside, attacker, defender, ability, result) {
   const effect = ability.effect;
   if (!effect || defender.hp <= 0) return;
+  const burnTurns = (hasPassive(attacker, 'pyromancer') ? PASSIVES.pyromancer.burnTurns : 4);
+  const burnPct   = (hasPassive(attacker, 'pyromancer') ? PASSIVES.pyromancer.burnPct   : 0.05);
   switch (effect) {
     case 'burn':
-      applyStatus(defender, 'burn', { turns: hasPassive(attacker, 'pyromancer') ? 4 : 4, pct: 0.05 });
+      applyStatus(defender, 'burn', { turns: burnTurns, pct: burnPct });
       pushLog(`${displayName(defender.creature)} is burning.`);
       break;
     case 'burn_long':
@@ -143,10 +106,10 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
       pushLog(`${displayName(defender.creature)} withers.`);
       break;
     case 'burn_both': {
-      applyStatus(defender, 'burn', { turns: 4, pct: 0.05 });
+      applyStatus(defender, 'burn', { turns: burnTurns, pct: burnPct });
       const ownBench = side === 'player' ? state.bf : state.ebf;
       if (ownBench && ownBench.hp > 0) {
-        applyStatus(ownBench, 'burn', { turns: 4, pct: 0.05 });
+        applyStatus(ownBench, 'burn', { turns: burnTurns, pct: burnPct });
         pushLog(`${displayName(defender.creature)} and ${displayName(ownBench.creature)} are both burning!`, 'eff');
       } else {
         pushLog(`${displayName(defender.creature)} is burning.`);

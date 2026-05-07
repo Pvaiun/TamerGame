@@ -1,12 +1,12 @@
 import { pushLog } from '../state.js';
 import { displayName } from '../creature.js';
-import { hasPassive } from './passives.js';
+import { blocksStatus, modifyHeal, applyBenchPassives, applyTurnStartPassives } from './passives.js';
 import { spawnFloat } from '../ui/animations.js';
 
-// Apply or refresh a status. Iron Will blocks debuff statuses.
+// Apply or refresh a status. Passives with blocksStatuses block matching types.
 export function applyStatus(f, type, opts) {
   opts = opts || {};
-  if (hasPassive(f, 'iron_will') && (type === 'soaking' || type === 'dazed' || type === 'cursed')) return false;
+  if (blocksStatus(f, type)) return false;
   if (type === 'burn') {
     f.statuses.burn = { turns: opts.turns || 4, percentPerTurn: opts.pct || 0.05 };
     return true;
@@ -40,10 +40,7 @@ export function cleanseStatuses(f) {
 
 // Tick statuses (burn/bloom/soaking/dazed/cursed). Used for active and bench fighters.
 export function tickFighterStatuses(f, side, isBench) {
-  if (isBench && hasPassive(f, 'sentinel')) {
-    applyHeal(f, Math.max(1, Math.round(f.creature.maxHp * 0.05)));
-  }
-  const spotterMult = (isBench && hasPassive(f, 'spotter')) ? 0.7 : 1.0;
+  const spotterMult = applyBenchPassives(f, isBench, { applyHeal });
   if (f.statuses.burn && f.statuses.burn.turns > 0) {
     const dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.burn.percentPerTurn * spotterMult));
     f.hp = Math.max(0, f.hp - dmg);
@@ -87,24 +84,7 @@ export function tickStartOfTurn(f, side) {
       pushLog(`${displayName(f.creature)} heals ${healed} from Mend.`);
     }
   }
-  if (hasPassive(f, 'photosynthesis')) {
-    const healed = applyHeal(f, Math.max(1, Math.round(f.creature.maxHp * 0.06)));
-    if (healed > 0) {
-      spawnFloat(side, `+${healed}`, 'heal');
-      pushLog(`${displayName(f.creature)}'s Photosynthesis heals ${healed}.`);
-    }
-  }
-  if (hasPassive(f, 'hex_eater')) {
-    if (f.statuses.soaking) f.statuses.soaking = null;
-    else if (f.statuses.burn) f.statuses.burn = null;
-    else if (f.statuses.dazed) f.statuses.dazed = null;
-    else if (f.statMods.atk < 0) f.statMods.atk = Math.min(0, f.statMods.atk + 0.15);
-    else if (f.statMods.def < 0) f.statMods.def = Math.min(0, f.statMods.def + 0.15);
-    else if (f.statMods.spd < 0) f.statMods.spd = Math.min(0, f.statMods.spd + 0.15);
-  }
-  if (hasPassive(f, 'slow_burn')) {
-    f.slowBurnStacks = Math.min(5, (f.slowBurnStacks || 0) + 1);
-  }
+  applyTurnStartPassives(f, side, { applyHeal, spawnFloat, pushLog, displayName });
   tickFighterStatuses(f, side, false);
   if (f.adrenalTurns > 0) {
     f.adrenalTurns--;
@@ -132,15 +112,10 @@ export function tickStartOfTurn(f, side) {
   f.bracingThisTurn = false;
 }
 
-// Apply healing respecting Berserker (blocks), Blooming/Vampire Touch (amplify), Vampire Touch (overheal).
+// Apply healing respecting passive modifiers (berserker blocks, blooming/vampire_touch amplify).
 export function applyHeal(f, baseAmount) {
-  if (hasPassive(f, 'berserker')) return 0;
-  let amt = baseAmount;
-  if (hasPassive(f, 'blooming') || hasPassive(f, 'vampire_touch')) amt = Math.round(amt * 1.5);
-  const cap = hasPassive(f, 'vampire_touch')
-    ? Math.round(f.creature.maxHp * 1.25)
-    : f.creature.maxHp;
+  const { amount, cap } = modifyHeal(f, baseAmount);
   const before = f.hp;
-  f.hp = Math.min(cap, f.hp + amt);
+  f.hp = Math.min(cap, f.hp + amount);
   return f.hp - before;
 }

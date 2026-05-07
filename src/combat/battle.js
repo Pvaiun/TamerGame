@@ -3,7 +3,7 @@ import { sleep } from '../rng.js';
 import { state, pushLog, TOTAL_WAVES } from '../state.js';
 import { displayName, gainXp, freshFighter } from '../creature.js';
 import { sfx } from '../audio.js';
-import { hasPassive } from './passives.js';
+import { hasPassive, applyBattleStartPassive, applySwapInPassives } from './passives.js';
 import { effectiveStat, calculateDamage } from './damage.js';
 import { applyStatus, cleanseStatuses, applyHeal, tickStartOfTurn, tickFighterStatuses } from './status.js';
 import { aiChoose } from './ai.js';
@@ -14,24 +14,9 @@ import { render } from '../ui/render.js';
 // Battle-start passive triggers (thick_hide, dark_pact, dreadful, prepared).
 // Called once for each fighter pair when a battle begins.
 function applyBattleStartPassives(pf, ef) {
-  for (const f of [pf, ef]) {
-    if (hasPassive(f, 'thick_hide')) {
-      f.hp += Math.round(f.creature.maxHp * 0.5);
-    }
-    if (hasPassive(f, 'dark_pact')) {
-      const cost = Math.round(f.creature.maxHp * 0.25);
-      f.hp = Math.max(1, f.hp - cost);
-      f.dpApplied = true;
-    }
-  }
-  if (hasPassive(pf, 'dreadful')) {
-    ef.hp = Math.max(1, ef.hp - Math.round(ef.creature.maxHp * 0.15));
-  }
-  if (hasPassive(ef, 'dreadful')) {
-    pf.hp = Math.max(1, pf.hp - Math.round(pf.creature.maxHp * 0.15));
-  }
-  if (hasPassive(pf, 'prepared')) applyStatus(ef, 'soaking', {});
-  if (hasPassive(ef, 'prepared')) applyStatus(pf, 'soaking', {});
+  const cbs = { applyStatus };
+  applyBattleStartPassive(pf, ef, cbs);
+  applyBattleStartPassive(ef, pf, cbs);
 }
 
 export function beginBattle() {
@@ -69,29 +54,14 @@ export async function playerSwap() {
   }
   pushLog(`${displayName(state.pf.creature)} swaps to the bench.`, 'eff');
   sfx('select');
-  const tagOutActive = hasPassive(state.pf, 'tag_out');
   const out = state.pf;
   state.pf = state.bf;
   state.bf = out;
   state.activeIdx = 1 - state.activeIdx;
   state.pf.onBench = false;
   state.bf.onBench = true;
-  if (hasPassive(state.pf, 'vanguard')) {
-    state.pf.statMods.atk += 0.5;
-    state.pf.vanguardActive = true;
-    pushLog(`${displayName(state.pf.creature)}'s Vanguard surges forward!`, 'eff');
-  }
-  if (hasPassive(state.pf, 'second_wind')) {
-    const healed = applyHeal(state.pf, Math.round(state.pf.creature.maxHp * 0.15));
-    if (healed > 0) {
-      spawnFloat('player', `+${healed}`, 'heal');
-      pushLog(`${displayName(state.pf.creature)}'s Second Wind heals ${healed}.`);
-    }
-  }
-  if (tagOutActive) {
-    cleanseStatuses(state.pf);
-    pushLog(`Tag Out cleanses ${displayName(state.pf.creature)}.`, 'eff');
-  }
+  const swapCbs = { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName };
+  applySwapInPassives(state.pf, out, 'player', swapCbs);
   render();
   await sleep(500);
   if (state.ef.hp > 0 && state.pf.hp > 0) {
@@ -367,22 +337,7 @@ export async function resolveAction(side, attacker, defender, ability) {
         pushLog(`${displayName(incoming.creature)} arrives healed for ${healed}.`);
       }
     }
-    if (hasPassive(incoming, 'vanguard')) {
-      incoming.statMods.atk += 0.5;
-      incoming.vanguardActive = true;
-      pushLog(`${displayName(incoming.creature)}'s Vanguard surges forward!`, 'eff');
-    }
-    if (hasPassive(incoming, 'second_wind')) {
-      const healed = applyHeal(incoming, Math.round(incoming.creature.maxHp * 0.15));
-      if (healed > 0) {
-        spawnFloat(side, `+${healed}`, 'heal');
-        pushLog(`${displayName(incoming.creature)}'s Second Wind heals ${healed}.`);
-      }
-    }
-    if (hasPassive(attacker, 'tag_out')) {
-      cleanseStatuses(incoming);
-      pushLog(`Tag Out cleanses ${displayName(incoming.creature)}.`, 'eff');
-    }
+    applySwapInPassives(incoming, attacker, side, { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName });
     incoming.onBench = false;
     attacker.onBench = true;
   } else if (ability.kind === 'bench_support') {
