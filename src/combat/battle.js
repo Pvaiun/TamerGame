@@ -7,12 +7,13 @@ import { hasPassive, applyBattleStartPassive, applySwapInPassives } from './pass
 import { effectiveStat, calculateDamage } from './damage.js';
 import { applyStatus, cleanseStatuses, applyHeal, tickStartOfTurn, tickFighterStatuses } from './status.js';
 import { aiChoose } from './ai.js';
-import { processPostHit, resolveAbilityEffect, applyCursedOnSwap } from './abilities.js';
+import { processPostHit, resolveAbilityEffect, applyCursedOnSwap, processHpCost, processSwapEffects, findEffect } from './abilities.js';
 import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
 
 // Swap the active fighter on `side` with their bench, applying buffOnSwap/healOnSwap
-// from the triggering ability. Used by swap_self abilities and by attacks with swapAfter.
+// from the triggering ability. Used by swap_self abilities and by the 'swap'
+// additional effect with target=self.
 async function performSelfSwap(side, attacker, ability) {
   const benchFighter = side === 'player' ? state.bf : state.ebf;
   if (!benchFighter || benchFighter.hp <= 0) {
@@ -268,11 +269,7 @@ export async function playerAct(abilityKey) {
 
 export async function resolveAction(side, attacker, defender, ability) {
   const oside = side === 'player' ? 'enemy' : 'player';
-  if (ability.hpCost) {
-    const cost = Math.round(attacker.creature.maxHp * ability.hpCost);
-    attacker.hp = Math.max(1, attacker.hp - cost);
-    spawnFloat(side, String(cost), 'dmg');
-  }
+  processHpCost(side, attacker, ability);
   if (attacker.statuses && attacker.statuses.dazed && Math.random() < 0.5) {
     pushLog(`${displayName(attacker.creature)} is dazed and can't act!`, 'eff');
     return;
@@ -304,9 +301,7 @@ export async function resolveAction(side, attacker, defender, ability) {
       resolveAbilityEffect(side, oside, attacker, defender, ability, result);
       if (h < hits - 1) await sleep(220);
     }
-    if (ability.swapAfter === 'self' && attacker.hp > 0) {
-      await performSelfSwap(side, attacker, ability);
-    }
+    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
   } else if (ability.kind === 'defend') {
     attacker.bracingThisTurn = true;
     pushLog(`${displayName(attacker.creature)} braces.`);
@@ -318,17 +313,20 @@ export async function resolveAction(side, attacker, defender, ability) {
       pushLog(`${displayName(attacker.creature)} begins healing (+${perTurn}/turn for ${ability.healTurns}).`);
     }
     resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
+    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
     sfx('heal');
   } else if (ability.kind === 'buff') {
     for (const [k, v] of Object.entries(ability.statMult || {})) attacker.statMods[k] += v;
     resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
-    const hasCleanse = (ability.additionalEffects || []).includes('cleanse_self');
+    const hasCleanse = !!findEffect(ability, 'cleanse');
     if (!hasCleanse) pushLog(`${displayName(attacker.creature)} channels ${ability.name}.`);
     sfx(hasCleanse ? 'heal' : 'select');
+    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
   } else if (ability.kind === 'debuff') {
     pushLog(`${displayName(attacker.creature)} casts ${ability.name}.`);
     sfx('select');
     resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
+    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
   } else if (ability.kind === 'charge_attack') {
     if (!attacker.charging) {
       attacker.charging = ability.key || ability;
@@ -392,6 +390,7 @@ export async function releaseCharge(side, attacker, defender, ability) {
   } else {
     resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
   }
+  processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
 }
 
 export function finishBattleIfDone() {

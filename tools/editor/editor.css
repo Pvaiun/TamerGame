@@ -133,6 +133,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 #se-list { min-height: 8px; }
 
 /* ── Additional effects (in abilities form) ── */
-.ae-list { display: flex; flex-direction: column; gap: 4px; }
-.ae-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); cursor: pointer; }
-.ae-label input { cursor: pointer; }
+#ae-list { display: flex; flex-direction: column; gap: 6px; min-height: 4px; }
+.ae-row { border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; background: rgba(255,255,255,0.02); }
+.ae-row-head { display: flex; align-items: center; gap: 8px; }
+.ae-row-head strong { font-size: 12px; }
+.ae-row-key { font-size: 10px; color: var(--text-muted); margin-left: auto; margin-right: 4px; }
+.ae-row-params { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.ae-param { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); }
+.ae-param.ae-bool { gap: 4px; cursor: pointer; }
+.ae-param.ae-targets { flex-direction: column; align-items: flex-start; gap: 3px; }
+.ae-param input[type="number"] { width: 64px; }
+.ae-add-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.ae-add-row select { flex: 1; }
