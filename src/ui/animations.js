@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { withBattleScene } from '../stage/game.js';
 
 export function spawnFloat(side, text, kind = 'dmg') {
   const stage = document.getElementById('stage');
@@ -19,23 +20,13 @@ export function spawnCallout(text) {
 }
 
 export function shakeStage() {
-  const stage = document.getElementById('stage');
-  if (!stage) return;
-  stage.classList.add('shake');
-  setTimeout(() => stage.classList.remove('shake'), 360);
+  withBattleScene(s => s.shake());
 }
 
 export function playLunge(side) {
-  const a = document.getElementById(side === 'player' ? 'p-actor' : 'e-actor');
-  if (!a) return;
-  a.classList.remove('idle'); a.classList.add('lunge');
-  setTimeout(() => { a.classList.remove('lunge'); a.classList.add('idle'); }, 360);
+  withBattleScene(s => s.lunge(side));
 }
 
 export function playRecoil(side) {
-  const a = document.getElementById(side === 'player' ? 'p-actor' : 'e-actor');
-  if (!a) return;
-  a.style.setProperty('--rx', side === 'player' ? '-12px' : '12px');
-  a.classList.remove('idle'); a.classList.add('recoil');
-  setTimeout(() => { a.classList.remove('recoil'); a.classList.add('idle'); }, 320);
+  withBattleScene(s => s.recoil(side));
 }

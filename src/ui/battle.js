@@ -6,21 +6,10 @@ import { renderCreatureSvg } from '../art.js';
 import { openInspectModal, openAbilityTooltip } from './cards.js';
 import { playerAct, playerSwap } from '../combat/battle.js';
 import { syncBattleScene } from '../stage/game.js';
+import { applyHpFill } from './hpTween.js';
 
 export function renderBattle() {
   const stage = el('div', { class: 'stage', id: 'stage' });
-  if (state.bf && state.bf.hp > 0) {
-    stage.appendChild(el('div', { class: 'stage-bench player' }));
-  }
-  const pActor = el('div', { class: 'stage-actor player idle' });
-  pActor.id = 'p-actor';
-  stage.appendChild(pActor);
-  const eActor = el('div', { class: 'stage-actor enemy idle' });
-  eActor.id = 'e-actor';
-  stage.appendChild(eActor);
-  if (state.ebf && state.ebf.hp > 0) {
-    stage.appendChild(el('div', { class: 'stage-bench enemy' }));
-  }
   app().appendChild(stage);
 
   const panel = el('div', { class: 'panel' });
@@ -142,11 +131,11 @@ function benchCreatureEl(f, side) {
   info.appendChild(el('div', { class: 'bench-hp-text' }, `${Math.max(0, f.hp)} / ${f.creature.maxHp}`));
   const bar = el('div', { class: 'bench-hp' });
   const fill = el('div', { class: 'bench-hp-fill' });
-  fill.style.width = `${Math.round(hpPct * 100)}%`;
   if (hpPct < 0.25) fill.style.background = '#cc5555';
   else if (hpPct < 0.5) fill.style.background = '#cc9955';
   else fill.style.background = '#66cc66';
   bar.appendChild(fill);
+  applyHpFill(fill, f);
   info.appendChild(bar);
   const status = el('div', { class: 'bench-status' });
   if (f.statuses) {
@@ -178,7 +167,9 @@ function actorHudEl(f, side) {
   let cls = 'hp-fill';
   if (pct < 0.25) cls += ' critical';
   else if (pct < 0.5) cls += ' low';
-  hpBar.appendChild(el('div', { class: cls, style: `width:${pct * 100}%;` }));
+  const fill = el('div', { class: cls });
+  hpBar.appendChild(fill);
+  applyHpFill(fill, f);
   wrap.appendChild(hpBar);
   attachLongPress(wrap, () => openInspectModal(f.creature), null);
 

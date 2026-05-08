@@ -27,9 +27,14 @@ function getBattleScene() {
   return game ? game.scene.getScene('Battle') : null;
 }
 
-export function syncBattleScene(combatants) {
+export function withBattleScene(fn) {
   const scene = getBattleScene();
-  if (!scene || !scene.scene.isActive()) return;
-  if (combatants) scene.setCombatants(combatants);
-  else scene.clearCombatants();
+  if (scene && scene.scene.isActive()) fn(scene);
+}
+
+export function syncBattleScene(combatants) {
+  withBattleScene(scene => {
+    if (combatants) scene.setCombatants(combatants);
+    else scene.clearCombatants();
+  });
 }
