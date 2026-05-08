@@ -11,12 +11,12 @@ export function partyAvgLevel(roster) {
 export function generateEnemy(wave, partyLevel) {
   const speciesName = pick(ALL_ENCOUNTER_SPECIES);
   const t = TEMPLATES.find(x => x.species === speciesName) || TEMPLATES[0];
-  const baseLvl = partyLevel + (wave - 1) * 2 + randi(0, 2);
+  const baseLvl = partyLevel + Math.floor((wave - 1) / 2) + randi(0, 1);
   const lvl = Math.max(1, Math.min(MAX_LEVEL, baseLvl));
   const c = makeCreature(t, lvl);
-  c.stats.hp  = Math.round(c.stats.hp  * 1.15);
-  c.stats.atk = Math.round(c.stats.atk * 1.15);
-  c.stats.def = Math.round(c.stats.def * 1.15);
+  c.stats.hp  = Math.round(c.stats.hp  * 1.05);
+  c.stats.atk = Math.round(c.stats.atk * 1.05);
+  c.stats.def = Math.round(c.stats.def * 1.05);
   c.maxHp = c.stats.hp;
   return c;
 }
