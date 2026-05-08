@@ -3,7 +3,7 @@ import { sleep } from '../rng.js';
 import { state, pushLog, TOTAL_WAVES } from '../state.js';
 import { displayName, gainXp, freshFighter } from '../creature.js';
 import { sfx } from '../audio.js';
-import { hasPassive, applyBattleStartPassive, applySwapInPassives } from './passives.js';
+import { applyBattleStartPassive, applySwapInPassives, winsTies } from './passives.js';
 import { effectiveStat, calculateDamage } from './damage.js';
 import { applyStatus, cleanseStatuses, applyHeal, tickStartOfTurn, tickFighterStatuses } from './status.js';
 import { aiChoose } from './ai.js';
@@ -66,7 +66,7 @@ async function performSelfSwap(side, attacker, swapEff) {
 }
 
 function applyBattleStartPassives(pf, ef) {
-  const cbs = { applyStatus };
+  const cbs = { applyStatus, applyHeal, spawnFloat, pushLog, displayName, cleanseStatuses };
   applyBattleStartPassive(pf, ef, cbs);
   applyBattleStartPassive(ef, pf, cbs);
 }
@@ -216,8 +216,8 @@ export async function playerAct(abilityKey) {
   if (pPrio !== ePrio) pFirst = pPrio > ePrio;
   else if (pSpd !== eSpd) pFirst = pSpd > eSpd;
   else {
-    if (hasPassive(state.pf, 'featherweight')) pFirst = true;
-    else if (hasPassive(state.ef, 'featherweight')) pFirst = false;
+    if (winsTies(state.pf)) pFirst = true;
+    else if (winsTies(state.ef)) pFirst = false;
     else pFirst = Math.random() < 0.5;
   }
 

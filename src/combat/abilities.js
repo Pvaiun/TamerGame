@@ -1,7 +1,7 @@
-import { PASSIVES, STATUSES, ADDITIONAL_EFFECTS } from '../data.js';
+import { STATUSES, ADDITIONAL_EFFECTS } from '../data.js';
 import { state, pushLog } from '../state.js';
 import { displayName } from '../creature.js';
-import { hasPassive, applyPostHitPassives } from './passives.js';
+import { hasPassive, applyPostHitPassives, applySelfDmgMult } from './passives.js';
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
 
@@ -35,9 +35,11 @@ function isModifier(eff) {
 }
 
 // Apply the cursed-on-swap penalty if the swapping-out fighter has cursed status.
+// Pivot Master halves this damage.
 export function applyCursedOnSwap(f, side) {
   if (!f || !f.statuses || !f.statuses.cursed) return 0;
-  const dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.cursed.percentOnSwap));
+  let dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.cursed.percentOnSwap));
+  if (hasPassive(f, 'pivot_master')) dmg = Math.max(1, Math.round(dmg * 0.5));
   f.hp = Math.max(0, f.hp - dmg);
   spawnFloat(side, String(dmg), 'crit');
   pushLog(`${displayName(f.creature)} suffers ${dmg} from the curse on swap-out!`, 'eff');
@@ -62,12 +64,8 @@ export function resolveTargets(targetKey, side, attacker, defender) {
   return [];
 }
 
-// Returns status apply opts, overriding defaults for passives that modify a specific status.
-function statusOptsFor(attacker, statusName) {
-  if (statusName === 'burn' && hasPassive(attacker, 'pyromancer')) {
-    const p = PASSIVES.pyromancer;
-    return { turns: p.burnTurns, pct: p.burnPct };
-  }
+// Status apply opts. Currently no per-passive overrides; kept as an extension point.
+function statusOptsFor(_attacker, _statusName) {
   return {};
 }
 
@@ -162,9 +160,10 @@ function handleEffect(eff, ctx) {
     }
     case 'hp_cost': {
       const pct = effParam(eff, 'percent') || 0;
-      const cost = Math.round(attacker.creature.maxHp * pct);
+      let cost = Math.round(attacker.creature.maxHp * pct);
+      cost = Math.max(0, Math.round(applySelfDmgMult(attacker, cost)));
       attacker.hp = Math.max(1, attacker.hp - cost);
-      spawnFloat(side, String(cost), 'dmg');
+      if (cost > 0) spawnFloat(side, String(cost), 'dmg');
       return;
     }
     case 'swap': {
