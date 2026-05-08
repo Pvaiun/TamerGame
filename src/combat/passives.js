@@ -46,8 +46,9 @@ export function applyStatMult(f, stat, m) {
 
 // --- Power modifier passives ---
 // Called from damage.js calculateDamage() and estimateDamage().
-// attackerSpd/defenderSpd are pre-computed and passed in to avoid re-calling effectiveStat.
-export function applyPowerMult(attacker, defender, ability, power, { attackerSpd = 0, defenderSpd = 0 } = {}) {
+// `phase` is the array of effects in the current phase — read here to find
+// damage modifiers (execute_scale, status_synergy) since they're per-phase.
+export function applyPowerMult(attacker, defender, ability, power, phase, { attackerSpd = 0, defenderSpd = 0 } = {}) {
   const elem = ability.element || null;
   if (elem) {
     for (const key of ['inferno_heart', 'tide_blessed', 'verdant_soul', 'sunforged', 'shadowforged']) {
@@ -64,14 +65,14 @@ export function applyPowerMult(attacker, defender, ability, power, { attackerSpd
     power *= p('cornered').powerMult;
   }
   {
-    const exec = (ability.additionalEffects || []).find(e => e.type === 'execute_scale');
+    const exec = (phase || []).find(e => e.type === 'execute_scale');
     if (exec) {
       const sa = exec.scaleAmount ?? ADDITIONAL_EFFECTS.execute_scale?.params?.scaleAmount?.default ?? 0.5;
       power *= 1 + sa * (1 - (defender.hp / defender.creature.maxHp));
     }
   }
   {
-    const syn = (ability.additionalEffects || []).find(e => e.type === 'status_synergy');
+    const syn = (phase || []).find(e => e.type === 'status_synergy');
     if (syn && defender.statuses) {
       const status = syn.status ?? ADDITIONAL_EFFECTS.status_synergy?.params?.status?.default ?? 'cursed';
       const mult   = syn.powerMult ?? ADDITIONAL_EFFECTS.status_synergy?.params?.powerMult?.default ?? 1.5;

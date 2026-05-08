@@ -162,21 +162,29 @@ export function openAbilityTooltip(abilityKey) {
     a.name,
   ].filter(Boolean)));
   const meta = el('div', { class: 'tooltip-meta' });
+  const flat = (a.phases || []).flat();
   if (a.element) meta.appendChild(metaCell('ELEMENT', a.element.toUpperCase(), 'type-' + a.element));
-  meta.appendChild(metaCell('KIND', (a.kind || 'attack').toUpperCase()));
-  if (a.power !== undefined) meta.appendChild(metaCell('BASE POWER', String(a.power)));
   if (a.priority) meta.appendChild(metaCell('PRIORITY', (a.priority > 0 ? '+' : '') + a.priority));
-  if (a.statMult) {
-    const parts = Object.entries(a.statMult).map(([k, v]) => `${k.toUpperCase()} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
-    meta.appendChild(metaCell('BUFF', parts.join(' '), '', true));
-  }
-  if (a.healPercent) meta.appendChild(metaCell('HEAL/TURN', Math.round(a.healPercent * 100) + '%', '', true));
-  if (a.healTurns) meta.appendChild(metaCell('DURATION', a.healTurns + ' turns'));
+  if (a.phases && a.phases.length > 1) meta.appendChild(metaCell('PHASES', String(a.phases.length)));
   {
-    const hpCostEff = (a.additionalEffects || []).find(e => e.type === 'hp_cost');
-    if (hpCostEff) {
-      const pct = hpCostEff.percent ?? 0;
-      meta.appendChild(metaCell('HP COST', Math.round(pct * 100) + '%'));
+    const dmg = flat.filter(e => e.type === 'damage');
+    if (dmg.length === 1) {
+      const d = dmg[0];
+      const hits = d.hits || 1;
+      meta.appendChild(metaCell('POWER', hits > 1 ? `${d.power} × ${hits}` : String(d.power)));
+    } else if (dmg.length > 1) {
+      meta.appendChild(metaCell('POWER', dmg.map(d => `${d.power}${(d.hits||1) > 1 ? '×' + (d.hits||1) : ''}`).join(' + ')));
+    }
+  }
+  for (const eff of flat) {
+    if (eff.type === 'buff' && eff.statMult) {
+      const parts = Object.entries(eff.statMult).filter(([, v]) => v).map(([k, v]) => `${k.toUpperCase()} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
+      if (parts.length) meta.appendChild(metaCell('STAT MOD', parts.join(' '), '', true));
+    } else if (eff.type === 'heal_over_time') {
+      meta.appendChild(metaCell('HEAL/TURN', Math.round((eff.percent ?? 0.06) * 100) + '%', '', true));
+      meta.appendChild(metaCell('DURATION', (eff.turns ?? 4) + ' turns'));
+    } else if (eff.type === 'hp_cost') {
+      meta.appendChild(metaCell('HP COST', Math.round((eff.percent ?? 0) * 100) + '%'));
     }
   }
   m.appendChild(meta);

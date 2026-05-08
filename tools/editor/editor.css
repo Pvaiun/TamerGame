@@ -132,8 +132,17 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .btn-sm { padding: 3px 10px; font-size: 11px; margin-top: 6px; }
 #se-list { min-height: 8px; }
 
+/* ── Phase blocks (multi-phase abilities) ── */
+.phase-block { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; background: rgba(255,255,255,0.015); }
+.phase-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.phase-label { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; flex: 1; }
+.ae-warn { font-size: 10px; color: var(--danger, #d94a3a); margin-top: 4px; }
+.ae-timing select { font-size: 11px; }
+.ae-statmods .stat-grid { gap: 4px; }
+.ae-statmods .stat-cell input { width: 56px; }
+
 /* ── Additional effects (in abilities form) ── */
-#ae-list { display: flex; flex-direction: column; gap: 6px; min-height: 4px; }
+.ae-list { display: flex; flex-direction: column; gap: 6px; min-height: 4px; }
 .ae-row { border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; background: rgba(255,255,255,0.02); }
 .ae-row-head { display: flex; align-items: center; gap: 6px; }
 .ae-row-head select { flex: 1; font-size: 12px; font-weight: 600; }
