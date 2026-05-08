@@ -1,5 +1,5 @@
 import { rand, pickN } from './rng.js';
-import { TYPE_PALETTE } from './data.js';
+import { TYPE_PALETTE, GLOBALS } from './data.js';
 import { MAX_LEVEL, nextCreatureId } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
@@ -74,13 +74,13 @@ export function gainXp(creature, amount) {
 }
 
 // Same threshold across all stats so a "B HP" and a "B ATK" mean the same growth quality.
+// Thresholds come from data/globals.json so designers can rebalance the grade scale
+// without editing code; we treat the numeric growth value as the source of truth and
+// only relabel here.
 export function growthRank(g) {
-  if (g >= 2.6) return 'S';
-  if (g >= 2.2) return 'A';
-  if (g >= 1.8) return 'B';
-  if (g >= 1.4) return 'C';
-  if (g >= 1.0) return 'D';
-  if (g >= 0.6) return 'E';
+  for (const t of GLOBALS.growthThresholds) {
+    if (g >= t.min) return t.grade;
+  }
   return 'F';
 }
 

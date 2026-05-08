@@ -4,7 +4,8 @@ import { ART_GENERATORS } from '../../src/art.js';
 
 const S = {
   abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typePalette: {},
-  dirty: { abilities: false, passives: false, templates: false, statuses: false },
+  globals: { growthThresholds: [] },
+  dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false },
   tab: 'monsters',
   monster: null,   // selected template index
   ability: null,   // selected ability key
@@ -19,13 +20,14 @@ const S = {
 
 async function init() {
   try {
-    const [types, passives, abilities, statuses, additionalEffects, templates] = await Promise.all([
+    const [types, passives, abilities, statuses, additionalEffects, templates, globals] = await Promise.all([
       fetch('../../data/types.json').then(r => r.json()),
       fetch('../../data/passives.json').then(r => r.json()),
       fetch('../../data/abilities.json').then(r => r.json()),
       fetch('../../data/statuseffects.json').then(r => r.json()),
       fetch('../../data/additionaleffects.json').then(r => r.json()),
       fetch('../../data/templates.json').then(r => r.json()),
+      fetch('../../data/globals.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
     S.typePalette = types.TYPE_PALETTE;
@@ -34,6 +36,8 @@ async function init() {
     S.statuses = statuses;
     S.additionalEffects = additionalEffects;
     S.templates = templates;
+    S.globals = globals;
+    if (!Array.isArray(S.globals.growthThresholds)) S.globals.growthThresholds = [];
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
     return;
@@ -70,10 +74,11 @@ function renderHeader() {
 function renderTabs() {
   const el = document.getElementById('tabs');
   const tabs = [
-    { key: 'monsters',  label: 'Monsters',        dirty: S.dirty.templates },
+    { key: 'monsters',  label: 'Monsters',         dirty: S.dirty.templates },
     { key: 'abilities', label: 'Abilities',        dirty: S.dirty.abilities },
     { key: 'passives',  label: 'Passives',         dirty: S.dirty.passives },
     { key: 'statuses',  label: 'Status Effects',   dirty: S.dirty.statuses },
+    { key: 'globals',   label: 'Global Variables', dirty: S.dirty.globals },
   ];
   el.innerHTML = tabs.map(t =>
     `<button class="tab ${S.tab === t.key ? 'active' : ''} ${t.dirty ? 'dirty' : ''}" data-tab="${t.key}">
@@ -88,7 +93,7 @@ function renderTabs() {
 // Per-tab scroll positions for the list panel — preserved across re-renders
 // triggered by selection, search, sort, etc. Tab switches still surface the
 // last scroll position for the new tab.
-const scrollPositions = { monsters: 0, abilities: 0, passives: 0, statuses: 0 };
+const scrollPositions = { monsters: 0, abilities: 0, passives: 0, statuses: 0, globals: 0 };
 
 function renderContent() {
   const el = document.getElementById('content');
@@ -102,6 +107,7 @@ function renderContent() {
   if (S.tab === 'abilities') el.innerHTML = abilitiesTabHTML();
   if (S.tab === 'passives')  el.innerHTML = passivesTabHTML();
   if (S.tab === 'statuses')  el.innerHTML = statusEffectsTabHTML();
+  if (S.tab === 'globals')   el.innerHTML = globalsTabHTML();
   el.dataset.scrollTab = S.tab;
   const newList = el.querySelector('.list-items');
   if (newList) newList.scrollTop = scrollPositions[S.tab] || 0;
@@ -133,22 +139,26 @@ function monstersTabHTML() {
     <div class="detail-panel">${t ? monsterFormHTML(t) : '<div class="empty">Select a monster to edit.</div>'}</div>`;
 }
 
-// Letter grade thresholds mirror src/creature.js growthRank().
-const GROWTH_GRADES = [
-  { grade: 'S', min: 2.6, mid: 2.8 },
-  { grade: 'A', min: 2.2, mid: 2.4 },
-  { grade: 'B', min: 1.8, mid: 2.0 },
-  { grade: 'C', min: 1.4, mid: 1.6 },
-  { grade: 'D', min: 1.0, mid: 1.2 },
-  { grade: 'E', min: 0.6, mid: 0.8 },
-  { grade: 'F', min: 0,   mid: 0.4 },
-];
-function growthGrade(v) {
-  for (const g of GROWTH_GRADES) if (v >= g.min) return g.grade;
-  return 'F';
+// Letter grade thresholds come from data/globals.json (S.globals.growthThresholds).
+// The numeric growth values on templates are the source of truth — these helpers
+// only translate between value ↔ grade for display and the grade-snap shortcut.
+function growthGradeList() {
+  return S.globals.growthThresholds || [];
 }
+function growthGrade(v) {
+  for (const g of growthGradeList()) if (v >= g.min) return g.grade;
+  const last = growthGradeList().slice(-1)[0];
+  return last ? last.grade : 'F';
+}
+// Midpoint of a grade band = halfway between this grade's min and the next higher
+// grade's min. The top grade has no upper bound, so we extend by 0.2 above its min.
 function growthMidpoint(grade) {
-  return (GROWTH_GRADES.find(g => g.grade === grade) || GROWTH_GRADES[6]).mid;
+  const list = growthGradeList();
+  const i = list.findIndex(g => g.grade === grade);
+  if (i < 0) return 0;
+  const cur = list[i];
+  const above = i > 0 ? list[i - 1].min : cur.min + 0.2;
+  return Math.round(((cur.min + above) / 2) * 100) / 100;
 }
 
 // Convert ASCII letters/digits to Unicode mathematical bold equivalents so that
@@ -213,7 +223,7 @@ function monsterFormHTML(t) {
   const growthCells = ['hp','atk','def','spd'].map(s => {
     const v = t.growth[s];
     const grade = growthGrade(v);
-    const gradeOpts = GROWTH_GRADES.map(g => `<option value="${g.grade}" ${g.grade === grade ? 'selected' : ''}>${g.grade}</option>`).join('');
+    const gradeOpts = growthGradeList().map(g => `<option value="${g.grade}" ${g.grade === grade ? 'selected' : ''}>${g.grade}</option>`).join('');
     return `
       <div class="stat-cell">
         <label>${s.toUpperCase()}</label>
@@ -573,6 +583,62 @@ function statusFormHTML(key, sv) {
     </div>`;
 }
 
+// ─── Globals Tab ─────────────────────────────────────────────────────────────
+// Edits the cosmetic letter-grade thresholds. Numeric growth values on each
+// monster template stay untouched — only the displayed grade letter follows
+// the new boundaries. The grade dropdown on the monster form is a one-way
+// shortcut for "snap value to grade midpoint"; nothing stores the grade.
+
+function globalsTabHTML() {
+  const list = growthGradeList();
+  const warnings = [];
+  for (let i = 1; i < list.length; i++) {
+    if (list[i].min >= list[i - 1].min) {
+      warnings.push(`${list[i].grade} (${list[i].min}) is not below ${list[i - 1].grade} (${list[i - 1].min}).`);
+    }
+  }
+
+  // Distribution: how many growth-stat slots across all templates fall into each grade.
+  const counts = Object.fromEntries(list.map(g => [g.grade, 0]));
+  for (const t of S.templates) {
+    for (const s of ['hp','atk','def','spd']) {
+      const gr = growthGrade(t.growth[s]);
+      counts[gr] = (counts[gr] || 0) + 1;
+    }
+  }
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+
+  const rows = list.map((g, i) => {
+    const above = i > 0 ? list[i - 1].min : null;
+    const mid = growthMidpoint(g.grade);
+    const pct = Math.round((counts[g.grade] / total) * 100);
+    return `
+      <div class="form-row" data-grade-row="${g.grade}">
+        <label class="growth-grade grade-${g.grade}" style="min-width:32px;text-align:center;">${g.grade}</label>
+        <span style="font-size:11px;color:var(--text-muted);min-width:80px;">min growth</span>
+        <input type="number" data-grade-min="${g.grade}" value="${g.min}" step="0.1" min="0" style="width:90px;flex:0 0 auto;">
+        <span class="readonly" style="font-size:11px;">${above !== null ? `< ${above}` : '(no upper bound)'} · midpoint ${mid}</span>
+        <span class="readonly" style="font-size:11px;margin-left:auto;">${counts[g.grade]} slots (${pct}%)</span>
+      </div>`;
+  }).join('');
+
+  const warnHTML = warnings.length
+    ? `<div class="ae-warn" style="margin-top:6px;">⚠ ${warnings.join(' ')}</div>`
+    : '';
+
+  return `
+    <div class="detail-panel" style="flex:1;">
+      <div class="form-section">
+        <div class="form-section-title">Growth Rate Thresholds
+          <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+            (relabels existing monsters; does not change their numeric growth values)</span>
+        </div>
+        ${rows}
+        ${warnHTML}
+      </div>
+    </div>`;
+}
+
 // ─── Event Binding ───────────────────────────────────────────────────────────
 
 function bindContentEvents() {
@@ -663,6 +729,23 @@ function bindContentEvents() {
   if (S.tab === 'abilities' && S.ability) bindAbilityFormEvents();
   if (S.tab === 'passives' && S.passive) bindPassiveFormEvents();
   if (S.tab === 'statuses' && S.status) bindStatusFormEvents();
+  if (S.tab === 'globals') bindGlobalsFormEvents();
+}
+
+function bindGlobalsFormEvents() {
+  document.querySelectorAll('[data-grade-min]').forEach(el => {
+    el.addEventListener('change', () => {
+      const grade = el.dataset.gradeMin;
+      const v = parseFloat(el.value);
+      const entry = (S.globals.growthThresholds || []).find(g => g.grade === grade);
+      if (!entry) return;
+      entry.min = isNaN(v) ? 0 : v;
+      S.dirty.globals = true;
+      renderContent(); // refresh midpoints, distribution counts, warnings
+      renderHeader();
+      renderTabs();
+    });
+  });
 }
 
 function bindMonsterFormEvents() {
@@ -994,6 +1077,7 @@ async function doCommit(message) {
     S.dirty.abilities  && { file: 'abilities.json',       data: S.abilities },
     S.dirty.passives   && { file: 'passives.json',        data: S.passives },
     S.dirty.statuses   && { file: 'statuseffects.json',   data: S.statuses },
+    S.dirty.globals    && { file: 'globals.json',         data: S.globals },
   ].filter(Boolean);
 
   try {
@@ -1001,7 +1085,7 @@ async function doCommit(message) {
       const sha = await getFileSha(file);
       await putFile(file, data, sha, message);
     }
-    S.dirty = { abilities: false, passives: false, templates: false, statuses: false };
+    S.dirty = { abilities: false, passives: false, templates: false, statuses: false, globals: false };
     showStatus('Committed! Pages will rebuild shortly.', false);
   } catch (e) {
     showStatus(`Commit failed: ${e.message}`, true);
