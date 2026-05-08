@@ -13,10 +13,11 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `data/abilities.json` — ability dict keyed by ability id; see "Ability schema" below
 - `data/passives.json` — passive dict keyed by passive id; each entry has params + a `codeRef` string naming the function in `passives.js` that consumes them
 - `data/statuseffects.json` — burn/bloom/soaking/cursed/dazed canonical defaults
+- `data/additionaleffects.json` — entries that go in an ability's `additionalEffects[]` (label, desc, params). Drives both the engine (params read in `combat/abilities.js`, `damage.js`, `passives.js`) and the editor's checkbox list.
 
 ### Core (`src/`)
 - `state.js` — `state` singleton, `pushLog`, `resetGame`, `nextCreatureId`, constants (`TOTAL_WAVES=10`, `BREED_WAVES={3,6,9}`, `MAX_LEVEL=50`)
-- `data.js` — `loadData()` + named exports (`TYPES`, `TYPE_CHART`, `TYPE_PALETTE`, `PASSIVES`, `ABILITIES`, `STATUSES`, `TEMPLATES`, `ALL_ENCOUNTER_SPECIES`)
+- `data.js` — `loadData()` + named exports (`TYPES`, `TYPE_CHART`, `TYPE_PALETTE`, `PASSIVES`, `ABILITIES`, `STATUSES`, `ADDITIONAL_EFFECTS`, `TEMPLATES`, `ALL_ENCOUNTER_SPECIES`)
 - `creature.js` — `makeCreature`, `gainXp`, `xpToNext`, `growthRank`, `rankColor`, `displayName`, `freshFighter` (the in-battle wrapper)
 - `breeding.js` — `makeChild`, `finalizeBreed` (called on breed waves)
 - `encounter.js` — `generateEnemy(Party)`, `generateBoss(Party)`, `partyAvgLevel`

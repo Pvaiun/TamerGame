@@ -11,6 +11,49 @@ import { processPostHit, resolveAbilityEffect, applyCursedOnSwap } from './abili
 import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
 
+// Swap the active fighter on `side` with their bench, applying buffOnSwap/healOnSwap
+// from the triggering ability. Used by swap_self abilities and by attacks with swapAfter.
+async function performSelfSwap(side, attacker, ability) {
+  const benchFighter = side === 'player' ? state.bf : state.ebf;
+  if (!benchFighter || benchFighter.hp <= 0) {
+    pushLog(`${displayName(attacker.creature)} tried to swap, but no ally is ready.`, 'eff');
+    return;
+  }
+  applyCursedOnSwap(attacker, side);
+  pushLog(`${displayName(attacker.creature)} swaps out via ${ability.name}.`, 'eff');
+  sfx('select');
+  if (side === 'player') {
+    const out = state.pf;
+    state.pf = state.bf;
+    state.bf = out;
+    state.activeIdx = 1 - state.activeIdx;
+    state.pCharge = null;
+  } else {
+    const out = state.ef;
+    state.ef = state.ebf;
+    state.ebf = out;
+    state.enemyActiveIdx = 1 - state.enemyActiveIdx;
+    state.enemy = state.enemyParty[state.enemyActiveIdx];
+    state.eCharge = null;
+  }
+  const incoming = benchFighter;
+  if (ability.buffOnSwap) {
+    for (const [k, v] of Object.entries(ability.buffOnSwap)) incoming.statMods[k] += v;
+    pushLog(`${displayName(incoming.creature)} arrives bolstered.`, 'eff');
+  }
+  if (ability.healOnSwap) {
+    const amt = Math.round(incoming.creature.maxHp * ability.healOnSwap);
+    const healed = applyHeal(incoming, amt);
+    if (healed > 0) {
+      spawnFloat(side, `+${healed}`, 'heal');
+      pushLog(`${displayName(incoming.creature)} arrives healed for ${healed}.`);
+    }
+  }
+  applySwapInPassives(incoming, attacker, side, { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName });
+  incoming.onBench = false;
+  attacker.onBench = true;
+}
+
 // Battle-start passive triggers (thick_hide, dark_pact, dreadful, prepared).
 // Called once for each fighter pair when a battle begins.
 function applyBattleStartPassives(pf, ef) {
@@ -261,6 +304,9 @@ export async function resolveAction(side, attacker, defender, ability) {
       resolveAbilityEffect(side, oside, attacker, defender, ability, result);
       if (h < hits - 1) await sleep(220);
     }
+    if (ability.swapAfter === 'self' && attacker.hp > 0) {
+      await performSelfSwap(side, attacker, ability);
+    }
   } else if (ability.kind === 'defend') {
     attacker.bracingThisTurn = true;
     pushLog(`${displayName(attacker.creature)} braces.`);
@@ -295,44 +341,7 @@ export async function resolveAction(side, attacker, defender, ability) {
       await releaseCharge(side, attacker, defender, ability);
     }
   } else if (ability.kind === 'swap_self') {
-    const benchFighter = side === 'player' ? state.bf : state.ebf;
-    if (!benchFighter || benchFighter.hp <= 0) {
-      pushLog(`${displayName(attacker.creature)} tried to swap, but no ally is ready.`, 'eff');
-      return;
-    }
-    applyCursedOnSwap(attacker, side);
-    pushLog(`${displayName(attacker.creature)} swaps out via ${ability.name}.`, 'eff');
-    sfx('select');
-    if (side === 'player') {
-      const out = state.pf;
-      state.pf = state.bf;
-      state.bf = out;
-      state.activeIdx = 1 - state.activeIdx;
-      state.pCharge = null;
-    } else {
-      const out = state.ef;
-      state.ef = state.ebf;
-      state.ebf = out;
-      state.enemyActiveIdx = 1 - state.enemyActiveIdx;
-      state.enemy = state.enemyParty[state.enemyActiveIdx];
-      state.eCharge = null;
-    }
-    const incoming = benchFighter;
-    if (ability.buffOnSwap) {
-      for (const [k, v] of Object.entries(ability.buffOnSwap)) incoming.statMods[k] += v;
-      pushLog(`${displayName(incoming.creature)} arrives bolstered.`, 'eff');
-    }
-    if (ability.healOnSwap) {
-      const amt = Math.round(incoming.creature.maxHp * ability.healOnSwap);
-      const healed = applyHeal(incoming, amt);
-      if (healed > 0) {
-        spawnFloat(side, `+${healed}`, 'heal');
-        pushLog(`${displayName(incoming.creature)} arrives healed for ${healed}.`);
-      }
-    }
-    applySwapInPassives(incoming, attacker, side, { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName });
-    incoming.onBench = false;
-    attacker.onBench = true;
+    await performSelfSwap(side, attacker, ability);
   } else if (ability.kind === 'bench_support') {
     const benchFighter = side === 'player' ? state.bf : state.ebf;
     if (!benchFighter) {

@@ -1,4 +1,4 @@
-import { PASSIVES } from '../data.js';
+import { PASSIVES, ADDITIONAL_EFFECTS } from '../data.js';
 
 export function hasPassive(f, key) {
   return f.creature.passives && f.creature.passives.includes(key);
@@ -64,10 +64,10 @@ export function applyPowerMult(attacker, defender, ability, power, { attackerSpd
     power *= p('cornered').powerMult;
   }
   if ((ability.additionalEffects || []).includes('execute_scale')) {
-    power *= 1 + 0.5 * (1 - (defender.hp / defender.creature.maxHp));
+    power *= 1 + (ADDITIONAL_EFFECTS.execute_scale?.scaleAmount ?? 0.5) * (1 - (defender.hp / defender.creature.maxHp));
   }
   if ((ability.additionalEffects || []).includes('cursed_synergy') && defender.statuses && defender.statuses.cursed) {
-    power *= 1.5;
+    power *= ADDITIONAL_EFFECTS.cursed_synergy?.powerMult ?? 1.5;
   }
   if (hasPassive(attacker, 'tempo') && attackerSpd > defenderSpd) {
     power *= p('tempo').powerMult;
@@ -231,7 +231,8 @@ export function applyPostHitPassives(side, oside, attacker, defender, result, cb
     defender.statMods.spd -= p('frostbite').spdPenalty;
   }
   if (defender.thornSoaking && defender.hp > 0 && attacker.hp > 0) {
-    applyStatus(attacker, 'soaking', { stacks: 1, turns: 4 });
+    const ts = ADDITIONAL_EFFECTS.thorn_soaking || {};
+    applyStatus(attacker, 'soaking', { stacks: ts.soakingStacks ?? 1, turns: ts.soakingTurns ?? 4 });
   }
 }
 
