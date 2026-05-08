@@ -1,4 +1,4 @@
-import { PASSIVES, STATUSES } from '../data.js';
+import { PASSIVES, STATUSES, ADDITIONAL_EFFECTS } from '../data.js';
 import { state, pushLog } from '../state.js';
 import { displayName } from '../creature.js';
 import { hasPassive, applyPostHitPassives } from './passives.js';
@@ -77,10 +77,11 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
 }
 
 function handleAdditionalEffect(eff, side, oside, attacker, defender, result) {
+  const cfg = ADDITIONAL_EFFECTS[eff] || {};
   switch (eff) {
     case 'burn_stacking': {
       const cur = defender.statuses.burn ? defender.statuses.burn.turns : 0;
-      applyStatus(defender, 'burn', { turns: Math.max(4, cur + 2), pct: 0.05 });
+      applyStatus(defender, 'burn', { turns: Math.max(cfg.minTurns, cur + cfg.extendTurns), pct: cfg.burnPct });
       pushLog(`${displayName(defender.creature)}'s burn smolders deeper.`);
       break;
     }
@@ -88,22 +89,15 @@ function handleAdditionalEffect(eff, side, oside, attacker, defender, result) {
       // Bonus damage if target is already cursed — handled in damage.js; no status apply here.
       break;
     case 'soaking_double':
-      applyStatus(defender, 'soaking', { stacks: 2, turns: 4 });
+      applyStatus(defender, 'soaking', { stacks: cfg.stacks, turns: cfg.turns });
       pushLog(`${displayName(defender.creature)} is heavily soaked.`);
       break;
     case 'execute_scale':
       // Damage scaling by missing HP is handled upstream in damage calculation.
       break;
-    case 'lifesteal_strong': {
-      const healed = applyHeal(attacker, Math.round(result.dmg * 0.5));
-      if (healed > 0) {
-        spawnFloat(side, `+${healed}`, 'heal');
-        pushLog(`${displayName(attacker.creature)} drains ${healed}.`);
-      }
-      break;
-    }
+    case 'lifesteal_strong':
     case 'lifesteal_full': {
-      const healed = applyHeal(attacker, result.dmg);
+      const healed = applyHeal(attacker, Math.round(result.dmg * (cfg.lifestealPct ?? 1)));
       if (healed > 0) {
         spawnFloat(side, `+${healed}`, 'heal');
         pushLog(`${displayName(attacker.creature)} drains ${healed}.`);

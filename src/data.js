@@ -7,6 +7,7 @@ export let TYPE_PALETTE = {};
 export let PASSIVES = {};
 export let ABILITIES = {};
 export let STATUSES = {};
+export let ADDITIONAL_EFFECTS = {};
 export let TEMPLATES = [];
 export let ALL_ENCOUNTER_SPECIES = [];
 
@@ -17,11 +18,12 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, templates] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
     fetchJson('data/statuseffects.json'),
+    fetchJson('data/additionaleffects.json'),
     fetchJson('data/templates.json'),
   ]);
   TYPES = types.TYPES;
@@ -30,6 +32,7 @@ export async function loadData() {
   Object.assign(PASSIVES, passives);
   Object.assign(ABILITIES, abilities);
   Object.assign(STATUSES, statuses);
+  Object.assign(ADDITIONAL_EFFECTS, addEffects);
   TEMPLATES.length = 0;
   TEMPLATES.push(...templates);
   ALL_ENCOUNTER_SPECIES.length = 0;

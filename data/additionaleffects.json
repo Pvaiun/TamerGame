@@ -1,0 +1,12 @@
+{
+  "execute_scale":    { "label": "Scale damage by target missing HP",          "desc": "Power scales up to (1 + scaleAmount)x as target HP drops.", "scaleAmount": 0.5 },
+  "pierce":           { "label": "Ignore part of target Defense",              "desc": "Defense is multiplied by (1 - defReduction) before damage calc.", "defReduction": 0.5 },
+  "lifesteal_strong": { "label": "Lifesteal a portion of damage dealt",        "desc": "Heal user for lifestealPct of damage dealt.", "lifestealPct": 0.5 },
+  "lifesteal_full":   { "label": "Lifesteal full damage dealt",                "desc": "Heal user for lifestealPct of damage dealt.", "lifestealPct": 1.0 },
+  "cleanse_self":     { "label": "Cleanse self — all statuses + stat penalties", "desc": "Removes all statuses and resets ATK/DEF/SPD mods on the user." },
+  "force_swap":       { "label": "Force-swap target active creature",          "desc": "Yanks the target out and swaps in their bench (if available)." },
+  "thorn_soaking":    { "label": "Soak attackers that hit you",                "desc": "Attackers receive Soaking when they damage you.", "soakingStacks": 1, "soakingTurns": 4 },
+  "burn_stacking":    { "label": "Burn (stacking) — extends duration each use", "desc": "Each consecutive use extends burn turns by extendTurns (min minTurns).", "extendTurns": 2, "minTurns": 4, "burnPct": 0.05 },
+  "soaking_double":   { "label": "Apply multiple stacks of Soaking",           "desc": "Applies stacks soaking for turns turns.", "stacks": 2, "turns": 4 },
+  "cursed_synergy":   { "label": "Bonus damage if target is already Cursed",   "desc": "Power is multiplied by powerMult against cursed targets.", "powerMult": 1.5 }
+}

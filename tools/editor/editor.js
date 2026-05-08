@@ -3,7 +3,7 @@ import { ART_GENERATORS } from '../../src/art.js';
 // ─── State ───────────────────────────────────────────────────────────────────
 
 const S = {
-  abilities: {}, passives: {}, statuses: {}, templates: [], types: [], typePalette: {},
+  abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typePalette: {},
   dirty: { abilities: false, passives: false, templates: false, statuses: false },
   tab: 'monsters',
   monster: null,   // selected template index
@@ -19,11 +19,12 @@ const S = {
 
 async function init() {
   try {
-    const [types, passives, abilities, statuses, templates] = await Promise.all([
+    const [types, passives, abilities, statuses, additionalEffects, templates] = await Promise.all([
       fetch('../../data/types.json').then(r => r.json()),
       fetch('../../data/passives.json').then(r => r.json()),
       fetch('../../data/abilities.json').then(r => r.json()),
       fetch('../../data/statuseffects.json').then(r => r.json()),
+      fetch('../../data/additionaleffects.json').then(r => r.json()),
       fetch('../../data/templates.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
@@ -31,6 +32,7 @@ async function init() {
     S.passives = passives;
     S.abilities = abilities;
     S.statuses = statuses;
+    S.additionalEffects = additionalEffects;
     S.templates = templates;
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
@@ -236,20 +238,6 @@ function abilitiesTabHTML() {
     <div class="detail-panel">${ab ? abilityFormHTML(S.ability, ab) : '<div class="empty">Select an ability to edit.</div>'}</div>`;
 }
 
-// Additional (non-status) effects that live in additionalEffects[]
-const ADDITIONAL_EFFECTS = [
-  { key: 'execute_scale',    label: 'Scale damage by target missing HP' },
-  { key: 'pierce',           label: 'Ignore 50% of target Defense' },
-  { key: 'lifesteal_strong', label: 'Lifesteal 50% of damage dealt' },
-  { key: 'lifesteal_full',   label: 'Lifesteal 100% of damage dealt' },
-  { key: 'cleanse_self',     label: 'Cleanse self — all statuses + stat penalties' },
-  { key: 'force_swap',       label: 'Force-swap target active creature' },
-  { key: 'thorn_soaking',    label: 'Apply Soaking to attackers that hit you' },
-  { key: 'burn_stacking',    label: 'Burn (stacking) — extends duration by +2t each use' },
-  { key: 'soaking_double',   label: 'Apply 2 stacks of Soaking' },
-  { key: 'cursed_synergy',   label: '+50% damage if target is already Cursed' },
-];
-
 // Bench-support effects still read from ability.effect (handled separately in battle.js)
 const BENCH_EFFECTS = {
   bench_bloom:    'Apply Bloom to bench ally',
@@ -290,14 +278,16 @@ function statusEffectsFormHTML(ab) {
 
 function additionalEffectsFormHTML(ab) {
   const active = new Set(ab.additionalEffects || []);
-  const checks = ADDITIONAL_EFFECTS.map(({ key, label }) => `
-    <label class="ae-label">
+  const entries = Object.entries(S.additionalEffects);
+  if (entries.length === 0) return '';
+  const checks = entries.map(([key, def]) => `
+    <label class="ae-label" title="${(def.desc || '').replace(/"/g, '&quot;')}">
       <input type="checkbox" data-ae-key="${key}" ${active.has(key) ? 'checked' : ''}>
-      ${label}
+      ${def.label || key}
     </label>`).join('');
   return `
     <div class="form-section">
-      <div class="form-section-title">Additional Effects</div>
+      <div class="form-section-title">Additional Effects <span style="color:var(--text-muted);font-size:10px;font-weight:400">(defined in additionaleffects.json)</span></div>
       <div class="ae-list">${checks}</div>
     </div>`;
 }
@@ -335,6 +325,13 @@ function abilityFormHTML(key, ab) {
       <div class="form-row"><label>Power</label><input type="number" data-ab-field="power" value="${ab.power ?? 0}" min="0"></div>
       <div class="form-row"><label>Hits</label><input type="number" data-ab-field="hits" value="${ab.hits ?? 1}" min="1"></div>
       <div class="form-row"><label>HP Cost %</label><input type="number" data-ab-field="hpCost" value="${Math.round((ab.hpCost ?? 0) * 100)}" min="0" max="100"></div>
+      <div class="form-row">
+        <label>Swap After</label>
+        <select data-ab-field="swapAfter">
+          <option value="" ${!ab.swapAfter ? 'selected' : ''}>(none)</option>
+          <option value="self" ${ab.swapAfter === 'self' ? 'selected' : ''}>Self → bench (after hit)</option>
+        </select>
+      </div>
     </div>` : ''}
     ${isBuff ? `
     <div class="form-section">
@@ -573,7 +570,7 @@ function bindAbilityFormEvents() {
       } else if (f === 'power' || f === 'hits' || f === 'priority' || f === 'healTurns') {
         const v = parseInt(el.value);
         if (v === 0 || v === 1 && f === 'hits') delete ab[f]; else ab[f] = v;
-      } else if (f === 'element' || f === 'effect') {
+      } else if (f === 'element' || f === 'effect' || f === 'swapAfter') {
         if (el.value === '') delete ab[f]; else ab[f] = el.value;
       } else {
         ab[f] = el.value;
