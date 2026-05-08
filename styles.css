@@ -176,7 +176,7 @@
 
   /* battle */
   .stage {
-    position: relative; height: 220px; background: linear-gradient(180deg, #1a1a26 0%, #14141c 60%, #0a0a10 100%);
+    position: relative; height: 220px;
     border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 12px;
   }
   .stage-actor { position: absolute; bottom: 24px; width: 140px; height: 140px; transition: transform 0.18s; }
