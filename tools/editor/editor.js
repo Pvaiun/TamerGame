@@ -163,8 +163,6 @@ function monsterFormHTML(t) {
   const passiveOpts2 = Object.entries(S.passives).map(([k, p]) => passiveOption(p, k, t.secondaryPassive === k)).join('');
   const typeOpts = S.types.map(ty =>
     `<option value="${ty}" ${t.type === ty ? 'selected' : ''}>${ty}</option>`).join('');
-  const primaryDesc   = (S.passives[t.primaryPassive]   || {}).desc || '';
-  const secondaryDesc = (S.passives[t.secondaryPassive] || {}).desc || '';
 
   const palette = S.typePalette[t.type] || { primary: '#666', secondary: '#888', accent: '#aaa', dark: '#333' };
   const gen = ART_GENERATORS[t.species];
@@ -178,16 +176,18 @@ function monsterFormHTML(t) {
     .sort((a, b) => S.abilities[a].name.localeCompare(S.abilities[b].name));
   const poolRows = pool.map((k, i) => {
     const ab = S.abilities[k];
+    const pipClass = `type-pip ${ab?.element || 'neutral'}`;
     const opts = allAbilityKeys
       .filter(ak => ak === k || !pool.includes(ak))
       .map(ak => {
         const a2 = S.abilities[ak];
-        const elem = a2.element || 'neutral';
-        return `<option value="${ak}" ${ak === k ? 'selected' : ''}>${a2.name} [${elem}]</option>`;
+        const short = (a2.desc || '').split(/[.\n]/)[0].slice(0, 60);
+        return `<option value="${ak}" ${ak === k ? 'selected' : ''}>${a2.name}${short ? ' — ' + short : ''}</option>`;
       }).join('');
     return `
       <div class="ae-row" data-pool-idx="${i}">
         <div class="ae-row-head">
+          <span class="${pipClass}" data-pool-pip="${i}" style="flex-shrink:0"></span>
           <select data-pool-sel="${i}">${opts}</select>
           <button class="btn-icon" data-pool-remove="${i}" title="Remove from pool">✕</button>
         </div>
@@ -241,9 +241,7 @@ function monsterFormHTML(t) {
     <div class="form-section">
       <div class="form-section-title">Passives</div>
       <div class="form-row"><label>Primary</label><select data-field="primaryPassive">${passiveOpts}</select></div>
-      <div class="passive-desc">${primaryDesc}</div>
       <div class="form-row"><label>Secondary</label><select data-field="secondaryPassive">${passiveOpts2}</select></div>
-      <div class="passive-desc">${secondaryDesc}</div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Ability Pool</div>
@@ -378,9 +376,11 @@ function effectRowHTML(eff, phaseIdx, effIdx) {
   const paramRows = Object.entries(params)
     .map(([pk, ps]) => aeParamHTML(phaseIdx, effIdx, pk, ps, aeParamCurrent(eff, pk, ps)))
     .join('');
-  const typeOpts = typeKeys.map(k =>
-    `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${S.additionalEffects[k]?.label || k}</option>`
-  ).join('');
+  const typeOpts = typeKeys.map(k => {
+    const s = S.additionalEffects[k];
+    const short = (s?.desc || '').split(/[.\n]/)[0].slice(0, 55);
+    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${s?.label || k}${short ? ' — ' + short : ''}</option>`;
+  }).join('');
   const desc = (schema.desc || '').replace(/"/g, '&quot;');
 
   // Timing override: only meaningful for non-modifier effects.
@@ -713,6 +713,8 @@ function bindMonsterFormEvents() {
     sel.addEventListener('change', () => {
       const i = +sel.dataset.poolSel;
       t.abilityPool[i] = sel.value;
+      const pip = document.querySelector(`[data-pool-pip="${i}"]`);
+      if (pip) pip.className = `type-pip ${S.abilities[sel.value]?.element || 'neutral'}`;
       S.dirty.templates = true;
       renderContent();
     });
