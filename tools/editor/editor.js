@@ -85,12 +85,26 @@ function renderTabs() {
   );
 }
 
+// Per-tab scroll positions for the list panel — preserved across re-renders
+// triggered by selection, search, sort, etc. Tab switches still surface the
+// last scroll position for the new tab.
+const scrollPositions = { monsters: 0, abilities: 0, passives: 0, statuses: 0 };
+
 function renderContent() {
   const el = document.getElementById('content');
+  // Save current list scroll under whichever tab was last rendered.
+  const lastTab = el.dataset.scrollTab;
+  if (lastTab) {
+    const cur = el.querySelector('.list-items');
+    if (cur) scrollPositions[lastTab] = cur.scrollTop;
+  }
   if (S.tab === 'monsters')  el.innerHTML = monstersTabHTML();
   if (S.tab === 'abilities') el.innerHTML = abilitiesTabHTML();
   if (S.tab === 'passives')  el.innerHTML = passivesTabHTML();
   if (S.tab === 'statuses')  el.innerHTML = statusEffectsTabHTML();
+  el.dataset.scrollTab = S.tab;
+  const newList = el.querySelector('.list-items');
+  if (newList) newList.scrollTop = scrollPositions[S.tab] || 0;
   bindContentEvents();
 }
 
@@ -119,24 +133,82 @@ function monstersTabHTML() {
     <div class="detail-panel">${t ? monsterFormHTML(t) : '<div class="empty">Select a monster to edit.</div>'}</div>`;
 }
 
+// Letter grade thresholds mirror src/creature.js growthRank().
+const GROWTH_GRADES = [
+  { grade: 'S', min: 2.6, mid: 2.8 },
+  { grade: 'A', min: 2.2, mid: 2.4 },
+  { grade: 'B', min: 1.8, mid: 2.0 },
+  { grade: 'C', min: 1.4, mid: 1.6 },
+  { grade: 'D', min: 1.0, mid: 1.2 },
+  { grade: 'E', min: 0.6, mid: 0.8 },
+  { grade: 'F', min: 0,   mid: 0.4 },
+];
+function growthGrade(v) {
+  for (const g of GROWTH_GRADES) if (v >= g.min) return g.grade;
+  return 'F';
+}
+function growthMidpoint(grade) {
+  return (GROWTH_GRADES.find(g => g.grade === grade) || GROWTH_GRADES[6]).mid;
+}
+
+function passiveOption(p, k, selected) {
+  const desc = (p.desc || '').replace(/"/g, '&quot;');
+  // Append a short description after a separator so users see what each passive does at a glance.
+  const short = (p.desc || '').split(/[.\n]/)[0].slice(0, 60);
+  return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${p.name}${short ? ' — ' + short : ''}</option>`;
+}
+
 function monsterFormHTML(t) {
-  const passiveOpts = Object.entries(S.passives)
-    .map(([k, p]) => `<option value="${k}" ${t.primaryPassive === k ? 'selected' : ''}>${p.name} (${k})</option>`).join('');
-  const passiveOpts2 = Object.entries(S.passives)
-    .map(([k, p]) => `<option value="${k}" ${t.secondaryPassive === k ? 'selected' : ''}>${p.name} (${k})</option>`).join('');
+  const passiveOpts  = Object.entries(S.passives).map(([k, p]) => passiveOption(p, k, t.primaryPassive === k)).join('');
+  const passiveOpts2 = Object.entries(S.passives).map(([k, p]) => passiveOption(p, k, t.secondaryPassive === k)).join('');
   const typeOpts = S.types.map(ty =>
     `<option value="${ty}" ${t.type === ty ? 'selected' : ''}>${ty}</option>`).join('');
-
-  const abilityChips = Object.entries(S.abilities)
-    .sort((a, b) => a[1].name.localeCompare(b[1].name))
-    .map(([k, ab]) => {
-      const active = t.abilityPool.includes(k);
-      return `<span class="chip ${active ? 'active' : ''}" data-ability-key="${k}" title="Long-press → edit in Abilities tab">${ab.name}</span>`;
-    }).join('');
+  const primaryDesc   = (S.passives[t.primaryPassive]   || {}).desc || '';
+  const secondaryDesc = (S.passives[t.secondaryPassive] || {}).desc || '';
 
   const palette = S.typePalette[t.type] || { primary: '#666', secondary: '#888', accent: '#aaa', dark: '#333' };
   const gen = ART_GENERATORS[t.species];
   const svgHTML = gen ? gen(palette) : '<svg viewBox="0 0 120 100"><circle cx="60" cy="60" r="20" fill="#666"/></svg>';
+
+  // Ability pool — render each entry as a row with a select dropdown + remove button,
+  // mirroring the +Add UX used for ability effects. Duplicates are filtered from
+  // each row's options (except for the row's own current selection).
+  const pool = t.abilityPool || [];
+  const allAbilityKeys = Object.keys(S.abilities)
+    .sort((a, b) => S.abilities[a].name.localeCompare(S.abilities[b].name));
+  const poolRows = pool.map((k, i) => {
+    const ab = S.abilities[k];
+    const opts = allAbilityKeys
+      .filter(ak => ak === k || !pool.includes(ak))
+      .map(ak => {
+        const a2 = S.abilities[ak];
+        const elem = a2.element || 'neutral';
+        return `<option value="${ak}" ${ak === k ? 'selected' : ''}>${a2.name} [${elem}]</option>`;
+      }).join('');
+    return `
+      <div class="ae-row" data-pool-idx="${i}">
+        <div class="ae-row-head">
+          <select data-pool-sel="${i}">${opts}</select>
+          <button class="btn-icon" data-pool-remove="${i}" title="Remove from pool">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+  const canAdd = allAbilityKeys.some(k => !pool.includes(k));
+
+  // Growth rate cells: numeric input + grade select. Editing either updates the other.
+  const growthCells = ['hp','atk','def','spd'].map(s => {
+    const v = t.growth[s];
+    const grade = growthGrade(v);
+    const gradeOpts = GROWTH_GRADES.map(g => `<option value="${g.grade}" ${g.grade === grade ? 'selected' : ''}>${g.grade}</option>`).join('');
+    return `
+      <div class="stat-cell">
+        <label>${s.toUpperCase()}</label>
+        <div class="growth-cell">
+          <input type="number" data-stat-growth="${s}" value="${v}" step="0.1" min="0" max="3.5">
+          <select data-stat-grade="${s}" class="growth-grade grade-${grade}">${gradeOpts}</select>
+        </div>
+      </div>`;
+  }).join('');
 
   return `
     <div class="form-section">
@@ -152,7 +224,7 @@ function monsterFormHTML(t) {
     </div>
     <div class="form-section">
       <div class="form-section-title">Base Stats</div>
-      <div class="stat-grid">
+      <div class="stat-grid stat-grid-narrow">
         ${['hp','atk','def','spd'].map(s => `
           <div class="stat-cell">
             <label>${s.toUpperCase()}</label>
@@ -161,23 +233,22 @@ function monsterFormHTML(t) {
       </div>
     </div>
     <div class="form-section">
-      <div class="form-section-title">Growth Rates</div>
-      <div class="stat-grid">
-        ${['hp','atk','def','spd'].map(s => `
-          <div class="stat-cell">
-            <label>${s.toUpperCase()}</label>
-            <input type="number" data-stat-growth="${s}" value="${t.growth[s]}" step="0.1" min="0">
-          </div>`).join('')}
+      <div class="form-section-title">Growth Rates
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">(set the number or pick a grade)</span>
       </div>
+      <div class="stat-grid stat-grid-narrow">${growthCells}</div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Passives</div>
       <div class="form-row"><label>Primary</label><select data-field="primaryPassive">${passiveOpts}</select></div>
+      <div class="passive-desc">${primaryDesc}</div>
       <div class="form-row"><label>Secondary</label><select data-field="secondaryPassive">${passiveOpts2}</select></div>
+      <div class="passive-desc">${secondaryDesc}</div>
     </div>
     <div class="form-section">
-      <div class="form-section-title">Ability Pool <span style="color:var(--text-muted);font-size:10px;font-weight:400">(click to toggle · long-press to edit)</span></div>
-      <div class="chip-grid">${abilityChips}</div>
+      <div class="form-section-title">Ability Pool</div>
+      <div id="pool-list">${poolRows}</div>
+      <button class="btn btn-secondary btn-sm" id="pool-add" ${canAdd ? '' : 'disabled'}>+ Add ability</button>
     </div>`;
 }
 
@@ -207,15 +278,17 @@ function abilitiesTabHTML() {
   const listHTML = entries.map(([k, a]) => {
     const dmg = totalDamage(a);
     const subParts = [];
-    if (a.element) subParts.push(a.element);
     if (phaseCount(a) > 1) subParts.push(`${phaseCount(a)} phases`);
     if (hasDamage(a)) subParts.push(`pow ${dmg}`);
+    const pipClass = a.element ? `type-pip ${a.element}` : 'type-pip neutral';
     return `
       <div class="list-item ${S.ability === k ? 'selected' : ''}" data-ability="${k}">
-        <div>
+        <span class="${pipClass}"></span>
+        <div style="flex:1; min-width:0;">
           <div class="list-item-name">${a.name}</div>
           <div class="list-item-sub">${subParts.join(' · ') || k}</div>
         </div>
+        <button class="btn-icon list-item-delete" data-delete-ability="${k}" title="Delete ability">✕</button>
       </div>`;
   }).join('');
 
@@ -236,6 +309,7 @@ function abilitiesTabHTML() {
       </div>
       <div class="kind-filter">${filterBtns}</div>
       <div class="list-items">${listHTML}</div>
+      <button class="btn btn-secondary btn-sm" id="ability-new" style="margin: 6px 8px;">+ New ability</button>
     </div>
     <div class="detail-panel">${ab ? abilityFormHTML(S.ability, ab) : '<div class="empty">Select an ability to edit.</div>'}</div>`;
 }
@@ -495,8 +569,60 @@ function bindContentEvents() {
     el.addEventListener('click', () => { S.monster = +el.dataset.idx; renderAll(); })
   );
   content.querySelectorAll('.list-item[data-ability]').forEach(el =>
-    el.addEventListener('click', () => { S.ability = el.dataset.ability; renderAll(); })
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-ability]')) return;
+      S.ability = el.dataset.ability; renderAll();
+    })
   );
+  content.querySelectorAll('[data-delete-ability]').forEach(btn =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const k = btn.dataset.deleteAbility;
+      const ab = S.abilities[k];
+      if (!ab) return;
+      // Find templates that reference this ability so we can warn the user.
+      const referencing = (S.templates || [])
+        .filter(t => (t.abilityPool || []).includes(k))
+        .map(t => t.species);
+      const refMsg = referencing.length
+        ? `\n\nWill remove from ${referencing.length} monster pool${referencing.length > 1 ? 's' : ''}: ${referencing.join(', ')}.`
+        : '';
+      if (!confirm(`Delete ability "${ab.name}" (${k})?${refMsg}`)) return;
+      delete S.abilities[k];
+      for (const t of S.templates) {
+        if (!t.abilityPool) continue;
+        t.abilityPool = t.abilityPool.filter(x => x !== k);
+      }
+      if (S.ability === k) S.ability = null;
+      S.dirty.abilities = true;
+      S.dirty.templates = referencing.length > 0 || S.dirty.templates;
+      renderAll();
+    })
+  );
+  const newAbilityBtn = content.querySelector('#ability-new');
+  if (newAbilityBtn) {
+    newAbilityBtn.addEventListener('click', () => {
+      const raw = prompt('New ability key (lowercase, snake_case):', '');
+      if (raw === null) return;
+      const key = raw.trim();
+      if (!key) return;
+      if (!/^[a-z][a-z0-9_]*$/.test(key)) {
+        alert('Key must start with a lowercase letter and contain only lowercase letters, digits, or underscores.');
+        return;
+      }
+      if (S.abilities[key]) { alert(`"${key}" already exists.`); return; }
+      const niceName = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      S.abilities[key] = {
+        name: niceName,
+        desc: '',
+        priority: 0,
+        phases: [[ { type: 'damage', power: 50 } ]],
+      };
+      S.ability = key;
+      S.dirty.abilities = true;
+      renderAll();
+    });
+  }
   content.querySelectorAll('.list-item[data-passive]').forEach(el =>
     el.addEventListener('click', () => { S.passive = el.dataset.passive; renderAll(); })
   );
@@ -534,9 +660,9 @@ function bindMonsterFormEvents() {
       const field = el.dataset.field;
       if (el.type === 'checkbox') t[field] = el.checked;
       else t[field] = el.value;
-      // Refresh portrait when type changes
-      if (field === 'type') renderContent();
-      else { S.dirty.templates = true; renderHeader(); renderTabs(); }
+      // Type changes affect the portrait; passive changes need to refresh the
+      // inline description block. Both go through renderContent.
+      if (field === 'type' || field === 'primaryPassive' || field === 'secondaryPassive') renderContent();
       S.dirty.templates = true; renderHeader(); renderTabs();
     });
   });
@@ -549,26 +675,59 @@ function bindMonsterFormEvents() {
     });
   });
 
-  // Growth rates
+  // Growth rate (numeric) — also refresh the linked grade chip.
   document.querySelectorAll('[data-stat-growth]').forEach(el => {
     el.addEventListener('change', () => {
-      t.growth[el.dataset.statGrowth] = parseFloat(el.value);
-      S.dirty.templates = true; renderHeader(); renderTabs();
+      const stat = el.dataset.statGrowth;
+      t.growth[stat] = parseFloat(el.value) || 0;
+      S.dirty.templates = true;
+      renderContent();
+    });
+  });
+  // Growth rate (letter grade) — snap value to the midpoint of the chosen grade.
+  document.querySelectorAll('[data-stat-grade]').forEach(el => {
+    el.addEventListener('change', () => {
+      const stat = el.dataset.statGrade;
+      t.growth[stat] = growthMidpoint(el.value);
+      S.dirty.templates = true;
+      renderContent();
     });
   });
 
-  // Ability pool chips — click to toggle, long-press to navigate
-  document.querySelectorAll('.chip[data-ability-key]').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const k = chip.dataset.abilityKey;
-      const idx = t.abilityPool.indexOf(k);
-      if (idx === -1) t.abilityPool.push(k);
-      else t.abilityPool.splice(idx, 1);
-      chip.classList.toggle('active', t.abilityPool.includes(k));
-      S.dirty.templates = true; renderHeader(); renderTabs();
+  // Ability pool — add row (picks the first ability not already in pool).
+  const poolAdd = document.getElementById('pool-add');
+  if (poolAdd) {
+    poolAdd.addEventListener('click', () => {
+      if (!t.abilityPool) t.abilityPool = [];
+      const next = Object.keys(S.abilities)
+        .sort((a, b) => S.abilities[a].name.localeCompare(S.abilities[b].name))
+        .find(k => !t.abilityPool.includes(k));
+      if (!next) return;
+      t.abilityPool.push(next);
+      S.dirty.templates = true;
+      renderContent();
     });
-    longPress(chip, () => {
-      S.tab = 'abilities'; S.ability = chip.dataset.abilityKey; renderAll();
+  }
+  // Ability pool — change selection in a row.
+  document.querySelectorAll('[data-pool-sel]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.poolSel;
+      t.abilityPool[i] = sel.value;
+      S.dirty.templates = true;
+      renderContent();
+    });
+    // Long-press jumps to the selected ability for editing.
+    longPress(sel, () => {
+      S.tab = 'abilities'; S.ability = sel.value; renderAll();
+    });
+  });
+  // Ability pool — remove row.
+  document.querySelectorAll('[data-pool-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.poolRemove;
+      t.abilityPool.splice(i, 1);
+      S.dirty.templates = true;
+      renderContent();
     });
   });
 
