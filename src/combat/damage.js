@@ -11,20 +11,30 @@ export function effectiveStat(f, stat) {
   return Math.max(1, Math.round(f.creature.stats[stat] * m));
 }
 
+function findInPhase(phase, type) {
+  return (phase || []).find(e => e.type === type) || null;
+}
+
+function modParam(eff, key) {
+  if (!eff) return undefined;
+  if (eff[key] !== undefined) return eff[key];
+  return ADDITIONAL_EFFECTS[eff.type]?.params?.[key]?.default;
+}
+
 // Returns {dmg, mult, elem, crit, evaded?}
-export function calculateDamage(attacker, defender, ability) {
+// `dmgEffect` is the specific damage effect being resolved (carries power/hits).
+// `phase` is the array of effects in the current phase (modifiers consulted from here).
+export function calculateDamage(attacker, defender, ability, dmgEffect, phase) {
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  {
-    const piercer = (ability.additionalEffects || []).find(e => e.type === 'pierce');
-    if (piercer) {
-      const dr = piercer.defReduction ?? ADDITIONAL_EFFECTS.pierce?.params?.defReduction?.default ?? 0.5;
-      def = Math.round(def * (1 - dr));
-    }
+  const piercer = findInPhase(phase, 'pierce');
+  if (piercer) {
+    const dr = modParam(piercer, 'defReduction') ?? 0.5;
+    def = Math.round(def * (1 - dr));
   }
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
-  let power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
+  let power = applyPowerMult(attacker, defender, ability, dmgEffect.power || 0, phase, { attackerSpd, defenderSpd });
   const elem = ability.element || null;
   let mult = hasPassive(attacker, 'eldritch_sight') ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
   if (checkEvasion(defender)) {
@@ -42,28 +52,32 @@ export function calculateDamage(attacker, defender, ability) {
   return { dmg: raw, mult, elem, crit };
 }
 
-// Deterministic average-damage estimate for the move-button UI. No crit/random/evade.
+// Deterministic damage estimate for the move-button UI. Sums across all damage
+// effects in the ability's first phase. No crit/random/evade.
 export function estimateDamage(attacker, defender, ability) {
-  if (!ability.power || ability.power <= 0) return 0;
-  if (ability.kind !== 'attack' && ability.kind !== 'charge_attack') return 0;
+  const phase = (ability.phases && ability.phases[0]) || [];
+  const dmgEffects = phase.filter(e => e.type === 'damage');
+  if (dmgEffects.length === 0) return 0;
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  {
-    const piercer = (ability.additionalEffects || []).find(e => e.type === 'pierce');
-    if (piercer) {
-      const dr = piercer.defReduction ?? ADDITIONAL_EFFECTS.pierce?.params?.defReduction?.default ?? 0.5;
-      def = Math.round(def * (1 - dr));
-    }
+  const piercer = findInPhase(phase, 'pierce');
+  if (piercer) {
+    const dr = modParam(piercer, 'defReduction') ?? 0.5;
+    def = Math.round(def * (1 - dr));
   }
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
-  const power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
   const elem = ability.element || null;
   const mult = hasPassive(attacker, 'eldritch_sight') ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
-  let raw = atk * (power / 50) * (atk / (atk + def)) * 0.4;
-  if (raw < 1) raw = 1;
-  raw *= mult;
-  raw = applyFlatDmgReduction(defender, raw);
-  raw = Math.max(1, Math.round(raw));
-  return raw;
+  let total = 0;
+  for (const dmgEff of dmgEffects) {
+    const power = applyPowerMult(attacker, defender, ability, dmgEff.power || 0, phase, { attackerSpd, defenderSpd });
+    let raw = atk * (power / 50) * (atk / (atk + def)) * 0.4;
+    if (raw < 1) raw = 1;
+    raw *= mult;
+    raw = applyFlatDmgReduction(defender, raw);
+    raw = Math.max(1, Math.round(raw));
+    total += raw * (dmgEff.hits || 1);
+  }
+  return total;
 }

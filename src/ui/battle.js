@@ -45,25 +45,31 @@ export function renderBattle() {
   }
 
   const grid = el('div', { class: 'ability-grid pokemon' });
-  if (state.pf.charging) {
-    const a = state.pf.chargeAbility;
+  if (state.pf.queuedAbility) {
+    const qk = state.pf.queuedAbility.key;
+    const a = ABILITIES[qk];
+    const phaseIdx = state.pf.queuedAbility.phaseIdx;
+    const totalPhases = (a && a.phases ? a.phases.length : 1);
+    const isLast = phaseIdx === totalPhases - 1;
     let cls = 'ability-btn pokemon-btn release-btn';
-    if (a.element) cls += ' elem-' + a.element;
-    if ((a.kind === 'attack' || a.kind === 'charge_attack') && a.element) {
+    if (a && a.element) cls += ' elem-' + a.element;
+    if (a && a.element && abilityHasDamage(a)) {
       const m = TYPE_CHART[a.element][state.ef.creature.type];
       if (m > 1) cls += ' eff-good';
       else if (m < 1) cls += ' eff-bad';
     }
     const btn = el('button', { class: cls, style: 'grid-column: 1 / -1; min-height: 110px;' });
-    btn.appendChild(el('div', { class: 'name', style: 'font-size: 14px; color: var(--text-faint); letter-spacing: 2px;' }, 'RELEASE'));
+    btn.appendChild(el('div', { class: 'name', style: 'font-size: 14px; color: var(--text-faint); letter-spacing: 2px;' },
+      isLast ? 'UNLEASH' : `CONTINUE (${phaseIdx + 1}/${totalPhases})`));
     btn.appendChild(el('div', { class: 'name', style: 'font-size: 18px; margin-top: 4px;' }, [
-      a.element ? el('span', { class: 'type-pip ' + a.element }) : null,
-      a.name,
+      a && a.element ? el('span', { class: 'type-pip ' + a.element }) : null,
+      a ? a.name : '?',
     ].filter(Boolean)));
-    if (a.power && a.power > 0) btn.appendChild(el('div', { class: 'dmg-value', style: 'font-size: 28px; margin-top: 4px;' }, String(a.power)));
+    const phasePower = phasePowerFor(a, phaseIdx);
+    if (phasePower > 0) btn.appendChild(el('div', { class: 'dmg-value', style: 'font-size: 28px; margin-top: 4px;' }, String(phasePower)));
     if (state.acting) btn.disabled = true;
     attachLongPress(btn,
-      () => openAbilityTooltip(Object.keys(ABILITIES).find(k => ABILITIES[k] === a) || ''),
+      () => openAbilityTooltip(qk),
       state.acting ? null : () => playerAct(null)
     );
     grid.appendChild(btn);
@@ -73,7 +79,7 @@ export function renderBattle() {
       if (!a) continue;
       let cls = 'ability-btn pokemon-btn';
       let starTag = false;
-      if ((a.kind === 'attack' || a.kind === 'charge_attack') && a.element) {
+      if (abilityHasDamage(a) && a.element) {
         const mult = TYPE_CHART[a.element][state.ef.creature.type];
         if (mult > 1) starTag = true;
       }
@@ -83,23 +89,7 @@ export function renderBattle() {
         a.element ? el('span', { class: 'type-pip ' + a.element }) : null,
         a.name,
       ].filter(Boolean)));
-      if (a.power && a.power > 0) {
-        const hits = a.hits || 1;
-        const label = hits > 1 ? `${a.power} × ${hits}` : `${a.power}`;
-        btn.appendChild(el('div', { class: 'dmg-value' }, label));
-      } else if (a.kind === 'apply_heal') {
-        btn.appendChild(el('div', { class: 'dmg-value subtle heal' }, 'HEAL'));
-      } else if (a.kind === 'buff') {
-        btn.appendChild(el('div', { class: 'dmg-value subtle' }, 'BUFF'));
-      } else if (a.kind === 'debuff') {
-        btn.appendChild(el('div', { class: 'dmg-value subtle' }, 'STATUS'));
-      } else if (a.kind === 'swap_self') {
-        btn.appendChild(el('div', { class: 'dmg-value subtle' }, 'SWAP'));
-      } else if (a.kind === 'bench_support') {
-        btn.appendChild(el('div', { class: 'dmg-value subtle heal' }, 'BENCH'));
-      } else if (a.kind === 'charge_attack' && !a.power) {
-        btn.appendChild(el('div', { class: 'dmg-value subtle' }, 'CHARGE'));
-      }
+      btn.appendChild(abilityFlavorChip(a));
       if (starTag) btn.appendChild(el('div', { class: 'eff-star' }, '★'));
       if (state.acting) btn.disabled = true;
       attachLongPress(btn,
@@ -219,4 +209,46 @@ function actorHudEl(f, side) {
   if (status.children.length) wrap.appendChild(status);
 
   return wrap;
+}
+
+// ─── Helpers: classify an ability by its effects for the move-button label ───
+
+function abilityFlatEffects(a) {
+  return (a && a.phases ? a.phases : []).flat();
+}
+
+function abilityHasDamage(a) {
+  return abilityFlatEffects(a).some(e => e.type === 'damage');
+}
+
+// Total power × hits for damage effects in the FIRST phase (button label).
+function phasePowerFor(a, phaseIdx) {
+  const phase = (a && a.phases) ? (a.phases[phaseIdx] || []) : [];
+  let total = 0;
+  for (const e of phase) {
+    if (e.type === 'damage') total += (e.power || 0) * (e.hits || 1);
+  }
+  return total;
+}
+
+function abilityFlavorChip(a) {
+  const phase0 = (a.phases && a.phases[0]) || [];
+  const dmg = phase0.filter(e => e.type === 'damage');
+  if (dmg.length > 0) {
+    const power = dmg.reduce((s, e) => s + (e.power || 0), 0);
+    const hits = dmg.reduce((s, e) => s + (e.hits || 1), 0);
+    const label = hits > 1 ? `${power} × ${hits}` : `${power}`;
+    return el('div', { class: 'dmg-value' }, label);
+  }
+  if (a.phases && a.phases.length > 1) {
+    return el('div', { class: 'dmg-value subtle' }, 'CHARGE');
+  }
+  const flat = abilityFlatEffects(a);
+  if (flat.some(e => e.type === 'heal_over_time')) return el('div', { class: 'dmg-value subtle heal' }, 'HEAL');
+  if (flat.some(e => e.type === 'swap'))           return el('div', { class: 'dmg-value subtle' }, 'SWAP');
+  if (flat.some(e => e.type === 'buff'))           return el('div', { class: 'dmg-value subtle' }, 'BUFF');
+  if (flat.some(e => e.type === 'apply_status'))   return el('div', { class: 'dmg-value subtle' }, 'STATUS');
+  if (flat.some(e => e.type === 'cleanse'))        return el('div', { class: 'dmg-value subtle heal' }, 'CLEANSE');
+  if (flat.some(e => e.type === 'bracing'))        return el('div', { class: 'dmg-value subtle' }, 'BRACE');
+  return el('div', { class: 'dmg-value subtle' }, '—');
 }

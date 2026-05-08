@@ -12,7 +12,7 @@ const S = {
   status: null,    // selected status key
   pat: '', branch: 'main',
   statusMsg: '', statusError: false,
-  search: { monsters: '', abilities: '', passives: '', statuses: '', abilityKind: '', abilitySort: 'name' },
+  search: { monsters: '', abilities: '', passives: '', statuses: '', abilityElement: '', abilitySort: 'name' },
 };
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -183,43 +183,45 @@ function monsterFormHTML(t) {
 
 // ─── Abilities Tab ───────────────────────────────────────────────────────────
 
-const KIND_FILTERS = [
-  { key: '',               label: 'All' },
-  { key: 'attack',         label: 'Attack' },
-  { key: 'charge_attack',  label: 'Charge' },
-  { key: 'buff',           label: 'Buff' },
-  { key: 'debuff',         label: 'Debuff' },
-  { key: 'apply_heal',     label: 'Heal' },
-  { key: 'bench_support',  label: 'Bench' },
-  { key: 'swap_self',      label: 'Swap' },
-];
-
 function abilitiesTabHTML() {
   const q   = S.search.abilities.toLowerCase();
-  const kf  = S.search.abilityKind;
+  const ef  = S.search.abilityElement;
   const srt = S.search.abilitySort;
+  const totalDamage = (a) => (a.phases || []).flat()
+    .filter(e => e.type === 'damage')
+    .reduce((s, e) => s + (e.power || 0) * (e.hits || 1), 0);
+  const phaseCount  = (a) => (a.phases ? a.phases.length : 0);
+  const hasDamage   = (a) => (a.phases || []).flat().some(e => e.type === 'damage');
+
   const entries = Object.entries(S.abilities)
-    .filter(([k, a]) => (!kf || a.kind === kf) && (!q || a.name.toLowerCase().includes(q) || k.includes(q)))
+    .filter(([k, a]) => (!ef || a.element === ef) && (!q || a.name.toLowerCase().includes(q) || k.includes(q)))
     .sort((a, b) => {
       if (srt === 'element') {
         const ea = a[1].element || '', eb = b[1].element || '';
         return ea.localeCompare(eb) || a[1].name.localeCompare(b[1].name);
       }
-      if (srt === 'power') {
-        return (b[1].power ?? -1) - (a[1].power ?? -1);
-      }
+      if (srt === 'power') return totalDamage(b[1]) - totalDamage(a[1]);
       return a[1].name.localeCompare(b[1].name);
     });
-  const listHTML = entries.map(([k, a]) => `
-    <div class="list-item ${S.ability === k ? 'selected' : ''}" data-ability="${k}">
-      <div>
-        <div class="list-item-name">${a.name}</div>
-        <div class="list-item-sub">${a.kind}${a.element ? ' · ' + a.element : ''}${a.power ? ' · ' + a.power : ''}</div>
-      </div>
-    </div>`).join('');
 
-  const filterBtns = KIND_FILTERS.map(f =>
-    `<button class="kind-filter-btn ${kf === f.key ? 'active' : ''}" data-kind="${f.key}">${f.label}</button>`
+  const listHTML = entries.map(([k, a]) => {
+    const dmg = totalDamage(a);
+    const subParts = [];
+    if (a.element) subParts.push(a.element);
+    if (phaseCount(a) > 1) subParts.push(`${phaseCount(a)} phases`);
+    if (hasDamage(a)) subParts.push(`pow ${dmg}`);
+    return `
+      <div class="list-item ${S.ability === k ? 'selected' : ''}" data-ability="${k}">
+        <div>
+          <div class="list-item-name">${a.name}</div>
+          <div class="list-item-sub">${subParts.join(' · ') || k}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const elemFilters = [['', 'All'], ...S.types.map(t => [t, t])];
+  const filterBtns = elemFilters.map(([key, label]) =>
+    `<button class="kind-filter-btn ${ef === key ? 'active' : ''}" data-element="${key}">${label}</button>`
   ).join('');
 
   const sortOpts = [['name','Name'],['element','Element'],['power','Power']]
@@ -238,44 +240,6 @@ function abilitiesTabHTML() {
     <div class="detail-panel">${ab ? abilityFormHTML(S.ability, ab) : '<div class="empty">Select an ability to edit.</div>'}</div>`;
 }
 
-// Bench-support effects still read from ability.effect (handled separately in battle.js)
-const BENCH_EFFECTS = {
-  bench_bloom:    'Apply Bloom to bench ally',
-  bench_buff_atk: 'Buff bench ally ATK +25%',
-  bench_buff_def: 'Buff bench ally DEF +30%',
-};
-
-function statusEffectsFormHTML(ab) {
-  const seList = (ab.statusEffects || []);
-  const statusOpts = Object.entries(S.statuses)
-    .map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
-  const TARGETS = ['self', 'bench', 'enemy', 'enemy_bench'];
-  const TARGET_LABELS = { self: 'Self', bench: 'Bench', enemy: 'Enemy', enemy_bench: 'Enemy Bench' };
-
-  const rows = seList.map((se, i) => `
-    <div class="se-row" data-se-idx="${i}">
-      <select data-se-status="${i}">${Object.entries(S.statuses).map(([k, s]) =>
-        `<option value="${k}" ${se.status === k ? 'selected' : ''}>${s.name}</option>`
-      ).join('')}</select>
-      <div class="se-targets">
-        ${TARGETS.map(t => `
-          <label class="se-target-label">
-            <input type="checkbox" data-se-target="${i}" data-tgt="${t}" ${(se.targets||[]).includes(t) ? 'checked' : ''}>
-            ${TARGET_LABELS[t]}
-          </label>`).join('')}
-      </div>
-      <button class="btn-icon" data-se-remove="${i}">✕</button>
-    </div>`).join('');
-
-  const addDisabled = Object.keys(S.statuses).length === 0 ? 'disabled' : '';
-  return `
-    <div class="form-section">
-      <div class="form-section-title">Status Effects</div>
-      <div id="se-list">${rows}</div>
-      <button class="btn btn-secondary btn-sm" id="se-add" ${addDisabled}>+ Add status effect</button>
-    </div>`;
-}
-
 // ─── Additional Effects ──────────────────────────────────────────────────────
 // Each instance on an ability is { type, ...params }. The schema in
 // data/additionaleffects.json defines per-type params (label + type + default).
@@ -289,8 +253,8 @@ function aeParamCurrent(eff, paramKey, schema) {
   return eff[paramKey] !== undefined ? eff[paramKey] : (schema?.default);
 }
 
-function aeParamHTML(rowIdx, paramKey, schema, current) {
-  const dataAttr = `data-ae-param="${paramKey}" data-ae-row="${rowIdx}"`;
+function aeParamHTML(phaseIdx, effIdx, paramKey, schema, current) {
+  const dataAttr = `data-ae-param="${paramKey}" data-ae-row="${effIdx}" data-ae-phase="${phaseIdx}"`;
   const label = schema.label || paramKey;
   if (schema.type === 'percent') {
     const v = Math.round((current ?? 0) * 1000) / 10;
@@ -298,6 +262,9 @@ function aeParamHTML(rowIdx, paramKey, schema, current) {
   }
   if (schema.type === 'multiplier') {
     return `<label class="ae-param"><span>${label}</span><input type="number" ${dataAttr} data-ae-ptype="multiplier" value="${current ?? 1}" step="0.05" min="0"></label>`;
+  }
+  if (schema.type === 'int') {
+    return `<label class="ae-param"><span>${label}</span><input type="number" ${dataAttr} data-ae-ptype="int" value="${current ?? 0}" step="1" min="0"></label>`;
   }
   if (schema.type === 'bool') {
     return `<label class="ae-param ae-bool"><input type="checkbox" ${dataAttr} data-ae-ptype="bool" ${current ? 'checked' : ''}> ${label}</label>`;
@@ -317,99 +284,103 @@ function aeParamHTML(rowIdx, paramKey, schema, current) {
       </label>`).join('');
     return `<div class="ae-param ae-targets"><span>${label}</span><div class="se-targets">${checks}</div></div>`;
   }
+  if (schema.type === 'statMods') {
+    const v = current || {};
+    const cells = ['atk', 'def', 'spd'].map(s =>
+      `<div class="stat-cell"><label>${s.toUpperCase()}</label>
+        <input type="number" ${dataAttr} data-ae-ptype="statMods" data-ae-stat="${s}"
+          value="${v[s] ?? 0}" step="0.05"></div>`).join('');
+    return `<div class="ae-param ae-statmods"><span>${label}</span><div class="stat-grid">${cells}</div></div>`;
+  }
   return '';
 }
 
-function additionalEffectsFormHTML(ab) {
-  const list = ab.additionalEffects || [];
+// Render a single effect row inside a phase. `phaseIdx` and `effIdx` are passed
+// through to all data-* attributes so binders know which phase/effect to mutate.
+function effectRowHTML(eff, phaseIdx, effIdx) {
   const typeKeys = Object.keys(S.additionalEffects);
+  const schema = S.additionalEffects[eff.type] || { label: eff.type, params: {} };
+  const params = schema.params || {};
+  const paramRows = Object.entries(params)
+    .map(([pk, ps]) => aeParamHTML(phaseIdx, effIdx, pk, ps, aeParamCurrent(eff, pk, ps)))
+    .join('');
+  const typeOpts = typeKeys.map(k =>
+    `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${S.additionalEffects[k]?.label || k}</option>`
+  ).join('');
+  const desc = (schema.desc || '').replace(/"/g, '&quot;');
 
-  const rows = list.map((eff, i) => {
-    const schema = S.additionalEffects[eff.type] || { label: eff.type, params: {} };
-    const params = schema.params || {};
-    const paramRows = Object.entries(params)
-      .map(([pk, ps]) => aeParamHTML(i, pk, ps, aeParamCurrent(eff, pk, ps)))
-      .join('');
-    const typeOpts = typeKeys.map(k =>
-      `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${S.additionalEffects[k]?.label || k}</option>`
+  // Timing override: only meaningful for non-modifier effects.
+  let timingHTML = '';
+  if (!schema.modifier && eff.type !== 'damage') {
+    const def = schema.defaultTiming || 'after';
+    const cur = eff.timing || def;
+    const tOpts = ['before', 'eachHit', 'after'].map(t =>
+      `<option value="${t}" ${cur === t ? 'selected' : ''}>${t}${t === def ? ' (default)' : ''}</option>`
     ).join('');
-    const desc = (schema.desc || '').replace(/"/g, '&quot;');
-    return `
-      <div class="ae-row" data-ae-idx="${i}">
-        <div class="ae-row-head">
-          <select data-ae-type-sel="${i}" title="${desc}">${typeOpts}</select>
-          <button class="btn-icon" data-ae-remove="${i}">✕</button>
-        </div>
-        ${paramRows ? `<div class="ae-row-params">${paramRows}</div>` : ''}
-      </div>`;
-  }).join('');
+    timingHTML = `<label class="ae-param ae-timing"><span>Timing</span>
+      <select data-ae-timing data-ae-row="${effIdx}" data-ae-phase="${phaseIdx}">${tOpts}</select></label>`;
+  }
 
-  const addDisabled = typeKeys.length === 0 ? 'disabled' : '';
+  // Dependency warning if `requires` is unmet within the current phase.
+  let warning = '';
+  const requires = schema.requires || [];
+  if (requires.length) {
+    const phaseTypes = new Set((S.abilities[S.ability].phases[phaseIdx] || []).map(e => e.type));
+    const missing = requires.filter(r => !phaseTypes.has(r));
+    if (missing.length) {
+      warning = `<div class="ae-warn">⚠ needs ${missing.join(', ')} in this phase</div>`;
+    }
+  }
+
   return `
-    <div class="form-section">
-      <div class="form-section-title">Additional Effects <span style="color:var(--text-muted);font-size:10px;font-weight:400">(types defined in additionaleffects.json)</span></div>
-      <div id="ae-list">${rows}</div>
-      <button class="btn btn-secondary btn-sm" id="ae-add" ${addDisabled}>+ Add additional effect</button>
+    <div class="ae-row" data-ae-idx="${effIdx}" data-ae-phase="${phaseIdx}">
+      <div class="ae-row-head">
+        <select data-ae-type-sel="${effIdx}" data-ae-phase="${phaseIdx}" title="${desc}">${typeOpts}</select>
+        <button class="btn-icon" data-ae-remove="${effIdx}" data-ae-phase="${phaseIdx}">✕</button>
+      </div>
+      ${paramRows || timingHTML ? `<div class="ae-row-params">${paramRows}${timingHTML}</div>` : ''}
+      ${warning}
     </div>`;
 }
 
-function benchEffectSelectHTML(ab) {
-  const opts = Object.entries(BENCH_EFFECTS)
-    .map(([k, label]) => `<option value="${k}" ${ab.effect === k ? 'selected' : ''}>${label}</option>`)
-    .join('');
-  return `<div class="form-row"><label>Bench Effect</label><select data-ab-field="effect"><option value="">(none)</option>${opts}</select></div>`;
+function phaseFormHTML(phase, phaseIdx, totalPhases) {
+  const rows = phase.map((eff, i) => effectRowHTML(eff, phaseIdx, i)).join('');
+  const phaseLabel = totalPhases > 1 ? `Phase ${phaseIdx + 1}` : 'Effects';
+  const removeBtn = totalPhases > 1
+    ? `<button class="btn-icon" data-phase-remove="${phaseIdx}" title="Remove this phase">✕</button>` : '';
+  return `
+    <div class="phase-block" data-phase-idx="${phaseIdx}">
+      <div class="phase-head">
+        <span class="phase-label">${phaseLabel}</span>
+        ${removeBtn}
+      </div>
+      <div class="ae-list">${rows}</div>
+      <button class="btn btn-secondary btn-sm" data-effect-add="${phaseIdx}">+ Add effect</button>
+    </div>`;
 }
 
 function abilityFormHTML(key, ab) {
-  const kinds = ['attack','charge_attack','buff','debuff','apply_heal','bench_support','swap_self'];
-  const kindOpts = kinds.map(k => `<option ${ab.kind === k ? 'selected' : ''}>${k}</option>`).join('');
-  const typeOpts = ['', ...S.types].map(t => `<option value="${t}" ${(ab.element || '') === t ? 'selected' : ''}>${t || '(none)'}</option>`).join('');
-  const isAttack = ab.kind === 'attack' || ab.kind === 'charge_attack';
-  const isBuff = ab.kind === 'buff' || ab.kind === 'debuff';
-  const isHeal = ab.kind === 'apply_heal';
-  const isSwap = ab.kind === 'swap_self';
-  const sm = ab.statMult || {};
-  const bos = ab.buffOnSwap || {};
+  const typeOpts = ['', ...S.types].map(t =>
+    `<option value="${t}" ${(ab.element || '') === t ? 'selected' : ''}>${t || '(none)'}</option>`).join('');
+  const phases = ab.phases && ab.phases.length ? ab.phases : [[]];
+  const phaseHTML = phases.map((p, i) => phaseFormHTML(p, i, phases.length)).join('');
 
   return `
     <div class="form-section">
       <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
       <div class="form-row"><label>Display name</label><input type="text" data-ab-field="name" value="${ab.name}"></div>
       <div class="form-row"><label>Description</label><textarea data-ab-field="desc">${ab.desc || ''}</textarea></div>
-      <div class="form-row"><label>Kind</label><select data-ab-field="kind">${kindOpts}</select></div>
       <div class="form-row"><label>Element</label><select data-ab-field="element">${typeOpts}</select></div>
       <div class="form-row"><label>Priority</label><input type="number" data-ab-field="priority" value="${ab.priority ?? 0}" min="-3" max="3"></div>
     </div>
-    ${isAttack ? `
     <div class="form-section">
-      <div class="form-section-title">Attack</div>
-      <div class="form-row"><label>Power</label><input type="number" data-ab-field="power" value="${ab.power ?? 0}" min="0"></div>
-      <div class="form-row"><label>Hits</label><input type="number" data-ab-field="hits" value="${ab.hits ?? 1}" min="1"></div>
-    </div>` : ''}
-    ${isBuff ? `
-    <div class="form-section">
-      <div class="form-section-title">Stat Multipliers (on use)</div>
-      <div class="stat-grid">
-        ${['atk','def','spd'].map(s => `<div class="stat-cell"><label>${s.toUpperCase()}</label><input type="number" data-ab-statmult="${s}" value="${sm[s] ?? 0}" step="0.05"></div>`).join('')}
+      <div class="form-section-title">Phases
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+          (multi-phase abilities resolve one phase per turn; subsequent phases queue up automatically)</span>
       </div>
-    </div>` : ''}
-    ${isHeal ? `
-    <div class="form-section">
-      <div class="form-section-title">Heal</div>
-      <div class="form-row"><label>Heal %</label><input type="number" data-ab-field="healPercent" value="${Math.round((ab.healPercent ?? 0) * 100)}" min="0" max="100"></div>
-      <div class="form-row"><label>Heal Turns</label><input type="number" data-ab-field="healTurns" value="${ab.healTurns ?? 0}" min="0"></div>
-    </div>` : ''}
-    ${isSwap ? `
-    <div class="form-section">
-      <div class="form-section-title">Swap Effects</div>
-      <div class="form-row"><label>Heal On Swap %</label><input type="number" data-ab-field="healOnSwap" value="${Math.round((ab.healOnSwap ?? 0) * 100)}" min="0" max="100"></div>
-      <div class="form-section-title" style="margin-top:8px">Buff On Swap</div>
-      <div class="stat-grid">
-        ${['atk','def','spd'].map(s => `<div class="stat-cell"><label>${s.toUpperCase()}</label><input type="number" data-ab-buffswap="${s}" value="${bos[s] ?? 0}" step="0.05"></div>`).join('')}
-      </div>
-    </div>` : ''}
-    ${ab.kind === 'bench_support' ? benchEffectSelectHTML(ab) : ''}
-    ${ab.kind !== 'bench_support' && ab.kind !== 'swap_self' ? statusEffectsFormHTML(ab) + additionalEffectsFormHTML(ab) : ''}`;
+      ${phaseHTML}
+      <button class="btn btn-secondary btn-sm" id="phase-add">+ Add phase</button>
+    </div>`;
 }
 
 // ─── Passives Tab ────────────────────────────────────────────────────────────
@@ -543,9 +514,9 @@ function bindContentEvents() {
   const sortSel = document.getElementById('sort-abilities');
   if (sortSel) sortSel.addEventListener('change', e => { S.search.abilitySort = e.target.value; renderContent(); });
 
-  // Kind filter buttons (Abilities tab)
+  // Element filter buttons (Abilities tab)
   content.querySelectorAll('.kind-filter-btn').forEach(btn =>
-    btn.addEventListener('click', () => { S.search.abilityKind = btn.dataset.kind; renderContent(); })
+    btn.addEventListener('click', () => { S.search.abilityElement = btn.dataset.element || ''; renderContent(); })
   );
 
   if (S.tab === 'monsters' && S.monster !== null) bindMonsterFormEvents();
@@ -613,151 +584,106 @@ function bindMonsterFormEvents() {
 
 function bindAbilityFormEvents() {
   const ab = S.abilities[S.ability];
+  if (!ab.phases) ab.phases = [[]];
 
+  // Identity fields (name, desc, element, priority)
   document.querySelectorAll('[data-ab-field]').forEach(el => {
     el.addEventListener('change', () => {
       const f = el.dataset.abField;
-      if (f === 'healPercent' || f === 'healOnSwap') {
-        const v = parseFloat(el.value) / 100;
-        if (v === 0) delete ab[f]; else ab[f] = parseFloat(v.toFixed(4));
-      } else if (f === 'power' || f === 'hits' || f === 'priority' || f === 'healTurns') {
+      if (f === 'priority') {
         const v = parseInt(el.value);
-        if (v === 0 || v === 1 && f === 'hits') delete ab[f]; else ab[f] = v;
-      } else if (f === 'element' || f === 'effect') {
+        if (v === 0) delete ab[f]; else ab[f] = v;
+      } else if (f === 'element') {
         if (el.value === '') delete ab[f]; else ab[f] = el.value;
       } else {
         ab[f] = el.value;
       }
-      if (f === 'kind') renderContent(); // re-render form for field visibility
-      else { S.dirty.abilities = true; renderHeader(); renderTabs(); }
       S.dirty.abilities = true; renderHeader(); renderTabs();
     });
   });
 
-  document.querySelectorAll('[data-ab-statmult]').forEach(el => {
-    el.addEventListener('change', () => {
-      if (!ab.statMult) ab.statMult = {};
-      const v = parseFloat(el.value);
-      if (v === 0) delete ab.statMult[el.dataset.abStatmult];
-      else ab.statMult[el.dataset.abStatmult] = v;
-      if (Object.keys(ab.statMult).length === 0) delete ab.statMult;
-      S.dirty.abilities = true; renderHeader(); renderTabs();
-    });
-  });
-
-  document.querySelectorAll('[data-ab-buffswap]').forEach(el => {
-    el.addEventListener('change', () => {
-      if (!ab.buffOnSwap) ab.buffOnSwap = {};
-      const v = parseFloat(el.value);
-      if (v === 0) delete ab.buffOnSwap[el.dataset.abBuffswap];
-      else ab.buffOnSwap[el.dataset.abBuffswap] = v;
-      if (Object.keys(ab.buffOnSwap).length === 0) delete ab.buffOnSwap;
-      S.dirty.abilities = true; renderHeader(); renderTabs();
-    });
-  });
-
-  // Status effects — add row
-  const seAdd = document.getElementById('se-add');
-  if (seAdd) {
-    seAdd.addEventListener('click', () => {
-      if (!ab.statusEffects) ab.statusEffects = [];
-      const firstKey = Object.keys(S.statuses)[0] || '';
-      ab.statusEffects.push({ status: firstKey, targets: [] });
+  // ── Phase add / remove ─────────────────────────────────────────────────
+  const phaseAdd = document.getElementById('phase-add');
+  if (phaseAdd) {
+    phaseAdd.addEventListener('click', () => {
+      if (!ab.phases) ab.phases = [[]];
+      ab.phases.push([]);
       S.dirty.abilities = true;
       renderContent();
     });
   }
-
-  // Status effects — remove row
-  document.querySelectorAll('[data-se-remove]').forEach(btn => {
+  document.querySelectorAll('[data-phase-remove]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const i = +btn.dataset.seRemove;
-      (ab.statusEffects || []).splice(i, 1);
-      if (ab.statusEffects && ab.statusEffects.length === 0) delete ab.statusEffects;
+      const i = +btn.dataset.phaseRemove;
+      ab.phases.splice(i, 1);
+      if (ab.phases.length === 0) ab.phases = [[]];
       S.dirty.abilities = true;
       renderContent();
     });
   });
 
-  // Status effects — status select
-  document.querySelectorAll('[data-se-status]').forEach(sel => {
-    sel.addEventListener('change', () => {
-      const i = +sel.dataset.seStatus;
-      ab.statusEffects[i].status = sel.value;
-      S.dirty.abilities = true; renderHeader(); renderTabs();
-    });
-  });
-
-  // Status effects — target checkboxes
-  document.querySelectorAll('[data-se-target]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const i = +cb.dataset.seTarget;
-      const tgt = cb.dataset.tgt;
-      const se = ab.statusEffects[i];
-      if (!se.targets) se.targets = [];
-      if (cb.checked) { if (!se.targets.includes(tgt)) se.targets.push(tgt); }
-      else { se.targets = se.targets.filter(t => t !== tgt); }
-      S.dirty.abilities = true; renderHeader(); renderTabs();
-    });
-  });
-
-  bindAdditionalEffectsEvents(ab);
-}
-
-function makeAeInst(type) {
-  const schema = S.additionalEffects[type] || { params: {} };
-  const inst = { type };
-  for (const [pk, ps] of Object.entries(schema.params || {})) {
-    const d = ps.default;
-    inst[pk] = Array.isArray(d) ? [...d] : d;
-  }
-  return inst;
-}
-
-// Per-instance, schema-driven additional effects handlers.
-function bindAdditionalEffectsEvents(ab) {
-  const addBtn = document.getElementById('ae-add');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      const type = Object.keys(S.additionalEffects)[0];
-      if (!type) return;
-      if (!ab.additionalEffects) ab.additionalEffects = [];
-      ab.additionalEffects.push(makeAeInst(type));
-      S.dirty.abilities = true;
-      renderContent();
-    });
-  }
-
-  document.querySelectorAll('[data-ae-type-sel]').forEach(sel => {
-    sel.addEventListener('change', () => {
-      const i = +sel.dataset.aeTypeSel;
-      ab.additionalEffects[i] = makeAeInst(sel.value);
+  // ── Effect add (per phase) ─────────────────────────────────────────────
+  document.querySelectorAll('[data-effect-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pi = +btn.dataset.effectAdd;
+      const firstType = Object.keys(S.additionalEffects)[0];
+      if (!firstType) return;
+      ab.phases[pi].push(makeAeInst(firstType));
       S.dirty.abilities = true;
       renderContent();
     });
   });
 
+  // ── Effect remove ──────────────────────────────────────────────────────
   document.querySelectorAll('[data-ae-remove]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const i = +btn.dataset.aeRemove;
-      (ab.additionalEffects || []).splice(i, 1);
-      if (ab.additionalEffects && ab.additionalEffects.length === 0) delete ab.additionalEffects;
+      const pi = +btn.dataset.aePhase;
+      const i  = +btn.dataset.aeRemove;
+      ab.phases[pi].splice(i, 1);
       S.dirty.abilities = true;
       renderContent();
     });
   });
 
+  // ── Effect type change (replaces the instance with fresh defaults) ──
+  document.querySelectorAll('[data-ae-type-sel]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const pi = +sel.dataset.aePhase;
+      const i  = +sel.dataset.aeTypeSel;
+      ab.phases[pi][i] = makeAeInst(sel.value);
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  });
+
+  // ── Per-effect timing override ──────────────────────────────────────────
+  document.querySelectorAll('[data-ae-timing]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const pi = +sel.dataset.aePhase;
+      const i  = +sel.dataset.aeRow;
+      const eff = ab.phases[pi][i];
+      const schema = S.additionalEffects[eff.type] || {};
+      if (sel.value === schema.defaultTiming) delete eff.timing;
+      else eff.timing = sel.value;
+      S.dirty.abilities = true; renderHeader(); renderTabs();
+    });
+  });
+
+  // ── Per-param edits ────────────────────────────────────────────────────
   document.querySelectorAll('[data-ae-param]').forEach(el => {
     el.addEventListener('change', () => {
-      const i      = +el.dataset.aeRow;
+      const pi    = +el.dataset.aePhase;
+      const i     = +el.dataset.aeRow;
       const paramK = el.dataset.aeParam;
       const ptype  = el.dataset.aePtype;
-      const eff    = ab.additionalEffects[i];
+      const eff    = ab.phases[pi][i];
       if (!eff) return;
       if (ptype === 'percent') {
         eff[paramK] = parseFloat((parseFloat(el.value) / 100).toFixed(4));
       } else if (ptype === 'multiplier') {
         eff[paramK] = parseFloat(el.value);
+      } else if (ptype === 'int') {
+        eff[paramK] = parseInt(el.value) || 0;
       } else if (ptype === 'bool') {
         eff[paramK] = el.checked;
       } else if (ptype === 'status') {
@@ -767,10 +693,28 @@ function bindAdditionalEffectsEvents(ab) {
         if (!Array.isArray(eff[paramK])) eff[paramK] = [];
         if (el.checked) { if (!eff[paramK].includes(tgt)) eff[paramK].push(tgt); }
         else { eff[paramK] = eff[paramK].filter(t => t !== tgt); }
+      } else if (ptype === 'statMods') {
+        const stat = el.dataset.aeStat;
+        if (!eff[paramK] || typeof eff[paramK] !== 'object') eff[paramK] = {};
+        const v = parseFloat(el.value);
+        eff[paramK][stat] = v;
       }
       S.dirty.abilities = true; renderHeader(); renderTabs();
     });
   });
+}
+
+function makeAeInst(type) {
+  const schema = S.additionalEffects[type] || { params: {} };
+  const inst = { type };
+  for (const [pk, ps] of Object.entries(schema.params || {})) {
+    const d = ps.default;
+    if (d === undefined) continue;
+    if (Array.isArray(d))                          inst[pk] = [...d];
+    else if (d !== null && typeof d === 'object')  inst[pk] = { ...d };
+    else                                           inst[pk] = d;
+  }
+  return inst;
 }
 
 function bindStatusFormEvents() {

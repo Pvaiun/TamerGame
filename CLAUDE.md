@@ -13,7 +13,7 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `data/abilities.json` — ability dict keyed by ability id; see "Ability schema" below
 - `data/passives.json` — passive dict keyed by passive id; each entry has params + a `codeRef` string naming the function in `passives.js` that consumes them
 - `data/statuseffects.json` — burn/bloom/soaking/cursed/dazed canonical defaults
-- `data/additionaleffects.json` — schema for entries that go in an ability's `additionalEffects[]`. Each type has `label`, `desc`, and a `params` map where each param has `type` (`percent`/`multiplier`/`bool`/`status`/`targets`/`swapTargets`), `default`, and `label`. Engine reads defaults from here when an instance omits a param; the editor uses it to render add/remove rows with editable inputs per type.
+- `data/additionaleffects.json` — schema for the effect types that go in an ability's `phases[][]`. Each type has `label`, `desc`, optional `defaultTiming` (`before`/`eachHit`/`after`), optional `modifier: true` for damage-mod-only effects, optional `requires: [...]` for editor warnings, and a `params` map where each param has `type` (`percent`/`multiplier`/`int`/`bool`/`status`/`targets`/`swapTargets`/`statMods`), `default`, and `label`. Engine reads defaults from here when an instance omits a param; the editor uses it to render add/remove rows with editable inputs per type.
 
 ### Core (`src/`)
 - `state.js` — `state` singleton, `pushLog`, `resetGame`, `nextCreatureId`, constants (`TOTAL_WAVES=10`, `BREED_WAVES={3,6,9}`, `MAX_LEVEL=50`)
@@ -27,10 +27,10 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `version.js` — single-line version string
 
 ### Combat (`src/combat/`)
-- `battle.js` — orchestrator. `beginBattle`, `playerAct(abilityKey)`, `playerSwap`, `resolveAction` (the big switch on `ability.kind`), `releaseCharge`, `handleFaintsIfAny`, `finishBattleIfDone`
-- `damage.js` — `effectiveStat`, `calculateDamage`, `estimateDamage` (UI preview, deterministic)
+- `battle.js` — orchestrator. `beginBattle`, `playerAct(abilityKey)`, `playerSwap`, `resolveAction` (the phase runner: walks effects in the current phase by timing band — `before` → damage loop with `eachHit` interleaved → `after`), `handleFaintsIfAny`, `finishBattleIfDone`. Multi-phase abilities queue the next phase on `attacker.queuedAbility`.
+- `damage.js` — `effectiveStat`, `calculateDamage(attacker, defender, ability, dmgEffect, phase)`, `estimateDamage` (UI preview, deterministic)
 - `status.js` — `applyStatus`, `cleanseStatuses`, `applyHeal`, `tickStartOfTurn`, `tickFighterStatuses`
-- `abilities.js` — post-hit effect resolver. `processPostHit` → passives, `resolveAbilityEffect` → walks `ability.statusEffects[]` and `ability.additionalEffects[]`, `applyCursedOnSwap`, `handleAdditionalEffect` (per-effect switch)
+- `abilities.js` — effect dispatcher. `runTimedEffects(timing, phase, ctx)` and `runEachHitEffects(phase, ctx)` walk a phase's effects and run handlers (apply_status, buff, heal_over_time, bracing, cleanse, lifesteal, hp_cost, swap). Damage modifiers (pierce, execute_scale, status_synergy) are not handled here — `damage.js`/`passives.js` consult them during damage calc. Helpers: `effParam(eff, key)`, `applyCursedOnSwap`, `resolveTargets`.
 - `passives.js` — every passive consumer. Functions match `codeRef` in `passives.json`: `applyStatMult`, `applyPowerMult`, `checkEvasion`, `getCritMult`, `applyFlatDmgReduction`, `blocksStatus`, `modifyHeal`, `applyBattleStartPassive`, `applySwapInPassives`, `applyPostHitPassives`, `applyTurnStartPassives`, `applyBenchPassives`. Helper `hasPassive(f, key)` and local `p(key)` reads `PASSIVES[key]`.
 - `ai.js` — `aiChoose(ef, pf)` returns ability key or `'_swap'`
 
@@ -52,17 +52,25 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 ### Ability (`data/abilities.json`)
 Keyed by ability id. Fields:
 - `name`, `desc` — display
-- `kind` — one of: `attack`, `charge_attack`, `defend`, `apply_heal`, `buff`, `debuff`, `bench_support`, `swap_self`. Drives the branch in `resolveAction`.
-- `power` — base power for damage formula (attack/charge_attack)
-- `element` — `fire|water|grass|light|dark` or absent (neutral)
+- `element` — `fire|water|grass|light|dark` or absent (neutral). Ability-level metadata; the type chart applies at the ability level for all of its damage effects.
 - `priority` — turn-order tiebreaker (default 0)
-- `hits` — multi-hit count (default 1)
-- `statMult` — `{atk?, def?, spd?}` battle-long mods (buff kind)
-- `statusEffects` — `[{ status, targets: ["enemy"|"self"|"bench"|"enemy_bench"] }, ...]`
-- `additionalEffects` — `[{ type, ...overrides }, ...]`. Each entry's `type` keys into `data/additionaleffects.json`, which defines the available params + their defaults; values on the instance override the defaults. Built-in types include `hp_cost`, `swap`, `lifesteal`, `cleanse`, `execute_scale`, `pierce`, `status_synergy`. Consumed in `abilities.js` / `damage.js` / `passives.js` / `battle.js`.
-- `effect` + `effectParams` — bench_support variants
-- `buffOnSwap`, `healOnSwap` — swap_self helpers (applied to the incoming bench fighter)
-- `healPercent`, `healTurns` — apply_heal variants
+- `phases` — `[[effect, effect, ...], [...]]`. An array of phases; each phase is an array of effects. Single-turn abilities have one phase. Multi-phase abilities (formerly "charge attacks") resolve one phase per turn — phase 0 runs on first use, the next phase is queued via `attacker.queuedAbility`, and so on. Swaps / faints / forced swaps clear the queue (the ability fizzles).
+
+#### Effect (entry in `phases[i][j]`)
+`{ type, ...params, timing? }`. The `type` keys into `data/additionaleffects.json` for the schema. `timing` is one of `before` / `eachHit` / `after` (default per type). Modifier-only effects (pierce, execute_scale, status_synergy) ignore timing.
+
+Built-in effect types:
+- `damage` — power × hits, targets (default `["enemy"]`). Damage modifiers in the same phase apply.
+- `apply_status` — status, targets, optional turns / percentPerTurn override
+- `buff` — statMult `{atk?, def?, spd?}` (battle-long), targets (default `["self"]`). Negative values for debuffs.
+- `heal_over_time` — percent / turns, targets (default `["self"]`)
+- `bracing` — current-turn damage reduction on targets
+- `swap` — targets `self` / `enemy` (or both), optional `buffOnSwap` / `healOnSwap` for incoming on self-swap
+- `lifesteal` — percentOfDamage; default timing `eachHit`
+- `hp_cost` — percent of user max HP at phase start; default timing `before`
+- `cleanse` — targets, plus three booleans (`cleanseStatuses` / `cleanseBuffs` / `cleanseDebuffs`)
+- Modifiers (no timing, consulted by `calculateDamage` / `applyPowerMult`):
+  - `execute_scale` (scaleAmount), `pierce` (defReduction), `status_synergy` (status, powerMult)
 
 ### Passive (`data/passives.json`)
 Each entry has params + a `codeRef` string that names the function in `passives.js` reading them. Add a passive: add JSON entry, then either extend the named function or wire up a new one. `codeRef: "TODO"` means params exist but no implementation yet.
@@ -71,7 +79,7 @@ Each entry has params + a `codeRef` string that names the function in `passives.
 Canonical defaults (`turns`, `percentPerTurn`, etc.) read by `applyStatus` when call sites omit overrides.
 
 ### Fighter (in-battle, built by `freshFighter` in `creature.js`)
-`{ creature, hp, statMods:{atk,def,spd}, bracingThisTurn, healing, statuses:{burn,bloom,soaking,cursed,dazed}, pendingSwapBuff, pendingSwapHeal, ... }`. The underlying `creature` object is never mutated during a fight.
+`{ creature, hp, statMods:{atk,def,spd}, bracingThisTurn, healing, statuses:{burn,bloom,soaking,cursed,dazed}, queuedAbility:{key, phaseIdx}|null, pendingSwapBuff, pendingSwapHeal, ... }`. The underlying `creature` object is never mutated during a fight. `queuedAbility` is set when a multi-phase ability has remaining phases; cleared on swap or faint.
 
 ## Conventions
 - **Data over code.** New numbers belong in JSON. The pattern across the codebase: JSON entry → named function in `passives.js`/`abilities.js` reads `eff.type` or `passive.codeRef` and applies params. Avoid hardcoding magic numbers in JS — prefer adding a field to the JSON.
@@ -84,7 +92,7 @@ Canonical defaults (`turns`, `percentPerTurn`, etc.) read by `applyStatus` when 
 
 ## Adding things — checklists
 
-**New ability:** add entry in `abilities.json` (set `kind`); if it needs new behavior beyond existing kinds/effects, extend `resolveAbilityEffect` / `handleAdditionalEffect` in `combat/abilities.js`, or the relevant branch in `resolveAction` (`combat/battle.js`). Then add it to one or more `abilityPool`s in `templates.json`.
+**New ability:** add an entry in `abilities.json` with `phases: [[...]]`. Compose effects from the existing types (see Effect schema). For brand-new behavior, add a type to `additionaleffects.json` and a case to `handleEffect` in `combat/abilities.js` (or, for damage-mod-only behavior, consult it in `damage.js`/`passives.js`). Reference the ability key in one or more `abilityPool`s in `templates.json`.
 
 **New passive:** add entry with params in `passives.json` (include `codeRef`); implement the consumer in `combat/passives.js` (use `hasPassive(f, key)` + `p(key)`); reference in a species' `primaryPassive` / `secondaryPassive`.
 

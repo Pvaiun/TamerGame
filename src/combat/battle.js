@@ -7,43 +7,53 @@ import { hasPassive, applyBattleStartPassive, applySwapInPassives } from './pass
 import { effectiveStat, calculateDamage } from './damage.js';
 import { applyStatus, cleanseStatuses, applyHeal, tickStartOfTurn, tickFighterStatuses } from './status.js';
 import { aiChoose } from './ai.js';
-import { processPostHit, resolveAbilityEffect, applyCursedOnSwap, processHpCost, processSwapEffects, findEffect } from './abilities.js';
+import {
+  applyCursedOnSwap,
+  processPostHit,
+  runTimedEffects,
+  runEachHitEffects,
+  effParam,
+} from './abilities.js';
 import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
 
-// Swap the active fighter on `side` with their bench, applying buffOnSwap/healOnSwap
-// from the triggering ability. Used by swap_self abilities and by the 'swap'
-// additional effect with target=self.
-async function performSelfSwap(side, attacker, ability) {
+// Self-swap helper. Used by the `swap` effect when target=self.
+// `swapEff` is the effect instance, which carries optional buffOnSwap/healOnSwap.
+async function performSelfSwap(side, attacker, swapEff) {
   const benchFighter = side === 'player' ? state.bf : state.ebf;
   if (!benchFighter || benchFighter.hp <= 0) {
     pushLog(`${displayName(attacker.creature)} tried to swap, but no ally is ready.`, 'eff');
     return;
   }
   applyCursedOnSwap(attacker, side);
-  pushLog(`${displayName(attacker.creature)} swaps out via ${ability.name}.`, 'eff');
+  pushLog(`${displayName(attacker.creature)} swaps to the bench.`, 'eff');
   sfx('select');
   if (side === 'player') {
     const out = state.pf;
     state.pf = state.bf;
     state.bf = out;
     state.activeIdx = 1 - state.activeIdx;
-    state.pCharge = null;
+    if (state.pf) state.pf.queuedAbility = null;
   } else {
     const out = state.ef;
     state.ef = state.ebf;
     state.ebf = out;
     state.enemyActiveIdx = 1 - state.enemyActiveIdx;
     state.enemy = state.enemyParty[state.enemyActiveIdx];
-    state.eCharge = null;
+    if (state.ef) state.ef.queuedAbility = null;
   }
   const incoming = benchFighter;
-  if (ability.buffOnSwap) {
-    for (const [k, v] of Object.entries(ability.buffOnSwap)) incoming.statMods[k] += v;
-    pushLog(`${displayName(incoming.creature)} arrives bolstered.`, 'eff');
+  const buffOnSwap = swapEff?.buffOnSwap;
+  if (buffOnSwap) {
+    let any = false;
+    for (const [k, v] of Object.entries(buffOnSwap)) {
+      if (typeof v === 'number' && v !== 0) { incoming.statMods[k] = (incoming.statMods[k] || 0) + v; any = true; }
+    }
+    if (any) pushLog(`${displayName(incoming.creature)} arrives bolstered.`, 'eff');
   }
-  if (ability.healOnSwap) {
-    const amt = Math.round(incoming.creature.maxHp * ability.healOnSwap);
+  const healOnSwap = swapEff?.healOnSwap || 0;
+  if (healOnSwap > 0) {
+    const amt = Math.round(incoming.creature.maxHp * healOnSwap);
     const healed = applyHeal(incoming, amt);
     if (healed > 0) {
       spawnFloat(side, `+${healed}`, 'heal');
@@ -55,8 +65,6 @@ async function performSelfSwap(side, attacker, ability) {
   attacker.onBench = true;
 }
 
-// Battle-start passive triggers (thick_hide, dark_pact, dreadful, prepared).
-// Called once for each fighter pair when a battle begins.
 function applyBattleStartPassives(pf, ef) {
   const cbs = { applyStatus };
   applyBattleStartPassive(pf, ef, cbs);
@@ -75,8 +83,6 @@ export function beginBattle() {
   applyBattleStartPassives(state.pf, state.ef);
   if (state.bf) applyBattleStartPassives(state.bf, state.ef);
   if (state.ebf) applyBattleStartPassives(state.ebf, state.pf);
-  state.pCharge = null;
-  state.eCharge = null;
   state.log = [];
   const enemiesDesc = state.enemyParty.map(e => displayName(e)).join(' and ');
   pushLog(`Wild ${enemiesDesc} appear.`);
@@ -85,17 +91,20 @@ export function beginBattle() {
   render();
 }
 
+function fizzleQueued(f) {
+  if (!f || !f.queuedAbility) return;
+  const ab = ABILITIES[f.queuedAbility.key];
+  if (ab) pushLog(`${displayName(f.creature)}'s ${ab.name} fizzles!`, 'eff');
+  f.queuedAbility = null;
+}
+
 // High-priority swap; opponent still acts on the new active.
 export async function playerSwap() {
   if (state.acting) return;
   if (!state.bf || state.bf.hp <= 0) return;
   state.acting = true;
   applyCursedOnSwap(state.pf, 'player');
-  if (state.pf.charging) {
-    pushLog(`${displayName(state.pf.creature)}'s ${state.pf.chargeAbility.name} fizzles!`, 'eff');
-    state.pf.charging = null;
-    state.pf.chargeAbility = null;
-  }
+  fizzleQueued(state.pf);
   pushLog(`${displayName(state.pf.creature)} swaps to the bench.`, 'eff');
   sfx('select');
   const out = state.pf;
@@ -109,23 +118,16 @@ export async function playerSwap() {
   render();
   await sleep(500);
   if (state.ef.hp > 0 && state.pf.hp > 0) {
-    let releasing = false;
-    let enemyAbility;
-    if (state.ef.charging) {
-      releasing = true;
-      enemyAbility = state.ef.chargeAbility;
+    let enemyAbility, enemyPhaseIdx = 0;
+    if (state.ef.queuedAbility) {
+      enemyAbility = ABILITIES[state.ef.queuedAbility.key];
+      enemyPhaseIdx = state.ef.queuedAbility.phaseIdx;
     } else {
       enemyAbility = ABILITIES[aiChoose(state.ef, state.pf)];
     }
     tickStartOfTurn(state.ef, 'enemy');
     if (state.ef.hp > 0) {
-      if (releasing) {
-        state.ef.charging = null;
-        state.ef.chargeAbility = null;
-        await releaseCharge('enemy', state.ef, state.pf, enemyAbility);
-      } else {
-        await resolveAction('enemy', state.ef, state.pf, enemyAbility);
-      }
+      await resolveAction('enemy', state.ef, state.pf, enemyAbility, enemyPhaseIdx);
       render();
       await sleep(500);
     }
@@ -137,7 +139,6 @@ export async function playerSwap() {
   render();
 }
 
-// Force-swap to bench when active faints. Returns true if battle continues, false if ended.
 export async function handleFaintsIfAny() {
   if (state.pf.hp <= 0) {
     pushLog(`${displayName(state.pf.creature)} fainted!`, 'eff');
@@ -148,7 +149,7 @@ export async function handleFaintsIfAny() {
       state.pf = state.bf;
       state.bf = out;
       state.activeIdx = 1 - state.activeIdx;
-      state.pCharge = null;
+      if (state.pf) state.pf.queuedAbility = null;
       render();
       await sleep(700);
     } else {
@@ -167,7 +168,7 @@ export async function handleFaintsIfAny() {
       state.ebf = out;
       state.enemyActiveIdx = 1 - state.enemyActiveIdx;
       state.enemy = state.enemyParty[state.enemyActiveIdx];
-      state.eCharge = null;
+      if (state.ef) state.ef.queuedAbility = null;
       render();
       await sleep(700);
     } else {
@@ -184,26 +185,24 @@ export async function playerAct(abilityKey) {
   if (state.acting) return;
   state.acting = true;
 
-  let pReleasing = false;
-  let playerAbility;
-  if (state.pf.charging) {
-    pReleasing = true;
-    playerAbility = state.pf.chargeAbility;
+  let playerAbility, playerPhaseIdx = 0;
+  if (state.pf.queuedAbility) {
+    playerAbility = ABILITIES[state.pf.queuedAbility.key];
+    playerPhaseIdx = state.pf.queuedAbility.phaseIdx;
   } else {
     playerAbility = ABILITIES[abilityKey];
   }
 
-  let eReleasing = false;
-  let enemyAbility;
+  let enemyAbility, enemyPhaseIdx = 0;
   let enemySwapping = false;
-  if (state.ef.charging) {
-    eReleasing = true;
-    enemyAbility = state.ef.chargeAbility;
+  if (state.ef.queuedAbility) {
+    enemyAbility = ABILITIES[state.ef.queuedAbility.key];
+    enemyPhaseIdx = state.ef.queuedAbility.phaseIdx;
   } else {
     const enemyKey = aiChoose(state.ef, state.pf);
     if (enemyKey === '_swap') {
       enemySwapping = true;
-      enemyAbility = { name: 'Swap', kind: 'swap_self', priority: 3 };
+      enemyAbility = { name: 'Swap', priority: 3, phases: [[]] };
     } else {
       enemyAbility = ABILITIES[enemyKey];
     }
@@ -222,11 +221,11 @@ export async function playerAct(abilityKey) {
     else pFirst = Math.random() < 0.5;
   }
 
-  const playerTurn = ['player', pReleasing, false, playerAbility];
-  const enemyTurn  = ['enemy',  eReleasing, enemySwapping, enemyAbility];
+  const playerTurn = ['player', false, playerAbility, playerPhaseIdx];
+  const enemyTurn  = ['enemy',  enemySwapping, enemyAbility, enemyPhaseIdx];
   const order = pFirst ? [playerTurn, enemyTurn] : [enemyTurn, playerTurn];
 
-  for (const [side, releasing, swapping, ability] of order) {
+  for (const [side, swapping, ability, phaseIdx] of order) {
     if (state.pf.hp <= 0 || state.ef.hp <= 0) break;
     const attacker = side === 'player' ? state.pf : state.ef;
     const defender = side === 'player' ? state.ef : state.pf;
@@ -234,11 +233,7 @@ export async function playerAct(abilityKey) {
     if (attacker.hp <= 0) break;
     if (swapping) {
       applyCursedOnSwap(state.ef, 'enemy');
-      if (state.ef.charging) {
-        pushLog(`${displayName(state.ef.creature)}'s ${state.ef.chargeAbility.name} fizzles!`, 'eff');
-        state.ef.charging = null;
-        state.ef.chargeAbility = null;
-      }
+      fizzleQueued(state.ef);
       pushLog(`${displayName(state.ef.creature)} swaps to its bench.`, 'eff');
       const out = state.ef;
       state.ef = state.ebf;
@@ -246,12 +241,8 @@ export async function playerAct(abilityKey) {
       state.enemyActiveIdx = 1 - state.enemyActiveIdx;
       state.enemy = state.enemyParty[state.enemyActiveIdx];
       sfx('select');
-    } else if (releasing) {
-      attacker.charging = null;
-      attacker.chargeAbility = null;
-      await releaseCharge(side, attacker, defender, ability);
     } else {
-      await resolveAction(side, attacker, defender, ability);
+      await resolveAction(side, attacker, defender, ability, phaseIdx);
     }
     render();
     await sleep(550);
@@ -267,130 +258,106 @@ export async function playerAct(abilityKey) {
   render();
 }
 
-export async function resolveAction(side, attacker, defender, ability) {
+// Run a single phase of an ability. Effects are grouped by timing:
+//   1. "before" effects (hp_cost, buff, etc.)
+//   2. dazed check (50% skip)
+//   3. damage effects, in declaration order; "eachHit" effects fire after each landed hit
+//   4. "after" effects (apply_status, swap, etc.)
+// Multi-phase abilities queue the next phase on the attacker via attacker.queuedAbility.
+export async function resolveAction(side, attacker, defender, ability, phaseIdx = 0) {
   const oside = side === 'player' ? 'enemy' : 'player';
-  processHpCost(side, attacker, ability);
+  const phases = ability.phases || [[]];
+  const phase = phases[phaseIdx] || [];
+  const helpers = { performSelfSwap };
+  const baseCtx = { side, oside, attacker, defender, helpers, lastDmg: 0 };
+
+  // Phase log line
+  if (phases.length > 1) {
+    if (phaseIdx === 0)                     pushLog(`${displayName(attacker.creature)} prepares ${ability.name}!`, 'eff');
+    else if (phaseIdx === phases.length - 1) pushLog(`${displayName(attacker.creature)} unleashes ${ability.name}!`, 'eff');
+    else                                     pushLog(`${displayName(attacker.creature)} continues ${ability.name}.`, 'eff');
+  } else {
+    pushLog(`${displayName(attacker.creature)} uses ${ability.name}.`);
+  }
+
+  // 1. Before-timed effects.
+  runTimedEffects('before', phase, baseCtx);
+
+  // 2. Dazed check.
   if (attacker.statuses && attacker.statuses.dazed && Math.random() < 0.5) {
     pushLog(`${displayName(attacker.creature)} is dazed and can't act!`, 'eff');
+    advanceQueue(attacker, ability, phaseIdx);
     return;
   }
-  if (ability.kind === 'attack') {
-    pushLog(`${displayName(attacker.creature)} uses ${ability.name}.`);
+
+  // 3. Damage effects (and eachHit-timed effects per landed hit).
+  const dmgEffects = phase.filter(e => e.type === 'damage');
+  if (dmgEffects.length > 0) {
     playLunge(side);
     await sleep(180);
-    const hits = ability.hits || 1;
-    for (let h = 0; h < hits; h++) {
-      if (defender.hp <= 0) break;
-      const result = calculateDamage(attacker, defender, ability);
-      if (result.evaded) {
-        spawnFloat(oside, 'EVADE', 'heal');
-        sfx('select');
-        pushLog(`${displayName(defender.creature)} evades the attack!`, 'eff');
-        continue;
+  }
+  for (const dmgEff of dmgEffects) {
+    const targetKeys = effParam(dmgEff, 'targets') || ['enemy'];
+    const hits = effParam(dmgEff, 'hits') || 1;
+    // For each target the damage effect names, run the hit loop.
+    for (const tk of targetKeys) {
+      const targetSide = (tk === 'self' || tk === 'bench') ? side : oside;
+      const fighters = resolveTargetsForDamage(tk, side, attacker, defender);
+      for (const target of fighters) {
+        for (let h = 0; h < hits; h++) {
+          if (target.hp <= 0 || attacker.hp <= 0) break;
+          const result = calculateDamage(attacker, target, ability, dmgEff, phase);
+          if (result.evaded) {
+            spawnFloat(targetSide, 'EVADE', 'heal');
+            sfx('select');
+            pushLog(`${displayName(target.creature)} evades the attack!`, 'eff');
+            continue;
+          }
+          target.hp = Math.max(0, target.hp - result.dmg);
+          spawnFloat(targetSide, String(result.dmg), result.crit ? 'crit' : 'dmg');
+          if (h === 0) {
+            if (result.mult > 1) spawnCallout('SUPER EFFECTIVE');
+            else if (result.mult < 1) spawnCallout('NOT VERY...');
+          }
+          if (result.crit) sfx('crit'); else sfx('hit');
+          shakeStage(); playRecoil(targetSide);
+          pushLog(`Deals ${result.dmg} damage${result.crit ? ' (CRIT)' : ''}.${result.mult > 1 ? ' Super effective!' : result.mult < 1 ? ' Not very effective.' : ''}`, result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : ''));
+          processPostHit(side, oside, attacker, target, ability, result);
+          runEachHitEffects(phase, { ...baseCtx, defender: target, lastDmg: result.dmg });
+          if (h < hits - 1) await sleep(220);
+        }
       }
-      defender.hp = Math.max(0, defender.hp - result.dmg);
-      spawnFloat(oside, String(result.dmg), result.crit ? 'crit' : 'dmg');
-      if (h === 0) {
-        if (result.mult > 1) spawnCallout('SUPER EFFECTIVE');
-        else if (result.mult < 1) spawnCallout('NOT VERY...');
-      }
-      if (result.crit) sfx('crit'); else sfx('hit');
-      shakeStage(); playRecoil(oside);
-      pushLog(`Deals ${result.dmg} damage${result.crit ? ' (CRIT)' : ''}.${result.mult > 1 ? ' Super effective!' : result.mult < 1 ? ' Not very effective.' : ''}`, result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : ''));
-      processPostHit(side, oside, attacker, defender, ability, result);
-      resolveAbilityEffect(side, oside, attacker, defender, ability, result);
-      if (h < hits - 1) await sleep(220);
-    }
-    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
-  } else if (ability.kind === 'defend') {
-    attacker.bracingThisTurn = true;
-    pushLog(`${displayName(attacker.creature)} braces.`);
-    sfx('select');
-  } else if (ability.kind === 'apply_heal') {
-    if (ability.healPercent && ability.healTurns) {
-      const perTurn = Math.max(1, Math.round(attacker.creature.maxHp * ability.healPercent));
-      attacker.healing = { perTurn, turnsLeft: ability.healTurns };
-      pushLog(`${displayName(attacker.creature)} begins healing (+${perTurn}/turn for ${ability.healTurns}).`);
-    }
-    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
-    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
-    sfx('heal');
-  } else if (ability.kind === 'buff') {
-    for (const [k, v] of Object.entries(ability.statMult || {})) attacker.statMods[k] += v;
-    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
-    const hasCleanse = !!findEffect(ability, 'cleanse');
-    if (!hasCleanse) pushLog(`${displayName(attacker.creature)} channels ${ability.name}.`);
-    sfx(hasCleanse ? 'heal' : 'select');
-    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
-  } else if (ability.kind === 'debuff') {
-    pushLog(`${displayName(attacker.creature)} casts ${ability.name}.`);
-    sfx('select');
-    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
-    processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
-  } else if (ability.kind === 'charge_attack') {
-    if (!attacker.charging) {
-      attacker.charging = ability.key || ability;
-      attacker.chargeAbility = ability;
-      pushLog(`${displayName(attacker.creature)} is charging ${ability.name}!`, 'eff');
-      sfx('select');
-    } else {
-      attacker.charging = null;
-      attacker.chargeAbility = null;
-      await releaseCharge(side, attacker, defender, ability);
-    }
-  } else if (ability.kind === 'swap_self') {
-    await performSelfSwap(side, attacker, ability);
-  } else if (ability.kind === 'bench_support') {
-    const benchFighter = side === 'player' ? state.bf : state.ebf;
-    if (!benchFighter) {
-      pushLog(`${displayName(attacker.creature)} casts ${ability.name}, but has no ally to support.`, 'eff');
-      return;
-    }
-    pushLog(`${displayName(attacker.creature)} aids the bench with ${ability.name}.`, 'eff');
-    sfx('heal');
-    if (ability.effect === 'bench_bloom') {
-      applyStatus(benchFighter, 'bloom', { turns: 4, pct: 0.06 });
-    } else if (ability.effect === 'bench_buff_atk') {
-      benchFighter.statMods.atk += 0.25;
-    } else if (ability.effect === 'bench_buff_def') {
-      benchFighter.statMods.def += 0.30;
-    } else if (ability.effect === 'bench_cleanse') {
-      cleanseStatuses(benchFighter);
-    } else if (ability.effect === 'bench_heal') {
-      const healed = applyHeal(benchFighter, Math.round(benchFighter.creature.maxHp * 0.30));
-      if (healed > 0) pushLog(`${displayName(benchFighter.creature)} heals ${healed} on the bench.`);
     }
   }
+
+  // 4. After-timed effects.
+  runTimedEffects('after', phase, baseCtx);
+
+  // Advance phase queue.
+  advanceQueue(attacker, ability, phaseIdx);
 }
 
-export async function releaseCharge(side, attacker, defender, ability) {
-  const oside = side === 'player' ? 'enemy' : 'player';
-  pushLog(`${displayName(attacker.creature)} unleashes ${ability.name}!`, 'eff');
-  playLunge(side);
-  await sleep(220);
-  if (ability.power && ability.power > 0) {
-    const hits = ability.hits || 1;
-    for (let h = 0; h < hits; h++) {
-      if (defender.hp <= 0) break;
-      const result = calculateDamage(attacker, defender, ability);
-      if (result.evaded) {
-        spawnFloat(oside, 'EVADE', 'heal');
-        sfx('select');
-        pushLog(`${displayName(defender.creature)} evades!`, 'eff');
-        continue;
-      }
-      defender.hp = Math.max(0, defender.hp - result.dmg);
-      spawnFloat(oside, String(result.dmg), result.crit ? 'crit' : 'dmg');
-      if (result.crit) sfx('crit'); else sfx('hit');
-      shakeStage(); playRecoil(oside);
-      pushLog(`Deals ${result.dmg} damage${result.crit ? ' (CRIT)' : ''}.`, result.crit ? 'crit' : '');
-      processPostHit(side, oside, attacker, defender, ability, result);
-      resolveAbilityEffect(side, oside, attacker, defender, ability, result);
-    }
+// Resolve a target key into the corresponding fighter list for damage. Mirrors
+// resolveTargets in abilities.js but is duplicated here to avoid a circular dep
+// while keeping damage routing local.
+function resolveTargetsForDamage(targetKey, side, attacker, defender) {
+  const ownBench   = side === 'player' ? state.bf  : state.ebf;
+  const enemyBench = side === 'player' ? state.ebf : state.bf;
+  if (targetKey === 'self')        return attacker.hp > 0 ? [attacker] : [];
+  if (targetKey === 'bench')       return ownBench && ownBench.hp > 0 ? [ownBench] : [];
+  if (targetKey === 'enemy')       return defender && defender.hp > 0 ? [defender] : [];
+  if (targetKey === 'enemy_bench') return enemyBench && enemyBench.hp > 0 ? [enemyBench] : [];
+  return [];
+}
+
+function advanceQueue(attacker, ability, phaseIdx) {
+  const phases = ability.phases || [];
+  if (phaseIdx + 1 < phases.length && attacker.hp > 0) {
+    const key = Object.keys(ABILITIES).find(k => ABILITIES[k] === ability);
+    attacker.queuedAbility = { key, phaseIdx: phaseIdx + 1 };
   } else {
-    resolveAbilityEffect(side, oside, attacker, defender, ability, { dmg: 0 });
+    attacker.queuedAbility = null;
   }
-  processSwapEffects(side, oside, attacker, defender, ability, { performSelfSwap });
 }
 
 export function finishBattleIfDone() {
@@ -400,12 +367,10 @@ export function finishBattleIfDone() {
     render();
     return;
   }
-  // XP based on sum of enemy levels — high-level kills pay big.
   const totalEnemyLevel = state.enemyParty.reduce((sum, e) => sum + e.level, 0);
   const xpGained = Math.round(totalEnemyLevel * 6 + 20);
   const xpReports = [];
   let anyLeveled = false;
-  // Award XP to ALL party members AND ALL reserve creatures.
   const allCreatures = [...state.party, ...state.reserve];
   for (const c of allCreatures) {
     const events = gainXp(c, xpGained);
