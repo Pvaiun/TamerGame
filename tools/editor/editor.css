@@ -193,3 +193,35 @@ select option { background: var(--surface); color: var(--text); font-weight: 400
 .ae-param.ae-bool { gap: 4px; cursor: pointer; }
 .ae-param.ae-targets { flex-direction: column; align-items: flex-start; gap: 3px; }
 .ae-param input[type="number"] { width: 64px; }
+
+/* ── Mobile / narrow viewport ── */
+@media (max-width: 720px) {
+  body { font-size: 14px; }
+  #header { flex-wrap: wrap; padding: 6px 8px; gap: 6px; }
+  .header-controls { width: 100%; flex-wrap: wrap; margin-left: 0; }
+  #pat-input, #branch-input { flex: 1; min-width: 100px; width: auto; }
+  #tabs { padding: 4px 4px 0; flex-wrap: wrap; }
+  .tab { padding: 6px 10px; font-size: 12px; }
+
+  /* Stack list above detail panel; cap list height so the form is reachable. */
+  #content { flex-direction: column; }
+  .list-panel { width: 100%; max-height: 35vh; border-right: none; border-bottom: 1px solid var(--border); }
+  .detail-panel { padding: 10px; }
+
+  /* Forms: let labels sit above inputs so long descriptions inside selects have room. */
+  .form-row { flex-wrap: wrap; gap: 4px 8px; }
+  .form-row label { min-width: 0; flex: 0 0 100%; }
+  .form-row input[type=text], .form-row select, .form-row textarea { flex: 1 1 100%; min-width: 0; }
+  .form-row input[type=number] { width: 100%; max-width: 140px; }
+
+  /* Stat grids fall back to 2 columns. */
+  .stat-grid, .stat-grid-narrow { grid-template-columns: repeat(2, 1fr); }
+
+  /* Effect rows: keep the select on its own line on mobile so long names + descriptions are legible. */
+  .ae-row-head { flex-wrap: wrap; }
+  .ae-row-head select { flex: 1 1 100%; }
+  .ae-row-params { gap: 6px 10px; }
+
+  /* Modal needs to fit on small screens. */
+  .modal { min-width: 0; width: calc(100vw - 24px); max-width: 480px; }
+}

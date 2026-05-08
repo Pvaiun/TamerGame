@@ -167,9 +167,8 @@ function boldify(str) {
 
 function passiveOption(p, k, selected) {
   const desc = (p.desc || '').replace(/"/g, '&quot;');
-  // Append the full first sentence so users see what each passive does at a glance.
-  const short = (p.desc || '').split(/[.\n]/)[0].trim();
-  return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${boldify(p.name)}${short ? ' — ' + short : ''}</option>`;
+  const full = (p.desc || '').replace(/\s+/g, ' ').trim();
+  return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${boldify(p.name)}${full ? ' — ' + full : ''}</option>`;
 }
 
 function monsterFormHTML(t) {
@@ -195,9 +194,9 @@ function monsterFormHTML(t) {
       .filter(ak => ak === k || !pool.includes(ak))
       .map(ak => {
         const a2 = S.abilities[ak];
-        const short = (a2.desc || '').split(/[.\n]/)[0].trim();
+        const full = (a2.desc || '').replace(/\s+/g, ' ').trim();
         const titleAttr = (a2.desc || '').replace(/"/g, '&quot;');
-        return `<option value="${ak}" title="${titleAttr}" ${ak === k ? 'selected' : ''}>${boldify(a2.name)}${short ? ' — ' + short : ''}</option>`;
+        return `<option value="${ak}" title="${titleAttr}" ${ak === k ? 'selected' : ''}>${boldify(a2.name)}${full ? ' — ' + full : ''}</option>`;
       }).join('');
     return `
       <div class="ae-row" data-pool-idx="${i}">
@@ -393,8 +392,8 @@ function effectRowHTML(eff, phaseIdx, effIdx) {
     .join('');
   const typeOpts = typeKeys.map(k => {
     const s = S.additionalEffects[k];
-    const short = (s?.desc || '').split(/[.\n]/)[0].trim();
-    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${boldify(s?.label || k)}${short ? ' — ' + short : ''}</option>`;
+    const full = (s?.desc || '').replace(/\s+/g, ' ').trim();
+    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${boldify(s?.label || k)}${full ? ' — ' + full : ''}</option>`;
   }).join('');
   const desc = (schema.desc || '').replace(/"/g, '&quot;');
 
