@@ -322,8 +322,7 @@ function aeParamHTML(rowIdx, paramKey, schema, current) {
 
 function additionalEffectsFormHTML(ab) {
   const list = ab.additionalEffects || [];
-  const aeOpts = Object.entries(S.additionalEffects).map(([k, d]) =>
-    `<option value="${k}">${d.label || k}</option>`).join('');
+  const typeKeys = Object.keys(S.additionalEffects);
 
   const rows = list.map((eff, i) => {
     const schema = S.additionalEffects[eff.type] || { label: eff.type, params: {} };
@@ -331,27 +330,26 @@ function additionalEffectsFormHTML(ab) {
     const paramRows = Object.entries(params)
       .map(([pk, ps]) => aeParamHTML(i, pk, ps, aeParamCurrent(eff, pk, ps)))
       .join('');
+    const typeOpts = typeKeys.map(k =>
+      `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${S.additionalEffects[k]?.label || k}</option>`
+    ).join('');
     const desc = (schema.desc || '').replace(/"/g, '&quot;');
     return `
       <div class="ae-row" data-ae-idx="${i}">
         <div class="ae-row-head">
-          <strong title="${desc}">${schema.label || eff.type}</strong>
-          <span class="ae-row-key">${eff.type}</span>
+          <select data-ae-type-sel="${i}" title="${desc}">${typeOpts}</select>
           <button class="btn-icon" data-ae-remove="${i}">✕</button>
         </div>
         ${paramRows ? `<div class="ae-row-params">${paramRows}</div>` : ''}
       </div>`;
   }).join('');
 
-  const addDisabled = Object.keys(S.additionalEffects).length === 0 ? 'disabled' : '';
+  const addDisabled = typeKeys.length === 0 ? 'disabled' : '';
   return `
     <div class="form-section">
       <div class="form-section-title">Additional Effects <span style="color:var(--text-muted);font-size:10px;font-weight:400">(types defined in additionaleffects.json)</span></div>
       <div id="ae-list">${rows}</div>
-      <div class="ae-add-row">
-        <select id="ae-add-type" ${addDisabled}>${aeOpts}</select>
-        <button class="btn btn-secondary btn-sm" id="ae-add" ${addDisabled}>+ Add additional effect</button>
-      </div>
+      <button class="btn btn-secondary btn-sm" id="ae-add" ${addDisabled}>+ Add additional effect</button>
     </div>`;
 }
 
@@ -706,26 +704,38 @@ function bindAbilityFormEvents() {
   bindAdditionalEffectsEvents(ab);
 }
 
-// New (per-instance, schema-driven) additional effects handlers.
+function makeAeInst(type) {
+  const schema = S.additionalEffects[type] || { params: {} };
+  const inst = { type };
+  for (const [pk, ps] of Object.entries(schema.params || {})) {
+    const d = ps.default;
+    inst[pk] = Array.isArray(d) ? [...d] : d;
+  }
+  return inst;
+}
+
+// Per-instance, schema-driven additional effects handlers.
 function bindAdditionalEffectsEvents(ab) {
   const addBtn = document.getElementById('ae-add');
-  const addSel = document.getElementById('ae-add-type');
-  if (addBtn && addSel) {
+  if (addBtn) {
     addBtn.addEventListener('click', () => {
-      const type = addSel.value;
+      const type = Object.keys(S.additionalEffects)[0];
       if (!type) return;
       if (!ab.additionalEffects) ab.additionalEffects = [];
-      const schema = S.additionalEffects[type] || { params: {} };
-      const inst = { type };
-      for (const [pk, ps] of Object.entries(schema.params || {})) {
-        const d = ps.default;
-        inst[pk] = Array.isArray(d) ? [...d] : d;
-      }
-      ab.additionalEffects.push(inst);
+      ab.additionalEffects.push(makeAeInst(type));
       S.dirty.abilities = true;
       renderContent();
     });
   }
+
+  document.querySelectorAll('[data-ae-type-sel]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.aeTypeSel;
+      ab.additionalEffects[i] = makeAeInst(sel.value);
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  });
 
   document.querySelectorAll('[data-ae-remove]').forEach(btn => {
     btn.addEventListener('click', () => {
