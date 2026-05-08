@@ -73,10 +73,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .form-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .form-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .form-row label { font-size: 12px; color: var(--text-dim); min-width: 90px; flex-shrink: 0; }
-.form-row input[type=text], .form-row input[type=number], .form-row textarea, .form-row select {
+.form-row input[type=text], .form-row input[type=number], .form-row textarea {
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
   padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: inherit;
 }
+
+/* Unified select styling: accent-blue text + border so dropdowns stand out across all panels (passives, ability pool, effect type, etc.). */
+select {
+  background: var(--surface); border: 1px solid var(--accent-dim); color: var(--accent);
+  padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: inherit; font-weight: 500;
+  cursor: pointer;
+}
+select:hover { border-color: var(--accent); }
+select:focus { outline: none; border-color: var(--accent); }
+select option { background: var(--surface); color: var(--text); font-weight: 400; }
 .form-row input[type=number] { width: 80px; }
 .form-row input[type=text], .form-row select { flex: 1; }
 .form-row textarea { flex: 1; resize: vertical; min-height: 52px; line-height: 1.4; }
@@ -177,7 +187,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .ae-list { display: flex; flex-direction: column; gap: 6px; min-height: 4px; }
 .ae-row { border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; background: rgba(255,255,255,0.02); }
 .ae-row-head { display: flex; align-items: center; gap: 6px; }
-.ae-row-head select { flex: 1; font-size: 12px; font-weight: 600; }
+.ae-row-head select { flex: 1; min-width: 0; }
 .ae-row-params { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
 .ae-param { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-dim); }
 .ae-param.ae-bool { gap: 4px; cursor: pointer; }
