@@ -1,20 +1,26 @@
 import Phaser from 'phaser';
 import { renderCreatureSvg } from '../../art.js';
 
-const ANCHORS = {
-  p:  { selector: '#p-actor',              mirror: false, alpha: 1.0 },
-  e:  { selector: '#e-actor',              mirror: true,  alpha: 1.0 },
-  pb: { selector: '.stage-bench.player',   mirror: false, alpha: 0.5 },
-  eb: { selector: '.stage-bench.enemy',    mirror: true,  alpha: 0.5 },
+const SLOTS = {
+  p:  { side: 'player', kind: 'main',  mirror: false, alpha: 1.0 },
+  e:  { side: 'enemy',  kind: 'main',  mirror: true,  alpha: 1.0 },
+  pb: { side: 'player', kind: 'bench', mirror: false, alpha: 0.5 },
+  eb: { side: 'enemy',  kind: 'bench', mirror: true,  alpha: 0.5 },
 };
 
 const TEX_RES = 280;
+const ACTOR_BOX = 140;
+const BENCH_BOX = 70;
+const ACTOR_OFFSET_X = 30;   // px from stage edge
+const ACTOR_OFFSET_Y = 24;   // px from stage bottom
+const BENCH_OFFSET_X = 0;
+const BENCH_OFFSET_Y = 40;
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
 
   create() {
-    this.sprites = {};
+    this.slots = {};
     this.creatureKeys = {};
     this.pendingTextures = new Set();
   }
@@ -27,18 +33,18 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clearCombatants() {
-    for (const k of Object.keys(this.sprites)) this.removeSprite(k);
+    for (const k of Object.keys(this.slots)) this.removeSlot(k);
   }
 
   upsert(key, creature) {
-    if (!creature) { this.removeSprite(key); return; }
+    if (!creature) { this.removeSlot(key); return; }
     if (this.creatureKeys[key] === creature.id) return;
-    this.removeSprite(key);
+    this.removeSlot(key);
     this.creatureKeys[key] = creature.id;
     const texKey = `creature_${creature.id}`;
     const finish = () => {
       if (this.creatureKeys[key] !== creature.id) return;
-      this.makeSprite(key, texKey);
+      this.makeSlot(key, texKey);
     };
     if (this.textures.exists(texKey)) finish();
     else this.loadCreatureTexture(texKey, creature, finish);
@@ -64,33 +70,100 @@ export class BattleScene extends Phaser.Scene {
     this.textures.addBase64(texKey, dataUrl);
   }
 
-  makeSprite(key, texKey) {
-    const info = ANCHORS[key];
-    const s = this.add.image(0, 0, texKey);
-    s.setOrigin(0.5, 0.5);
-    if (info.mirror) s.setFlipX(true);
-    s.setAlpha(info.alpha);
-    s.setVisible(false);
-    this.sprites[key] = s;
+  makeSlot(key, texKey) {
+    const info = SLOTS[key];
+    const container = this.add.container(0, 0);
+    container.setVisible(false);
+    const sprite = this.add.image(0, 0, texKey);
+    sprite.setOrigin(0.5, 1.0);
+    if (info.mirror) sprite.setFlipX(true);
+    sprite.setAlpha(info.alpha);
+    container.add(sprite);
+
+    const idleAmpl = info.kind === 'main' ? 4 : 2;
+    const idleDur  = info.kind === 'main' ? 1300 : 1700;
+    const idleTween = this.tweens.add({
+      targets: sprite,
+      y: { from: 0, to: -idleAmpl },
+      duration: idleDur,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.slots[key] = { container, sprite, idleTween, info, actionTween: null };
   }
 
-  removeSprite(key) {
-    if (this.sprites[key]) { this.sprites[key].destroy(); delete this.sprites[key]; }
+  removeSlot(key) {
+    const slot = this.slots[key];
+    if (slot) {
+      slot.idleTween?.stop();
+      slot.actionTween?.stop();
+      slot.container.destroy();
+    }
+    delete this.slots[key];
     delete this.creatureKeys[key];
   }
 
+  lunge(side) {
+    const key = side === 'player' ? 'p' : 'e';
+    const slot = this.slots[key];
+    if (!slot) return;
+    const dir = side === 'player' ? 1 : -1;
+    slot.actionTween?.stop();
+    slot.actionTween = this.tweens.add({
+      targets: slot.sprite,
+      x: { from: 0, to: 40 * dir },
+      duration: 170,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onComplete: () => { slot.sprite.x = 0; slot.actionTween = null; },
+    });
+  }
+
+  recoil(side) {
+    const key = side === 'player' ? 'p' : 'e';
+    const slot = this.slots[key];
+    if (!slot) return;
+    const dir = side === 'player' ? -1 : 1;
+    slot.actionTween?.stop();
+    slot.actionTween = this.tweens.add({
+      targets: slot.sprite,
+      x: { from: 0, to: 12 * dir },
+      duration: 100,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onComplete: () => { slot.sprite.x = 0; slot.actionTween = null; },
+    });
+  }
+
+  shake() {
+    this.cameras.main.shake(360, 0.005);
+  }
+
   update() {
-    for (const [key, info] of Object.entries(ANCHORS)) {
-      const sprite = this.sprites[key];
-      if (!sprite) continue;
-      const el = document.querySelector(info.selector);
-      if (!el) { sprite.setVisible(false); continue; }
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) { sprite.setVisible(false); continue; }
-      const scale = Math.min(rect.width / TEX_RES, rect.height / TEX_RES);
-      sprite.setVisible(true);
-      sprite.setScale(scale);
-      sprite.setPosition(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    const stageEl = document.getElementById('stage');
+    if (!stageEl) {
+      for (const slot of Object.values(this.slots)) slot.container.setVisible(false);
+      return;
+    }
+    const r = stageEl.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) {
+      for (const slot of Object.values(this.slots)) slot.container.setVisible(false);
+      return;
+    }
+    const positions = {
+      p:  { x: r.left  + ACTOR_OFFSET_X + ACTOR_BOX / 2, y: r.bottom - ACTOR_OFFSET_Y },
+      e:  { x: r.right - ACTOR_OFFSET_X - ACTOR_BOX / 2, y: r.bottom - ACTOR_OFFSET_Y },
+      pb: { x: r.left  + BENCH_OFFSET_X + BENCH_BOX / 2, y: r.bottom - BENCH_OFFSET_Y },
+      eb: { x: r.right - BENCH_OFFSET_X - BENCH_BOX / 2, y: r.bottom - BENCH_OFFSET_Y },
+    };
+    for (const [key, slot] of Object.entries(this.slots)) {
+      const pos = positions[key];
+      slot.container.setPosition(pos.x, pos.y);
+      slot.container.setVisible(true);
+      const boxH = slot.info.kind === 'main' ? ACTOR_BOX : BENCH_BOX;
+      slot.sprite.setScale(boxH / TEX_RES);
     }
   }
 }

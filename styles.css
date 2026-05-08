@@ -179,29 +179,6 @@
     position: relative; height: 220px;
     border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 12px;
   }
-  .stage-actor { position: absolute; bottom: 24px; width: 140px; height: 140px; transition: transform 0.18s; }
-  .stage-actor.player { left: 30px; transform-origin: bottom center; }
-  .stage-actor.enemy  { right: 30px; transform-origin: bottom center; }
-  /* Anchor boxes for canvas-rendered bench creatures. Sprite alpha is set in Phaser. */
-  .stage-bench { position: absolute; bottom: 40px; width: 70px; height: 70px; pointer-events: none; }
-  .stage-bench.player { left: 0px; }
-  .stage-bench.enemy  { right: 0px; }
-  .stage-actor.player.lunge { animation: lunge-r 0.34s ease-out; }
-  .stage-actor.enemy.lunge  { animation: lunge-l 0.34s ease-out; }
-  .stage-actor.recoil { animation: recoil 0.32s ease-out; }
-  @keyframes lunge-r { 0%{transform:translateX(0)} 50%{transform:translateX(40px)} 100%{transform:translateX(0)} }
-  @keyframes lunge-l { 0%{transform:translateX(0)} 50%{transform:translateX(-40px)} 100%{transform:translateX(0)} }
-  @keyframes recoil { 0%{transform:translateX(0)} 30%{transform:translateX(var(--rx, 12px))} 100%{transform:translateX(0)} }
-  .stage-actor.idle { animation: bob 2.6s ease-in-out infinite; }
-  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-  .stage.shake { animation: shake 0.36s; }
-  @keyframes shake {
-    0%,100% { transform: translate(0, 0); }
-    20% { transform: translate(-3px, 1px); }
-    40% { transform: translate(3px, -1px); }
-    60% { transform: translate(-2px, 2px); }
-    80% { transform: translate(2px, -2px); }
-  }
   .floating { position: absolute; font-weight: bold; font-size: 26px; pointer-events: none; animation: float-up 0.95s forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 5; }
   .floating.crit { font-size: 32px; color: #ffcc55; }
   .floating.heal { color: #66ee99; }
@@ -369,7 +346,6 @@
     .header-stat-label { font-size: 8px; letter-spacing: 1px; }
     .header-stat-value { font-size: 13px; }
     .battle-hud { grid-template-columns: 1fr; gap: 8px; }
-    .stage-actor { width: 110px; height: 110px; }
   }
 
   /* breeding flow */
