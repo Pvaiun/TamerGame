@@ -5,6 +5,18 @@ import { hasPassive, applyPostHitPassives } from './passives.js';
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
 
+// Read a param from an additional-effect instance, falling back to the schema default.
+export function effParam(eff, paramKey) {
+  if (eff[paramKey] !== undefined) return eff[paramKey];
+  const schema = ADDITIONAL_EFFECTS[eff.type];
+  return schema && schema.params && schema.params[paramKey] ? schema.params[paramKey].default : undefined;
+}
+
+// Find the first additional effect of a given type on an ability.
+export function findEffect(ability, type) {
+  return (ability.additionalEffects || []).find(e => e.type === type) || null;
+}
+
 // Apply the cursed-on-swap penalty if the swapping-out fighter has cursed status.
 // Returns the damage dealt (could be 0 if not cursed). Used by both player and enemy swaps.
 export function applyCursedOnSwap(f, side) {
@@ -71,74 +83,97 @@ export function resolveAbilityEffect(side, oside, attacker, defender, ability, r
   }
 
   // ── Additional (non-status) effects ─────────────────────────────────────
+  // Note: hp_cost is applied at the start of resolveAction; swap is processed once
+  // after the action by processSwapEffects. Both are skipped here.
   for (const eff of (ability.additionalEffects || [])) {
     handleAdditionalEffect(eff, side, oside, attacker, defender, result);
   }
 }
 
 function handleAdditionalEffect(eff, side, oside, attacker, defender, result) {
-  const cfg = ADDITIONAL_EFFECTS[eff] || {};
-  switch (eff) {
-    case 'burn_stacking': {
-      const cur = defender.statuses.burn ? defender.statuses.burn.turns : 0;
-      applyStatus(defender, 'burn', { turns: Math.max(cfg.minTurns, cur + cfg.extendTurns), pct: cfg.burnPct });
-      pushLog(`${displayName(defender.creature)}'s burn smolders deeper.`);
-      break;
-    }
-    case 'cursed_synergy':
-      // Bonus damage if target is already cursed — handled in damage.js; no status apply here.
-      break;
-    case 'soaking_double':
-      applyStatus(defender, 'soaking', { stacks: cfg.stacks, turns: cfg.turns });
-      pushLog(`${displayName(defender.creature)} is heavily soaked.`);
-      break;
-    case 'execute_scale':
-      // Damage scaling by missing HP is handled upstream in damage calculation.
-      break;
-    case 'lifesteal_strong':
-    case 'lifesteal_full': {
-      const healed = applyHeal(attacker, Math.round(result.dmg * (cfg.lifestealPct ?? 1)));
+  switch (eff.type) {
+    case 'lifesteal': {
+      const pct = effParam(eff, 'percentOfDamage');
+      const healed = applyHeal(attacker, Math.round(result.dmg * pct));
       if (healed > 0) {
         spawnFloat(side, `+${healed}`, 'heal');
         pushLog(`${displayName(attacker.creature)} drains ${healed}.`);
       }
       break;
     }
-    case 'cleanse_self':
-      cleanseStatuses(attacker);
-      attacker.statMods = { atk: 0, def: 0, spd: 0 };
-      pushLog(`${displayName(attacker.creature)} is cleansed.`);
-      break;
-    case 'force_swap': {
-      const oppBench = side === 'player' ? state.ebf : state.bf;
-      if (!oppBench || oppBench.hp <= 0) {
-        pushLog(`${displayName(defender.creature)} has nowhere to swap.`, 'eff');
-        break;
-      }
-      applyCursedOnSwap(defender, oside);
-      pushLog(`${displayName(defender.creature)} is yanked from the field!`, 'eff');
-      if (side === 'player') {
-        const out = state.ef;
-        state.ef = state.ebf;
-        state.ebf = out;
-        state.enemyActiveIdx = 1 - state.enemyActiveIdx;
-        state.enemy = state.enemyParty[state.enemyActiveIdx];
-        state.eCharge = null;
-      } else {
-        const out = state.pf;
-        state.pf = state.bf;
-        state.bf = out;
-        state.activeIdx = 1 - state.activeIdx;
-        state.pCharge = null;
+    case 'cleanse': {
+      const targets = effParam(eff, 'targets') || ['self'];
+      const doStatuses = effParam(eff, 'cleanseStatuses');
+      const doBuffs    = effParam(eff, 'cleanseBuffs');
+      const doDebuffs  = effParam(eff, 'cleanseDebuffs');
+      const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
+      for (const f of fighters) {
+        if (doStatuses) cleanseStatuses(f);
+        if (doBuffs || doDebuffs) {
+          for (const k of ['atk', 'def', 'spd']) {
+            if (doBuffs   && f.statMods[k] > 0) f.statMods[k] = 0;
+            if (doDebuffs && f.statMods[k] < 0) f.statMods[k] = 0;
+          }
+        }
+        pushLog(`${displayName(f.creature)} is cleansed.`);
       }
       break;
     }
-    case 'thorn_soaking':
-      attacker.thornSoaking = true;
-      pushLog(`${displayName(attacker.creature)} cloaks itself in vapor.`);
-      break;
+    // Pure damage modifiers: handled upstream in damage.js / passives.js.
+    case 'execute_scale':
     case 'pierce':
-      // Handled upstream in damage calculation.
+    case 'status_synergy':
+    // hp_cost is applied at action start in resolveAction.
+    case 'hp_cost':
+    // swap is processed after the action by processSwapEffects.
+    case 'swap':
       break;
+  }
+}
+
+// Apply hp_cost effects on the user before the ability resolves.
+export function processHpCost(side, attacker, ability) {
+  for (const eff of (ability.additionalEffects || [])) {
+    if (eff.type !== 'hp_cost') continue;
+    const pct = effParam(eff, 'percent') || 0;
+    const cost = Math.round(attacker.creature.maxHp * pct);
+    attacker.hp = Math.max(1, attacker.hp - cost);
+    spawnFloat(side, String(cost), 'dmg');
+  }
+}
+
+// Process swap effects once after an ability resolves. Each swap effect can
+// target "self", "enemy", or both. Self-swap uses performSelfSwap (called via
+// the injected helper); enemy-swap is force-swap of the defender side.
+export function processSwapEffects(side, oside, attacker, defender, ability, helpers) {
+  for (const eff of (ability.additionalEffects || [])) {
+    if (eff.type !== 'swap') continue;
+    const targets = effParam(eff, 'targets') || ['self'];
+    if (targets.includes('enemy')) {
+      const oppBench = side === 'player' ? state.ebf : state.bf;
+      if (!oppBench || oppBench.hp <= 0) {
+        pushLog(`${displayName(defender.creature)} has nowhere to swap.`, 'eff');
+      } else {
+        applyCursedOnSwap(defender, oside);
+        pushLog(`${displayName(defender.creature)} is yanked from the field!`, 'eff');
+        if (side === 'player') {
+          const out = state.ef;
+          state.ef = state.ebf;
+          state.ebf = out;
+          state.enemyActiveIdx = 1 - state.enemyActiveIdx;
+          state.enemy = state.enemyParty[state.enemyActiveIdx];
+          state.eCharge = null;
+        } else {
+          const out = state.pf;
+          state.pf = state.bf;
+          state.bf = out;
+          state.activeIdx = 1 - state.activeIdx;
+          state.pCharge = null;
+        }
+      }
+    }
+    if (targets.includes('self') && attacker.hp > 0) {
+      helpers.performSelfSwap(side, attacker, ability);
+    }
   }
 }

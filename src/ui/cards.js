@@ -172,7 +172,13 @@ export function openAbilityTooltip(abilityKey) {
   }
   if (a.healPercent) meta.appendChild(metaCell('HEAL/TURN', Math.round(a.healPercent * 100) + '%', '', true));
   if (a.healTurns) meta.appendChild(metaCell('DURATION', a.healTurns + ' turns'));
-  if (a.hpCost) meta.appendChild(metaCell('HP COST', Math.round(a.hpCost * 100) + '%'));
+  {
+    const hpCostEff = (a.additionalEffects || []).find(e => e.type === 'hp_cost');
+    if (hpCostEff) {
+      const pct = hpCostEff.percent ?? 0;
+      meta.appendChild(metaCell('HP COST', Math.round(pct * 100) + '%'));
+    }
+  }
   m.appendChild(meta);
   m.appendChild(el('div', { class: 'tooltip-desc' }, a.desc));
   const closeRow = el('div', { class: 'modal-actions' });

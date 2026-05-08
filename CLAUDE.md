@@ -13,7 +13,7 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `data/abilities.json` — ability dict keyed by ability id; see "Ability schema" below
 - `data/passives.json` — passive dict keyed by passive id; each entry has params + a `codeRef` string naming the function in `passives.js` that consumes them
 - `data/statuseffects.json` — burn/bloom/soaking/cursed/dazed canonical defaults
-- `data/additionaleffects.json` — entries that go in an ability's `additionalEffects[]` (label, desc, params). Drives both the engine (params read in `combat/abilities.js`, `damage.js`, `passives.js`) and the editor's checkbox list.
+- `data/additionaleffects.json` — schema for entries that go in an ability's `additionalEffects[]`. Each type has `label`, `desc`, and a `params` map where each param has `type` (`percent`/`multiplier`/`bool`/`status`/`targets`/`swapTargets`), `default`, and `label`. Engine reads defaults from here when an instance omits a param; the editor uses it to render add/remove rows with editable inputs per type.
 
 ### Core (`src/`)
 - `state.js` — `state` singleton, `pushLog`, `resetGame`, `nextCreatureId`, constants (`TOTAL_WAVES=10`, `BREED_WAVES={3,6,9}`, `MAX_LEVEL=50`)
@@ -57,12 +57,11 @@ Keyed by ability id. Fields:
 - `element` — `fire|water|grass|light|dark` or absent (neutral)
 - `priority` — turn-order tiebreaker (default 0)
 - `hits` — multi-hit count (default 1)
-- `hpCost` — fraction of max HP self-damage on use
 - `statMult` — `{atk?, def?, spd?}` battle-long mods (buff kind)
 - `statusEffects` — `[{ status, targets: ["enemy"|"self"|"bench"|"enemy_bench"] }, ...]`
-- `additionalEffects` — array of effect markers (objects with a `type` field) consumed in `abilities.js` / `damage.js` / `passives.js`
+- `additionalEffects` — `[{ type, ...overrides }, ...]`. Each entry's `type` keys into `data/additionaleffects.json`, which defines the available params + their defaults; values on the instance override the defaults. Built-in types include `hp_cost`, `swap`, `lifesteal`, `cleanse`, `execute_scale`, `pierce`, `status_synergy`. Consumed in `abilities.js` / `damage.js` / `passives.js` / `battle.js`.
 - `effect` + `effectParams` — bench_support variants
-- `buffOnSwap`, `healOnSwap`, `swapAfter` — swap_self / post-hit-swap helpers
+- `buffOnSwap`, `healOnSwap` — swap_self helpers (applied to the incoming bench fighter)
 - `healPercent`, `healTurns` — apply_heal variants
 
 ### Passive (`data/passives.json`)

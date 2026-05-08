@@ -276,19 +276,82 @@ function statusEffectsFormHTML(ab) {
     </div>`;
 }
 
+// ─── Additional Effects ──────────────────────────────────────────────────────
+// Each instance on an ability is { type, ...params }. The schema in
+// data/additionaleffects.json defines per-type params (label + type + default).
+// Missing params fall back to defaults at runtime (mirroring effParam in abilities.js).
+
+const AE_TARGET_LABELS = { self: 'Self', bench: 'Bench', enemy: 'Enemy', enemy_bench: 'Enemy Bench' };
+const AE_TARGETS_ALL   = ['self', 'bench', 'enemy', 'enemy_bench'];
+const AE_SWAP_TARGETS  = ['self', 'enemy'];
+
+function aeParamCurrent(eff, paramKey, schema) {
+  return eff[paramKey] !== undefined ? eff[paramKey] : (schema?.default);
+}
+
+function aeParamHTML(rowIdx, paramKey, schema, current) {
+  const dataAttr = `data-ae-param="${paramKey}" data-ae-row="${rowIdx}"`;
+  const label = schema.label || paramKey;
+  if (schema.type === 'percent') {
+    const v = Math.round((current ?? 0) * 1000) / 10;
+    return `<label class="ae-param"><span>${label} %</span><input type="number" ${dataAttr} data-ae-ptype="percent" value="${v}" step="0.1" min="0" max="100"></label>`;
+  }
+  if (schema.type === 'multiplier') {
+    return `<label class="ae-param"><span>${label}</span><input type="number" ${dataAttr} data-ae-ptype="multiplier" value="${current ?? 1}" step="0.05" min="0"></label>`;
+  }
+  if (schema.type === 'bool') {
+    return `<label class="ae-param ae-bool"><input type="checkbox" ${dataAttr} data-ae-ptype="bool" ${current ? 'checked' : ''}> ${label}</label>`;
+  }
+  if (schema.type === 'status') {
+    const opts = Object.entries(S.statuses)
+      .map(([k, s]) => `<option value="${k}" ${current === k ? 'selected' : ''}>${s.name}</option>`).join('');
+    return `<label class="ae-param"><span>${label}</span><select ${dataAttr} data-ae-ptype="status">${opts}</select></label>`;
+  }
+  if (schema.type === 'targets' || schema.type === 'swapTargets') {
+    const list = schema.type === 'swapTargets' ? AE_SWAP_TARGETS : AE_TARGETS_ALL;
+    const arr = Array.isArray(current) ? current : [];
+    const checks = list.map(t => `
+      <label class="se-target-label">
+        <input type="checkbox" ${dataAttr} data-ae-ptype="${schema.type}" data-ae-tgt="${t}" ${arr.includes(t) ? 'checked' : ''}>
+        ${AE_TARGET_LABELS[t]}
+      </label>`).join('');
+    return `<div class="ae-param ae-targets"><span>${label}</span><div class="se-targets">${checks}</div></div>`;
+  }
+  return '';
+}
+
 function additionalEffectsFormHTML(ab) {
-  const active = new Set(ab.additionalEffects || []);
-  const entries = Object.entries(S.additionalEffects);
-  if (entries.length === 0) return '';
-  const checks = entries.map(([key, def]) => `
-    <label class="ae-label" title="${(def.desc || '').replace(/"/g, '&quot;')}">
-      <input type="checkbox" data-ae-key="${key}" ${active.has(key) ? 'checked' : ''}>
-      ${def.label || key}
-    </label>`).join('');
+  const list = ab.additionalEffects || [];
+  const aeOpts = Object.entries(S.additionalEffects).map(([k, d]) =>
+    `<option value="${k}">${d.label || k}</option>`).join('');
+
+  const rows = list.map((eff, i) => {
+    const schema = S.additionalEffects[eff.type] || { label: eff.type, params: {} };
+    const params = schema.params || {};
+    const paramRows = Object.entries(params)
+      .map(([pk, ps]) => aeParamHTML(i, pk, ps, aeParamCurrent(eff, pk, ps)))
+      .join('');
+    const desc = (schema.desc || '').replace(/"/g, '&quot;');
+    return `
+      <div class="ae-row" data-ae-idx="${i}">
+        <div class="ae-row-head">
+          <strong title="${desc}">${schema.label || eff.type}</strong>
+          <span class="ae-row-key">${eff.type}</span>
+          <button class="btn-icon" data-ae-remove="${i}">✕</button>
+        </div>
+        ${paramRows ? `<div class="ae-row-params">${paramRows}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  const addDisabled = Object.keys(S.additionalEffects).length === 0 ? 'disabled' : '';
   return `
     <div class="form-section">
-      <div class="form-section-title">Additional Effects <span style="color:var(--text-muted);font-size:10px;font-weight:400">(defined in additionaleffects.json)</span></div>
-      <div class="ae-list">${checks}</div>
+      <div class="form-section-title">Additional Effects <span style="color:var(--text-muted);font-size:10px;font-weight:400">(types defined in additionaleffects.json)</span></div>
+      <div id="ae-list">${rows}</div>
+      <div class="ae-add-row">
+        <select id="ae-add-type" ${addDisabled}>${aeOpts}</select>
+        <button class="btn btn-secondary btn-sm" id="ae-add" ${addDisabled}>+ Add additional effect</button>
+      </div>
     </div>`;
 }
 
@@ -324,14 +387,6 @@ function abilityFormHTML(key, ab) {
       <div class="form-section-title">Attack</div>
       <div class="form-row"><label>Power</label><input type="number" data-ab-field="power" value="${ab.power ?? 0}" min="0"></div>
       <div class="form-row"><label>Hits</label><input type="number" data-ab-field="hits" value="${ab.hits ?? 1}" min="1"></div>
-      <div class="form-row"><label>HP Cost %</label><input type="number" data-ab-field="hpCost" value="${Math.round((ab.hpCost ?? 0) * 100)}" min="0" max="100"></div>
-      <div class="form-row">
-        <label>Swap After</label>
-        <select data-ab-field="swapAfter">
-          <option value="" ${!ab.swapAfter ? 'selected' : ''}>(none)</option>
-          <option value="self" ${ab.swapAfter === 'self' ? 'selected' : ''}>Self → bench (after hit)</option>
-        </select>
-      </div>
     </div>` : ''}
     ${isBuff ? `
     <div class="form-section">
@@ -564,13 +619,13 @@ function bindAbilityFormEvents() {
   document.querySelectorAll('[data-ab-field]').forEach(el => {
     el.addEventListener('change', () => {
       const f = el.dataset.abField;
-      if (f === 'hpCost' || f === 'healPercent' || f === 'healOnSwap') {
+      if (f === 'healPercent' || f === 'healOnSwap') {
         const v = parseFloat(el.value) / 100;
         if (v === 0) delete ab[f]; else ab[f] = parseFloat(v.toFixed(4));
       } else if (f === 'power' || f === 'hits' || f === 'priority' || f === 'healTurns') {
         const v = parseInt(el.value);
         if (v === 0 || v === 1 && f === 'hits') delete ab[f]; else ab[f] = v;
-      } else if (f === 'element' || f === 'effect' || f === 'swapAfter') {
+      } else if (f === 'element' || f === 'effect') {
         if (el.value === '') delete ab[f]; else ab[f] = el.value;
       } else {
         ab[f] = el.value;
@@ -648,13 +703,61 @@ function bindAbilityFormEvents() {
     });
   });
 
-  // Additional effects — checkboxes
-  document.querySelectorAll('[data-ae-key]').forEach(cb => {
-    cb.addEventListener('change', () => {
+  bindAdditionalEffectsEvents(ab);
+}
+
+// New (per-instance, schema-driven) additional effects handlers.
+function bindAdditionalEffectsEvents(ab) {
+  const addBtn = document.getElementById('ae-add');
+  const addSel = document.getElementById('ae-add-type');
+  if (addBtn && addSel) {
+    addBtn.addEventListener('click', () => {
+      const type = addSel.value;
+      if (!type) return;
       if (!ab.additionalEffects) ab.additionalEffects = [];
-      if (cb.checked) { if (!ab.additionalEffects.includes(cb.dataset.aeKey)) ab.additionalEffects.push(cb.dataset.aeKey); }
-      else { ab.additionalEffects = ab.additionalEffects.filter(k => k !== cb.dataset.aeKey); }
-      if (ab.additionalEffects.length === 0) delete ab.additionalEffects;
+      const schema = S.additionalEffects[type] || { params: {} };
+      const inst = { type };
+      for (const [pk, ps] of Object.entries(schema.params || {})) {
+        const d = ps.default;
+        inst[pk] = Array.isArray(d) ? [...d] : d;
+      }
+      ab.additionalEffects.push(inst);
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  }
+
+  document.querySelectorAll('[data-ae-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.aeRemove;
+      (ab.additionalEffects || []).splice(i, 1);
+      if (ab.additionalEffects && ab.additionalEffects.length === 0) delete ab.additionalEffects;
+      S.dirty.abilities = true;
+      renderContent();
+    });
+  });
+
+  document.querySelectorAll('[data-ae-param]').forEach(el => {
+    el.addEventListener('change', () => {
+      const i      = +el.dataset.aeRow;
+      const paramK = el.dataset.aeParam;
+      const ptype  = el.dataset.aePtype;
+      const eff    = ab.additionalEffects[i];
+      if (!eff) return;
+      if (ptype === 'percent') {
+        eff[paramK] = parseFloat((parseFloat(el.value) / 100).toFixed(4));
+      } else if (ptype === 'multiplier') {
+        eff[paramK] = parseFloat(el.value);
+      } else if (ptype === 'bool') {
+        eff[paramK] = el.checked;
+      } else if (ptype === 'status') {
+        eff[paramK] = el.value;
+      } else if (ptype === 'targets' || ptype === 'swapTargets') {
+        const tgt = el.dataset.aeTgt;
+        if (!Array.isArray(eff[paramK])) eff[paramK] = [];
+        if (el.checked) { if (!eff[paramK].includes(tgt)) eff[paramK].push(tgt); }
+        else { eff[paramK] = eff[paramK].filter(t => t !== tgt); }
+      }
       S.dirty.abilities = true; renderHeader(); renderTabs();
     });
   });

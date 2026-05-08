@@ -1,12 +1,55 @@
 {
-  "execute_scale":    { "label": "Scale damage by target missing HP",          "desc": "Power scales up to (1 + scaleAmount)x as target HP drops.", "scaleAmount": 0.5 },
-  "pierce":           { "label": "Ignore part of target Defense",              "desc": "Defense is multiplied by (1 - defReduction) before damage calc.", "defReduction": 0.5 },
-  "lifesteal_strong": { "label": "Lifesteal a portion of damage dealt",        "desc": "Heal user for lifestealPct of damage dealt.", "lifestealPct": 0.5 },
-  "lifesteal_full":   { "label": "Lifesteal full damage dealt",                "desc": "Heal user for lifestealPct of damage dealt.", "lifestealPct": 1.0 },
-  "cleanse_self":     { "label": "Cleanse self — all statuses + stat penalties", "desc": "Removes all statuses and resets ATK/DEF/SPD mods on the user." },
-  "force_swap":       { "label": "Force-swap target active creature",          "desc": "Yanks the target out and swaps in their bench (if available)." },
-  "thorn_soaking":    { "label": "Soak attackers that hit you",                "desc": "Attackers receive Soaking when they damage you.", "soakingStacks": 1, "soakingTurns": 4 },
-  "burn_stacking":    { "label": "Burn (stacking) — extends duration each use", "desc": "Each consecutive use extends burn turns by extendTurns (min minTurns).", "extendTurns": 2, "minTurns": 4, "burnPct": 0.05 },
-  "soaking_double":   { "label": "Apply multiple stacks of Soaking",           "desc": "Applies stacks soaking for turns turns.", "stacks": 2, "turns": 4 },
-  "cursed_synergy":   { "label": "Bonus damage if target is already Cursed",   "desc": "Power is multiplied by powerMult against cursed targets.", "powerMult": 1.5 }
+  "hp_cost": {
+    "label": "HP cost on use",
+    "desc": "User loses a percent of max HP when using this ability.",
+    "params": {
+      "percent": { "type": "percent", "default": 0.15, "label": "HP cost %" }
+    }
+  },
+  "swap": {
+    "label": "Swap active creature",
+    "desc": "Swaps the active creature on each selected side with their bench (if alive). Triggers after the ability resolves.",
+    "params": {
+      "targets": { "type": "swapTargets", "default": ["self"], "label": "Swap who" }
+    }
+  },
+  "lifesteal": {
+    "label": "Lifesteal",
+    "desc": "Heals the user for a percent of damage dealt.",
+    "params": {
+      "percentOfDamage": { "type": "percent", "default": 0.5, "label": "Heal % of damage" }
+    }
+  },
+  "cleanse": {
+    "label": "Cleanse",
+    "desc": "Removes selected categories (statuses / positive stat mods / negative stat mods) on selected targets.",
+    "params": {
+      "targets":         { "type": "targets", "default": ["self"], "label": "Targets" },
+      "cleanseStatuses": { "type": "bool",    "default": true,     "label": "Statuses" },
+      "cleanseBuffs":    { "type": "bool",    "default": true,     "label": "Stat buffs" },
+      "cleanseDebuffs":  { "type": "bool",    "default": true,     "label": "Stat debuffs" }
+    }
+  },
+  "execute_scale": {
+    "label": "Scale damage by target missing HP",
+    "desc": "Power is multiplied by up to (1 + scaleAmount) as the target's HP drops to 0.",
+    "params": {
+      "scaleAmount": { "type": "percent", "default": 0.5, "label": "Max bonus" }
+    }
+  },
+  "pierce": {
+    "label": "Ignore part of target Defense",
+    "desc": "Defense is multiplied by (1 - defReduction) before damage calc.",
+    "params": {
+      "defReduction": { "type": "percent", "default": 0.5, "label": "Defense ignored" }
+    }
+  },
+  "status_synergy": {
+    "label": "Bonus damage if target has status",
+    "desc": "Power is multiplied by powerMult if the target already has the chosen status.",
+    "params": {
+      "status":    { "type": "status",     "default": "cursed", "label": "Status" },
+      "powerMult": { "type": "multiplier", "default": 1.5,      "label": "Power x" }
+    }
+  }
 }

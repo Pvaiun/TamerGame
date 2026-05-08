@@ -15,7 +15,13 @@ export function effectiveStat(f, stat) {
 export function calculateDamage(attacker, defender, ability) {
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  if ((ability.additionalEffects || []).includes('pierce')) def = Math.round(def * (1 - (ADDITIONAL_EFFECTS.pierce?.defReduction ?? 0.5)));
+  {
+    const piercer = (ability.additionalEffects || []).find(e => e.type === 'pierce');
+    if (piercer) {
+      const dr = piercer.defReduction ?? ADDITIONAL_EFFECTS.pierce?.params?.defReduction?.default ?? 0.5;
+      def = Math.round(def * (1 - dr));
+    }
+  }
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   let power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
@@ -42,7 +48,13 @@ export function estimateDamage(attacker, defender, ability) {
   if (ability.kind !== 'attack' && ability.kind !== 'charge_attack') return 0;
   const atk = effectiveStat(attacker, 'atk');
   let def = effectiveStat(defender, 'def');
-  if ((ability.additionalEffects || []).includes('pierce')) def = Math.round(def * (1 - (ADDITIONAL_EFFECTS.pierce?.defReduction ?? 0.5)));
+  {
+    const piercer = (ability.additionalEffects || []).find(e => e.type === 'pierce');
+    if (piercer) {
+      const dr = piercer.defReduction ?? ADDITIONAL_EFFECTS.pierce?.params?.defReduction?.default ?? 0.5;
+      def = Math.round(def * (1 - dr));
+    }
+  }
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   const power = applyPowerMult(attacker, defender, ability, ability.power, { attackerSpd, defenderSpd });
