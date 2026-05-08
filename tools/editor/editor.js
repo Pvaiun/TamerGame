@@ -153,8 +153,8 @@ function growthMidpoint(grade) {
 
 function passiveOption(p, k, selected) {
   const desc = (p.desc || '').replace(/"/g, '&quot;');
-  // Append a short description after a separator so users see what each passive does at a glance.
-  const short = (p.desc || '').split(/[.\n]/)[0].slice(0, 60);
+  // Append the full first sentence so users see what each passive does at a glance.
+  const short = (p.desc || '').split(/[.\n]/)[0].trim();
   return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${p.name}${short ? ' — ' + short : ''}</option>`;
 }
 
@@ -181,8 +181,9 @@ function monsterFormHTML(t) {
       .filter(ak => ak === k || !pool.includes(ak))
       .map(ak => {
         const a2 = S.abilities[ak];
-        const short = (a2.desc || '').split(/[.\n]/)[0].slice(0, 60);
-        return `<option value="${ak}" ${ak === k ? 'selected' : ''}>${a2.name}${short ? ' — ' + short : ''}</option>`;
+        const short = (a2.desc || '').split(/[.\n]/)[0].trim();
+        const titleAttr = (a2.desc || '').replace(/"/g, '&quot;');
+        return `<option value="${ak}" title="${titleAttr}" ${ak === k ? 'selected' : ''}>${a2.name}${short ? ' — ' + short : ''}</option>`;
       }).join('');
     return `
       <div class="ae-row" data-pool-idx="${i}">
@@ -378,7 +379,7 @@ function effectRowHTML(eff, phaseIdx, effIdx) {
     .join('');
   const typeOpts = typeKeys.map(k => {
     const s = S.additionalEffects[k];
-    const short = (s?.desc || '').split(/[.\n]/)[0].slice(0, 55);
+    const short = (s?.desc || '').split(/[.\n]/)[0].trim();
     return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${s?.label || k}${short ? ' — ' + short : ''}</option>`;
   }).join('');
   const desc = (schema.desc || '').replace(/"/g, '&quot;');
