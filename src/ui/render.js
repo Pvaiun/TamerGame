@@ -2,6 +2,7 @@ import { el, app } from './dom.js';
 import { state, TOTAL_WAVES } from '../state.js';
 import { generateEnemyParty, generateBossParty, partyAvgLevel } from '../encounter.js';
 import { renderBattle } from './battle.js';
+import { syncBattleScene } from '../stage/game.js';
 import {
   renderHeader, renderStart, renderStarterPick, renderBloodlineReady,
   renderPreBattle, renderAftermath, renderBreed, renderVictory, renderGameover,
@@ -28,6 +29,7 @@ export function render() {
     case 'victory': renderVictory(); break;
     case 'gameover': renderGameover(); break;
   }
+  if (state.screen !== 'battle') syncBattleScene(null);
 }
 
 // Shared wave-advance helper. Lives here (not in state.js) so it can call render()

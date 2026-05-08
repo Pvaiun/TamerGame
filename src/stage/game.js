@@ -1,16 +1,5 @@
 import Phaser from 'phaser';
-
-class BootScene extends Phaser.Scene {
-  constructor() { super('Boot'); }
-  create() {
-    console.log('[stage] boot scene ready', {
-      size: `${this.scale.width}x${this.scale.height}`,
-    });
-    this.scale.on('resize', (size) => {
-      console.log('[stage] resize', `${size.width}x${size.height}`);
-    });
-  }
-}
+import { BattleScene } from './scenes/battleScene.js';
 
 let game = null;
 
@@ -25,14 +14,22 @@ export function initStage(mountEl) {
       width: '100%',
       height: '100%',
     },
-    scene: [BootScene],
+    scene: [BattleScene],
     banner: false,
   });
-  console.log('[stage] phaser game created', {
-    renderer: game.config.renderType === Phaser.WEBGL ? 'WebGL (auto)' : 'auto',
-    version: Phaser.VERSION,
-  });
+  console.log('[stage] phaser game created', { version: Phaser.VERSION });
   return game;
 }
 
 export function getGame() { return game; }
+
+function getBattleScene() {
+  return game ? game.scene.getScene('Battle') : null;
+}
+
+export function syncBattleScene(combatants) {
+  const scene = getBattleScene();
+  if (!scene || !scene.scene.isActive()) return;
+  if (combatants) scene.setCombatants(combatants);
+  else scene.clearCombatants();
+}
