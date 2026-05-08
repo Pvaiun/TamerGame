@@ -151,11 +151,25 @@ function growthMidpoint(grade) {
   return (GROWTH_GRADES.find(g => g.grade === grade) || GROWTH_GRADES[6]).mid;
 }
 
+// Convert ASCII letters/digits to Unicode mathematical bold equivalents so that
+// names render bold inside <option> elements (which don't support HTML markup).
+function boldify(str) {
+  let out = '';
+  for (const ch of String(str)) {
+    const c = ch.charCodeAt(0);
+    if (c >= 65 && c <= 90)  out += String.fromCodePoint(0x1D400 + (c - 65));      // A-Z
+    else if (c >= 97 && c <= 122) out += String.fromCodePoint(0x1D41A + (c - 97)); // a-z
+    else if (c >= 48 && c <= 57)  out += String.fromCodePoint(0x1D7CE + (c - 48)); // 0-9
+    else out += ch;
+  }
+  return out;
+}
+
 function passiveOption(p, k, selected) {
   const desc = (p.desc || '').replace(/"/g, '&quot;');
   // Append the full first sentence so users see what each passive does at a glance.
   const short = (p.desc || '').split(/[.\n]/)[0].trim();
-  return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${p.name}${short ? ' — ' + short : ''}</option>`;
+  return `<option value="${k}" title="${desc}" ${selected ? 'selected' : ''}>${boldify(p.name)}${short ? ' — ' + short : ''}</option>`;
 }
 
 function monsterFormHTML(t) {
@@ -183,7 +197,7 @@ function monsterFormHTML(t) {
         const a2 = S.abilities[ak];
         const short = (a2.desc || '').split(/[.\n]/)[0].trim();
         const titleAttr = (a2.desc || '').replace(/"/g, '&quot;');
-        return `<option value="${ak}" title="${titleAttr}" ${ak === k ? 'selected' : ''}>${a2.name}${short ? ' — ' + short : ''}</option>`;
+        return `<option value="${ak}" title="${titleAttr}" ${ak === k ? 'selected' : ''}>${boldify(a2.name)}${short ? ' — ' + short : ''}</option>`;
       }).join('');
     return `
       <div class="ae-row" data-pool-idx="${i}">
@@ -380,7 +394,7 @@ function effectRowHTML(eff, phaseIdx, effIdx) {
   const typeOpts = typeKeys.map(k => {
     const s = S.additionalEffects[k];
     const short = (s?.desc || '').split(/[.\n]/)[0].trim();
-    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${s?.label || k}${short ? ' — ' + short : ''}</option>`;
+    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${boldify(s?.label || k)}${short ? ' — ' + short : ''}</option>`;
   }).join('');
   const desc = (schema.desc || '').replace(/"/g, '&quot;');
 
