@@ -8,9 +8,6 @@ import { playerAct, playerSwap } from '../combat/battle.js';
 import { syncBattleScene } from '../stage/game.js';
 
 export function renderBattle() {
-  const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('div', { class: 'panel-title' }, `Wave ${state.wave} — battle`));
-
   const stage = el('div', { class: 'stage', id: 'stage' });
   if (state.bf && state.bf.hp > 0) {
     stage.appendChild(el('div', { class: 'stage-bench player' }));
@@ -24,7 +21,10 @@ export function renderBattle() {
   if (state.ebf && state.ebf.hp > 0) {
     stage.appendChild(el('div', { class: 'stage-bench enemy' }));
   }
-  panel.appendChild(stage);
+  app().appendChild(stage);
+
+  const panel = el('div', { class: 'panel' });
+  panel.appendChild(el('div', { class: 'panel-title' }, `Wave ${state.wave} — battle`));
 
   const hud = el('div', { class: 'battle-hud' });
   hud.appendChild(actorHudEl(state.pf, 'player'));
