@@ -11,6 +11,7 @@ export let ADDITIONAL_EFFECTS = {};
 export let TEMPLATES = [];
 export let ALL_ENCOUNTER_SPECIES = [];
 export const GLOBALS = { growthThresholds: [] };
+export const PASSIVE_SCHEMA = { triggers: {}, conditions: {}, effects: {} };
 
 async function fetchJson(path) {
   const r = await fetch(path);
@@ -19,7 +20,7 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates, globals] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
@@ -27,6 +28,7 @@ export async function loadData() {
     fetchJson('data/additionaleffects.json'),
     fetchJson('data/templates.json'),
     fetchJson('data/globals.json'),
+    fetchJson('data/passivetriggers.json'),
   ]);
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
@@ -40,4 +42,7 @@ export async function loadData() {
   ALL_ENCOUNTER_SPECIES.length = 0;
   ALL_ENCOUNTER_SPECIES.push(...TEMPLATES.filter(t => !t.starter).map(t => t.species));
   GLOBALS.growthThresholds = globals.growthThresholds || [];
+  Object.assign(PASSIVE_SCHEMA.triggers,   passiveSchema.triggers   || {});
+  Object.assign(PASSIVE_SCHEMA.conditions, passiveSchema.conditions || {});
+  Object.assign(PASSIVE_SCHEMA.effects,    passiveSchema.effects    || {});
 }

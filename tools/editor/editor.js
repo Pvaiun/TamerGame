@@ -5,6 +5,7 @@ import { ART_GENERATORS } from '../../src/art.js';
 const S = {
   abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typePalette: {},
   globals: { growthThresholds: [] },
+  passiveSchema: { triggers: {}, conditions: {}, effects: {} },
   dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false },
   tab: 'monsters',
   monster: null,   // selected template index
@@ -20,7 +21,7 @@ const S = {
 
 async function init() {
   try {
-    const [types, passives, abilities, statuses, additionalEffects, templates, globals] = await Promise.all([
+    const [types, passives, abilities, statuses, additionalEffects, templates, globals, passiveSchema] = await Promise.all([
       fetch('../../data/types.json').then(r => r.json()),
       fetch('../../data/passives.json').then(r => r.json()),
       fetch('../../data/abilities.json').then(r => r.json()),
@@ -28,6 +29,7 @@ async function init() {
       fetch('../../data/additionaleffects.json').then(r => r.json()),
       fetch('../../data/templates.json').then(r => r.json()),
       fetch('../../data/globals.json').then(r => r.json()),
+      fetch('../../data/passivetriggers.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
     S.typePalette = types.TYPE_PALETTE;
@@ -37,6 +39,7 @@ async function init() {
     S.additionalEffects = additionalEffects;
     S.templates = templates;
     S.globals = globals;
+    S.passiveSchema = passiveSchema;
     if (!Array.isArray(S.globals.growthThresholds)) S.globals.growthThresholds = [];
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
@@ -488,49 +491,189 @@ function passivesTabHTML() {
   const entries = Object.entries(S.passives)
     .filter(([k, p]) => !q || p.name.toLowerCase().includes(q) || k.includes(q))
     .sort((a, b) => a[1].name.localeCompare(b[1].name));
-  const listHTML = entries.map(([k, p]) => `
+  const listHTML = entries.map(([k, p]) => {
+    const trigCount = (p.triggers || []).length;
+    return `
     <div class="list-item ${S.passive === k ? 'selected' : ''}" data-passive="${k}">
-      <div>
+      <div style="flex:1;min-width:0;">
         <div class="list-item-name">${p.name}</div>
-        <div class="list-item-sub">${k}</div>
+        <div class="list-item-sub">${trigCount} trigger${trigCount === 1 ? '' : 's'}</div>
       </div>
-    </div>`).join('');
+      <button class="btn-icon list-item-delete" data-delete-passive="${k}" title="Delete passive">✕</button>
+    </div>`;
+  }).join('');
 
   const pv = S.passive ? S.passives[S.passive] : null;
   return `
     <div class="list-panel">
       <div class="list-search"><input id="search-passives" placeholder="Search…" value="${S.search.passives}"></div>
       <div class="list-items">${listHTML}</div>
+      <button class="btn btn-secondary btn-sm" id="passive-new" style="margin: 6px 8px;">+ New passive</button>
     </div>
     <div class="detail-panel">${pv ? passiveFormHTML(S.passive, pv) : '<div class="empty">Select a passive to edit.</div>'}</div>`;
 }
 
-function passiveFormHTML(key, pv) {
-  // Dynamic numeric/array/string params (everything except name, desc, codeRef)
-  const SKIP = new Set(['name', 'desc', 'codeRef']);
-  const paramRows = Object.entries(pv)
-    .filter(([k]) => !SKIP.has(k))
-    .map(([k, v]) => {
-      if (typeof v === 'number') {
-        return `<div class="form-row"><label>${k}</label><input type="number" data-pv-param="${k}" value="${v}" step="0.01"></div>`;
-      }
-      if (Array.isArray(v)) {
-        return `<div class="form-row"><label>${k}</label><input type="text" data-pv-array="${k}" value="${v.join(', ')}" placeholder="comma-separated"></div>`;
-      }
-      if (typeof v === 'string') {
-        return `<div class="form-row"><label>${k}</label><input type="text" data-pv-param-str="${k}" value="${v}"></div>`;
-      }
-      return '';
-    }).join('');
+// ── Passive form ────────────────────────────────────────────────────────────
+// Each passive has triggers: [{ on, if?, effect, consumesOn? }]. The form
+// renders one block per trigger entry and lets the designer pick trigger,
+// edit conditions, and edit the effect's params from the schema.
 
+function passiveFormHTML(key, pv) {
+  if (!pv.triggers) pv.triggers = [];
+  const triggerRows = pv.triggers.map((t, i) => triggerEntryHTML(t, i)).join('');
   return `
     <div class="form-section">
       <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
-      <div class="form-row"><label>Display name</label><input type="text" data-pv-field="name" value="${pv.name}"></div>
+      <div class="form-row"><label>Display name</label><input type="text" data-pv-field="name" value="${pv.name || ''}"></div>
       <div class="form-row"><label>Description</label><textarea data-pv-field="desc">${pv.desc || ''}</textarea></div>
-      <div class="form-row"><label>Code ref</label><span class="readonly">${pv.codeRef || '—'}</span></div>
     </div>
-    ${paramRows ? `<div class="form-section"><div class="form-section-title">Balance Params</div>${paramRows}</div>` : ''}`;
+    <div class="form-section">
+      <div class="form-section-title">Triggers
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+          (each trigger fires its effect when the matching combat event happens)</span>
+      </div>
+      ${triggerRows}
+      <button class="btn btn-secondary btn-sm" id="trigger-add">+ Add trigger</button>
+    </div>`;
+}
+
+function triggerEntryHTML(t, i) {
+  const triggerDefs = S.passiveSchema.triggers || {};
+  const trigOpts = Object.entries(triggerDefs).map(([k, def]) => {
+    const short = (def.desc || '').replace(/"/g, '&quot;');
+    return `<option value="${k}" ${t.on === k ? 'selected' : ''} title="${short}">${boldify(def.label || k)}${def.desc ? ' — ' + def.desc : ''}</option>`;
+  }).join('');
+
+  const consumesOpts = ['', 'battle'].map(v =>
+    `<option value="${v}" ${(t.consumesOn || '') === v ? 'selected' : ''}>${v ? 'once per battle' : 'every fire'}</option>`).join('');
+
+  // Conditions block: one row per active condition + an "add" dropdown.
+  const condDefs = S.passiveSchema.conditions || {};
+  const activeConds = t.if ? Object.keys(t.if) : [];
+  const condRows = activeConds.map(ck => condRowHTML(ck, t.if[ck], i)).join('');
+  const addableConds = Object.keys(condDefs).filter(c => !activeConds.includes(c));
+  const condAddOpts = `<option value="">+ add condition</option>` +
+    addableConds.map(c => `<option value="${c}">${condDefs[c].label || c}</option>`).join('');
+
+  const effHTML = passiveEffectHTML(t.effect || { type: 'power_mult', value: 1 }, i);
+
+  return `
+    <div class="phase-block" data-tg-idx="${i}">
+      <div class="phase-head">
+        <span class="phase-label">Trigger ${i + 1}</span>
+        <button class="btn-icon" data-tg-remove="${i}" title="Remove trigger">✕</button>
+      </div>
+      <div class="form-row">
+        <label>On</label>
+        <select data-tg-on="${i}">${trigOpts}</select>
+      </div>
+      <div class="form-row">
+        <label>Consumes</label>
+        <select data-tg-consumes="${i}">${consumesOpts}</select>
+      </div>
+      <div class="form-section-title" style="margin-top:6px;font-size:10px;">Conditions</div>
+      ${condRows}
+      <div class="form-row"><label></label><select data-tg-cond-add="${i}">${condAddOpts}</select></div>
+      <div class="form-section-title" style="margin-top:6px;font-size:10px;">Effect</div>
+      ${effHTML}
+    </div>`;
+}
+
+function condRowHTML(condKey, condValue, trigIdx) {
+  const def = (S.passiveSchema.conditions || {})[condKey] || { label: condKey, type: 'numCmp' };
+  const label = def.label || condKey;
+  let inputHTML = '';
+  if (def.type === 'bool') {
+    inputHTML = `<input type="checkbox" data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="bool" ${condValue ? 'checked' : ''}>`;
+  } else if (def.type === 'numCmp') {
+    inputHTML = `<input type="text" data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="numCmp" value="${condValue ?? ''}" placeholder="e.g. >=0.5" style="width:120px;">`;
+  } else if (def.type === 'element') {
+    const opts = ['fire','water','grass','light','dark']
+      .map(e => `<option value="${e}" ${condValue === e ? 'selected' : ''}>${e}</option>`).join('');
+    inputHTML = `<select data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="enum">${opts}</select>`;
+  } else if (def.type === 'stat') {
+    const opts = ['atk','def','spd']
+      .map(s => `<option value="${s}" ${condValue === s ? 'selected' : ''}>${s.toUpperCase()}</option>`).join('');
+    inputHTML = `<select data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="enum">${opts}</select>`;
+  } else if (def.type === 'status') {
+    const opts = Object.entries(S.statuses).map(([k, s]) =>
+      `<option value="${k}" ${condValue === k ? 'selected' : ''}>${s.name}</option>`).join('');
+    inputHTML = `<select data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="enum">${opts}</select>`;
+  } else {
+    inputHTML = `<input type="text" data-tg-cond="${condKey}" data-tg-cond-trig="${trigIdx}" data-tg-cond-type="string" value="${condValue ?? ''}">`;
+  }
+  return `
+    <div class="form-row" data-tg-cond-row="${condKey}-${trigIdx}">
+      <label style="font-size:11px;">${label}</label>
+      ${inputHTML}
+      <button class="btn-icon" data-tg-cond-remove="${condKey}" data-tg-cond-remove-trig="${trigIdx}" title="Remove">✕</button>
+    </div>`;
+}
+
+function passiveEffectHTML(eff, trigIdx) {
+  const effDefs = S.passiveSchema.effects || {};
+  const opts = Object.entries(effDefs).map(([k, def]) => {
+    return `<option value="${k}" ${eff.type === k ? 'selected' : ''}>${boldify(def.label || k)}</option>`;
+  }).join('');
+  const def = effDefs[eff.type] || { params: {} };
+  const params = def.params || {};
+  const paramRows = Object.entries(params)
+    .map(([pk, ps]) => passiveParamHTML(pk, ps, eff[pk] !== undefined ? eff[pk] : ps.default, trigIdx))
+    .join('');
+  return `
+    <div class="ae-row" data-tg-eff="${trigIdx}">
+      <div class="ae-row-head">
+        <select data-tg-eff-type="${trigIdx}">${opts}</select>
+      </div>
+      ${paramRows ? `<div class="ae-row-params">${paramRows}</div>` : ''}
+    </div>`;
+}
+
+function passiveParamHTML(pk, ps, current, trigIdx) {
+  const dataAttr = `data-tg-param="${pk}" data-tg-param-trig="${trigIdx}" data-tg-param-type="${ps.type}"`;
+  const label = ps.label || pk;
+  if (ps.type === 'percent') {
+    const v = Math.round((current ?? 0) * 1000) / 10;
+    return `<label class="ae-param"><span>${label} %</span><input type="number" ${dataAttr} value="${v}" step="0.1" min="0"></label>`;
+  }
+  if (ps.type === 'multiplier') {
+    return `<label class="ae-param"><span>${label}</span><input type="number" ${dataAttr} value="${current ?? 1}" step="0.05"></label>`;
+  }
+  if (ps.type === 'int') {
+    return `<label class="ae-param"><span>${label}</span><input type="number" ${dataAttr} value="${current ?? 0}" step="1"></label>`;
+  }
+  if (ps.type === 'string') {
+    return `<label class="ae-param"><span>${label}</span><input type="text" ${dataAttr} value="${current ?? ''}"></label>`;
+  }
+  if (ps.type === 'stat') {
+    const opts = ['atk','def','spd'].map(s =>
+      `<option value="${s}" ${current === s ? 'selected' : ''}>${s.toUpperCase()}</option>`).join('');
+    return `<label class="ae-param"><span>${label}</span><select ${dataAttr}>${opts}</select></label>`;
+  }
+  if (ps.type === 'side') {
+    const opts = ['self','enemy'].map(s =>
+      `<option value="${s}" ${current === s ? 'selected' : ''}>${s}</option>`).join('');
+    return `<label class="ae-param"><span>${label}</span><select ${dataAttr}>${opts}</select></label>`;
+  }
+  if (ps.type === 'status') {
+    const opts = Object.entries(S.statuses).map(([k, s]) =>
+      `<option value="${k}" ${current === k ? 'selected' : ''}>${s.name}</option>`).join('');
+    return `<label class="ae-param"><span>${label}</span><select ${dataAttr}>${opts}</select></label>`;
+  }
+  if (ps.type === 'statusList') {
+    const arr = Array.isArray(current) ? current : [];
+    const checks = Object.entries(S.statuses).map(([k, s]) =>
+      `<label class="se-target-label"><input type="checkbox" ${dataAttr} data-tg-status-key="${k}" ${arr.includes(k) ? 'checked' : ''}>${s.name}</label>`).join('');
+    return `<div class="ae-param ae-targets"><span>${label}</span><div class="se-targets">${checks}</div></div>`;
+  }
+  if (ps.type === 'statMods') {
+    const v = current || {};
+    const cells = ['atk','def','spd'].map(s =>
+      `<div class="stat-cell"><label>${s.toUpperCase()}</label>
+        <input type="number" ${dataAttr} data-tg-stat="${s}" value="${v[s] ?? 0}" step="0.05"></div>`).join('');
+    return `<div class="ae-param ae-statmods"><span>${label}</span><div class="stat-grid">${cells}</div></div>`;
+  }
+  return '';
 }
 
 // ─── Status Effects Tab ──────────────────────────────────────────────────────
@@ -704,8 +847,54 @@ function bindContentEvents() {
     });
   }
   content.querySelectorAll('.list-item[data-passive]').forEach(el =>
-    el.addEventListener('click', () => { S.passive = el.dataset.passive; renderAll(); })
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-passive]')) return;
+      S.passive = el.dataset.passive; renderAll();
+    })
   );
+  content.querySelectorAll('[data-delete-passive]').forEach(btn =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const k = btn.dataset.deletePassive;
+      const pv = S.passives[k];
+      if (!pv) return;
+      const referencing = (S.templates || [])
+        .filter(t => t.primaryPassive === k || t.secondaryPassive === k)
+        .map(t => t.species);
+      const refMsg = referencing.length
+        ? `\n\nAlso clears it from ${referencing.length} monster${referencing.length > 1 ? 's' : ''}: ${referencing.join(', ')}.`
+        : '';
+      if (!confirm(`Delete passive "${pv.name}" (${k})?${refMsg}`)) return;
+      delete S.passives[k];
+      for (const t of S.templates) {
+        if (t.primaryPassive === k) t.primaryPassive = '';
+        if (t.secondaryPassive === k) t.secondaryPassive = '';
+      }
+      if (S.passive === k) S.passive = null;
+      S.dirty.passives = true;
+      if (referencing.length) S.dirty.templates = true;
+      renderAll();
+    })
+  );
+  const newPassiveBtn = content.querySelector('#passive-new');
+  if (newPassiveBtn) {
+    newPassiveBtn.addEventListener('click', () => {
+      const raw = prompt('New passive key (lowercase, snake_case):', '');
+      if (raw === null) return;
+      const key = raw.trim();
+      if (!key) return;
+      if (!/^[a-z][a-z0-9_]*$/.test(key)) {
+        alert('Key must start with a lowercase letter and contain only lowercase letters, digits, or underscores.');
+        return;
+      }
+      if (S.passives[key]) { alert(`"${key}" already exists.`); return; }
+      const niceName = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      S.passives[key] = { name: niceName, desc: '', triggers: [] };
+      S.passive = key;
+      S.dirty.passives = true;
+      renderAll();
+    });
+  }
   content.querySelectorAll('.list-item[data-status]').forEach(el =>
     el.addEventListener('click', () => { S.status = el.dataset.status; renderAll(); })
   );
@@ -1005,7 +1194,9 @@ function bindStatusFormEvents() {
 
 function bindPassiveFormEvents() {
   const pv = S.passives[S.passive];
+  if (!pv.triggers) pv.triggers = [];
 
+  // Identity (name, desc).
   document.querySelectorAll('[data-pv-field]').forEach(el => {
     el.addEventListener('change', () => {
       pv[el.dataset.pvField] = el.value;
@@ -1013,26 +1204,149 @@ function bindPassiveFormEvents() {
     });
   });
 
-  document.querySelectorAll('[data-pv-param]').forEach(el => {
-    el.addEventListener('change', () => {
-      pv[el.dataset.pvParam] = parseFloat(el.value);
+  // Add trigger.
+  const tgAdd = document.getElementById('trigger-add');
+  if (tgAdd) {
+    tgAdd.addEventListener('click', () => {
+      const trigKeys = Object.keys(S.passiveSchema.triggers || {});
+      const effKeys  = Object.keys(S.passiveSchema.effects   || {});
+      pv.triggers.push({
+        on: trigKeys[0] || 'turn_start',
+        effect: makePvEffect(effKeys[0] || 'power_mult'),
+      });
+      S.dirty.passives = true; renderContent();
+    });
+  }
+
+  // Remove trigger.
+  document.querySelectorAll('[data-tg-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.tgRemove;
+      pv.triggers.splice(i, 1);
+      S.dirty.passives = true; renderContent();
+    });
+  });
+
+  // Trigger "on" change.
+  document.querySelectorAll('[data-tg-on]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.tgOn;
+      pv.triggers[i].on = sel.value;
+      S.dirty.passives = true; renderContent();
+    });
+  });
+
+  // consumesOn.
+  document.querySelectorAll('[data-tg-consumes]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.tgConsumes;
+      if (sel.value) pv.triggers[i].consumesOn = sel.value;
+      else delete pv.triggers[i].consumesOn;
       S.dirty.passives = true; renderHeader(); renderTabs();
     });
   });
 
-  document.querySelectorAll('[data-pv-param-str]').forEach(el => {
+  // Add condition.
+  document.querySelectorAll('[data-tg-cond-add]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      if (!sel.value) return;
+      const i = +sel.dataset.tgCondAdd;
+      const t = pv.triggers[i];
+      if (!t.if) t.if = {};
+      const def = (S.passiveSchema.conditions || {})[sel.value] || { type: 'string' };
+      t.if[sel.value] = condDefaultValue(def.type);
+      S.dirty.passives = true; renderContent();
+    });
+  });
+
+  // Remove condition.
+  document.querySelectorAll('[data-tg-cond-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.tgCondRemoveTrig;
+      const k = btn.dataset.tgCondRemove;
+      const t = pv.triggers[i];
+      if (t.if) {
+        delete t.if[k];
+        if (!Object.keys(t.if).length) delete t.if;
+      }
+      S.dirty.passives = true; renderContent();
+    });
+  });
+
+  // Edit condition value.
+  document.querySelectorAll('[data-tg-cond]').forEach(el => {
     el.addEventListener('change', () => {
-      pv[el.dataset.pvParamStr] = el.value;
+      const i = +el.dataset.tgCondTrig;
+      const k = el.dataset.tgCond;
+      const ct = el.dataset.tgCondType;
+      const t = pv.triggers[i];
+      if (!t.if) t.if = {};
+      if (ct === 'bool') t.if[k] = el.checked;
+      else t.if[k] = el.value;
       S.dirty.passives = true; renderHeader(); renderTabs();
     });
   });
 
-  document.querySelectorAll('[data-pv-array]').forEach(el => {
+  // Effect type change.
+  document.querySelectorAll('[data-tg-eff-type]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = +sel.dataset.tgEffType;
+      pv.triggers[i].effect = makePvEffect(sel.value);
+      S.dirty.passives = true; renderContent();
+    });
+  });
+
+  // Effect param edits.
+  document.querySelectorAll('[data-tg-param]').forEach(el => {
     el.addEventListener('change', () => {
-      pv[el.dataset.pvArray] = el.value.split(',').map(s => s.trim()).filter(Boolean);
+      const i = +el.dataset.tgParamTrig;
+      const pk = el.dataset.tgParam;
+      const pt = el.dataset.tgParamType;
+      const eff = pv.triggers[i].effect;
+      if (!eff) return;
+      if (pt === 'percent') {
+        eff[pk] = parseFloat((parseFloat(el.value) / 100).toFixed(4));
+      } else if (pt === 'multiplier') {
+        eff[pk] = parseFloat(el.value);
+      } else if (pt === 'int') {
+        eff[pk] = parseInt(el.value) || 0;
+      } else if (pt === 'string' || pt === 'stat' || pt === 'side' || pt === 'status') {
+        eff[pk] = el.value;
+      } else if (pt === 'statusList') {
+        const k = el.dataset.tgStatusKey;
+        if (!Array.isArray(eff[pk])) eff[pk] = [];
+        if (el.checked) { if (!eff[pk].includes(k)) eff[pk].push(k); }
+        else            { eff[pk] = eff[pk].filter(s => s !== k); }
+      } else if (pt === 'statMods') {
+        const stat = el.dataset.tgStat;
+        if (!eff[pk] || typeof eff[pk] !== 'object') eff[pk] = {};
+        eff[pk][stat] = parseFloat(el.value);
+      }
       S.dirty.passives = true; renderHeader(); renderTabs();
     });
   });
+}
+
+function makePvEffect(type) {
+  const def = (S.passiveSchema.effects || {})[type] || { params: {} };
+  const inst = { type };
+  for (const [pk, ps] of Object.entries(def.params || {})) {
+    const d = ps.default;
+    if (d === undefined) continue;
+    if (Array.isArray(d))                          inst[pk] = [...d];
+    else if (d !== null && typeof d === 'object')  inst[pk] = { ...d };
+    else                                           inst[pk] = d;
+  }
+  return inst;
+}
+
+function condDefaultValue(type) {
+  if (type === 'bool') return true;
+  if (type === 'numCmp') return '>=0';
+  if (type === 'element') return 'fire';
+  if (type === 'stat') return 'atk';
+  if (type === 'status') return 'burn';
+  return '';
 }
 
 // ─── Long-press ──────────────────────────────────────────────────────────────

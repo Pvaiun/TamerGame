@@ -1,6 +1,9 @@
 import { TYPE_CHART, ADDITIONAL_EFFECTS } from '../data.js';
 import { rand } from '../rng.js';
-import { hasPassive, applyStatMult, applyPowerMult, checkEvasion, getCritMult, applyFlatDmgReduction } from './passives.js';
+import {
+  applyStatMult, applyPowerMult, checkEvasion,
+  getCritMult, getCritChance, applyFlatDmgReduction, bypassesTypeChart,
+} from './passives.js';
 
 // Resolves a fighter's effective stat after passive multipliers, status modifiers, and stat mods.
 // Capped 0.25x..3.0x to prevent infinite Focus/Fury stacking.
@@ -36,7 +39,7 @@ export function calculateDamage(attacker, defender, ability, dmgEffect, phase) {
   const defenderSpd = effectiveStat(defender, 'spd');
   let power = applyPowerMult(attacker, defender, ability, dmgEffect.power || 0, phase, { attackerSpd, defenderSpd });
   const elem = ability.element || null;
-  let mult = hasPassive(attacker, 'eldritch_sight') ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
+  let mult = bypassesTypeChart(attacker) ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
   if (checkEvasion(defender)) {
     return { dmg: 0, mult, elem, crit: false, evaded: true };
   }
@@ -44,8 +47,8 @@ export function calculateDamage(attacker, defender, ability, dmgEffect, phase) {
   if (raw < 1) raw = 1;
   raw *= mult;
   if (defender.bracingThisTurn) raw *= 0.4;
-  raw = applyFlatDmgReduction(defender, raw);
-  const crit = Math.random() < 0.1;
+  raw = applyFlatDmgReduction(defender, raw, elem);
+  const crit = Math.random() < getCritChance(attacker);
   if (crit) raw *= getCritMult(attacker);
   raw *= rand(0.92, 1.08);
   raw = Math.max(1, Math.round(raw));
@@ -68,14 +71,14 @@ export function estimateDamage(attacker, defender, ability) {
   const attackerSpd = effectiveStat(attacker, 'spd');
   const defenderSpd = effectiveStat(defender, 'spd');
   const elem = ability.element || null;
-  const mult = hasPassive(attacker, 'eldritch_sight') ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
+  const mult = bypassesTypeChart(attacker) ? 1 : (elem ? TYPE_CHART[elem][defender.creature.type] : 1);
   let total = 0;
   for (const dmgEff of dmgEffects) {
     const power = applyPowerMult(attacker, defender, ability, dmgEff.power || 0, phase, { attackerSpd, defenderSpd });
     let raw = atk * (power / 50) * (atk / (atk + def)) * 0.4;
     if (raw < 1) raw = 1;
     raw *= mult;
-    raw = applyFlatDmgReduction(defender, raw);
+    raw = applyFlatDmgReduction(defender, raw, elem);
     raw = Math.max(1, Math.round(raw));
     total += raw * (dmgEff.hits || 1);
   }

@@ -104,8 +104,6 @@ export function freshFighter(c) {
     statMods: { atk: 0, def: 0, spd: 0 },
     bracingThisTurn: false,
     healing: null,
-    aquaveilUsed: false,
-    dpApplied: false,
     statuses: {
       burn: null,
       bloom: null,
@@ -113,7 +111,12 @@ export function freshFighter(c) {
       cursed: null,
       dazed: null,
     },
+    queuedAbility: null,
     pendingSwapBuff: null,
     pendingSwapHeal: 0,
+    onBench: false,
+    attacksMade: 0,
+    consumedTriggers: new Set(),
+    timedBuffs: [],
   };
 }

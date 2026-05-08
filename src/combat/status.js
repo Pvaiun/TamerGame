@@ -86,13 +86,6 @@ export function tickStartOfTurn(f, side) {
   }
   applyTurnStartPassives(f, side, { applyHeal, spawnFloat, pushLog, displayName });
   tickFighterStatuses(f, side, false);
-  if (f.adrenalTurns > 0) {
-    f.adrenalTurns--;
-    if (f.adrenalTurns === 0 && f.adrenalAtkDelta) {
-      f.statMods.atk -= f.adrenalAtkDelta;
-      f.adrenalAtkDelta = 0;
-    }
-  }
   if (f.pendingSwapBuff) {
     for (const [k, v] of Object.entries(f.pendingSwapBuff)) {
       f.statMods[k] += v;
