@@ -10,6 +10,7 @@ export let STATUSES = {};
 export let ADDITIONAL_EFFECTS = {};
 export let TEMPLATES = [];
 export let ALL_ENCOUNTER_SPECIES = [];
+export const GLOBALS = { growthThresholds: [] };
 
 async function fetchJson(path) {
   const r = await fetch(path);
@@ -18,13 +19,14 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates, globals] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
     fetchJson('data/statuseffects.json'),
     fetchJson('data/additionaleffects.json'),
     fetchJson('data/templates.json'),
+    fetchJson('data/globals.json'),
   ]);
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
@@ -37,4 +39,5 @@ export async function loadData() {
   TEMPLATES.push(...templates);
   ALL_ENCOUNTER_SPECIES.length = 0;
   ALL_ENCOUNTER_SPECIES.push(...TEMPLATES.filter(t => !t.starter).map(t => t.species));
+  GLOBALS.growthThresholds = globals.growthThresholds || [];
 }
