@@ -5,6 +5,7 @@ import { displayName } from '../creature.js';
 import { renderCreatureSvg } from '../art.js';
 import { openInspectModal, openAbilityTooltip } from './cards.js';
 import { playerAct, playerSwap } from '../combat/battle.js';
+import { syncBattleScene } from '../stage/game.js';
 
 export function renderBattle() {
   const panel = el('div', { class: 'panel' });
@@ -12,23 +13,16 @@ export function renderBattle() {
 
   const stage = el('div', { class: 'stage', id: 'stage' });
   if (state.bf && state.bf.hp > 0) {
-    const pBench = el('div', { class: 'stage-bench player' });
-    pBench.innerHTML = renderCreatureSvg(state.bf.creature);
-    stage.appendChild(pBench);
+    stage.appendChild(el('div', { class: 'stage-bench player' }));
   }
   const pActor = el('div', { class: 'stage-actor player idle' });
   pActor.id = 'p-actor';
-  pActor.innerHTML = renderCreatureSvg(state.pf.creature);
   stage.appendChild(pActor);
   const eActor = el('div', { class: 'stage-actor enemy idle' });
   eActor.id = 'e-actor';
-  const eSvg = renderCreatureSvg(state.ef.creature);
-  eActor.innerHTML = `<div style="transform: scaleX(-1);">${eSvg}</div>`;
   stage.appendChild(eActor);
   if (state.ebf && state.ebf.hp > 0) {
-    const eBench = el('div', { class: 'stage-bench enemy' });
-    eBench.innerHTML = `<div style="transform: scaleX(-1);">${renderCreatureSvg(state.ebf.creature)}</div>`;
-    stage.appendChild(eBench);
+    stage.appendChild(el('div', { class: 'stage-bench enemy' }));
   }
   panel.appendChild(stage);
 
@@ -123,6 +117,8 @@ export function renderBattle() {
   panel.appendChild(logEl);
 
   app().appendChild(panel);
+
+  syncBattleScene({ pf: state.pf, ef: state.ef, bf: state.bf, ebf: state.ebf });
 }
 
 function benchCreatureEl(f, side) {
