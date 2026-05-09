@@ -1,4 +1,6 @@
-import { ART_GENERATORS } from '../../src/art.js';
+// Editor stays self-contained: it renders bitmap glyphs from data/glyphs.json
+// directly (no dependency on src/ui/glyphs.js) so this tool can keep working
+// independently of the game's UI layer.
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -6,7 +8,9 @@ const S = {
   abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typePalette: {},
   globals: { growthThresholds: [] },
   passiveSchema: { triggers: {}, conditions: {}, effects: {} },
-  dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false },
+  glyphs: {},  // keyed by species name, each value is 16-string array
+  voice: { subtitles: {}, notes: {}, passives: {}, afflictions: {} },
+  dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false },
   tab: 'monsters',
   monster: null,   // selected template index
   ability: null,   // selected ability key
@@ -21,7 +25,7 @@ const S = {
 
 async function init() {
   try {
-    const [types, passives, abilities, statuses, additionalEffects, templates, globals, passiveSchema] = await Promise.all([
+    const [types, passives, abilities, statuses, additionalEffects, templates, globals, passiveSchema, glyphs, voice] = await Promise.all([
       fetch('../../data/types.json').then(r => r.json()),
       fetch('../../data/passives.json').then(r => r.json()),
       fetch('../../data/abilities.json').then(r => r.json()),
@@ -30,6 +34,8 @@ async function init() {
       fetch('../../data/templates.json').then(r => r.json()),
       fetch('../../data/globals.json').then(r => r.json()),
       fetch('../../data/passivetriggers.json').then(r => r.json()),
+      fetch('../../data/glyphs.json').then(r => r.json()),
+      fetch('../../data/voiceprose.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
     S.typePalette = types.TYPE_PALETTE;
@@ -41,11 +47,52 @@ async function init() {
     S.globals = globals;
     S.passiveSchema = passiveSchema;
     if (!Array.isArray(S.globals.growthThresholds)) S.globals.growthThresholds = [];
+    // glyphs.json carries an _format key for human readers — strip it from state.
+    for (const [k, v] of Object.entries(glyphs)) {
+      if (k.startsWith('_')) continue;
+      S.glyphs[k] = v;
+    }
+    Object.assign(S.voice.subtitles,   voice.subtitles   || {});
+    Object.assign(S.voice.notes,       voice.notes       || {});
+    Object.assign(S.voice.passives,    voice.passives    || {});
+    Object.assign(S.voice.afflictions, voice.afflictions || {});
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
     return;
   }
   renderAll();
+}
+
+// Render a 16x16 glyph as inline SVG markup. 2x2 cells, intrinsic 32x32 viewbox.
+// Author can pass either a species name (looks up S.glyphs) or rows directly.
+function glyphSvg(speciesOrRows) {
+  const rows = Array.isArray(speciesOrRows)
+    ? speciesOrRows
+    : (S.glyphs[speciesOrRows] || null);
+  if (!rows) {
+    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" fill="currentColor"><rect x="14" y="14" width="2" height="2"/></svg>';
+  }
+  let rects = '';
+  for (let y = 0; y < 16; y++) {
+    const row = rows[y] || '';
+    for (let x = 0; x < 16; x++) {
+      if (row[x] === '#') rects += `<rect x="${x*2}" y="${y*2}" width="2" height="2"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" fill="currentColor">${rects}</svg>`;
+}
+
+// Build a fresh empty-glyph row array. Useful when adding a species without one.
+function emptyGlyphRows() {
+  return new Array(16).fill('................');
+}
+
+// Toggle one pixel in a glyph rows array. Returns the new rows (mutates in place).
+function toggleGlyphPixel(rows, x, y) {
+  const r = rows[y];
+  const ch = r[x] === '#' ? '.' : '#';
+  rows[y] = r.substring(0, x) + ch + r.substring(x + 1);
+  return rows;
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
@@ -77,7 +124,7 @@ function renderHeader() {
 function renderTabs() {
   const el = document.getElementById('tabs');
   const tabs = [
-    { key: 'monsters',  label: 'Monsters',         dirty: S.dirty.templates },
+    { key: 'monsters',  label: 'Monsters',         dirty: S.dirty.templates || S.dirty.glyphs || S.dirty.voice },
     { key: 'abilities', label: 'Abilities',        dirty: S.dirty.abilities },
     { key: 'passives',  label: 'Passives',         dirty: S.dirty.passives },
     { key: 'statuses',  label: 'Status Effects',   dirty: S.dirty.statuses },
@@ -190,9 +237,9 @@ function monsterFormHTML(t) {
   const typeOpts = S.types.map(ty =>
     `<option value="${ty}" ${t.type === ty ? 'selected' : ''}>${ty}</option>`).join('');
 
-  const palette = S.typePalette[t.type] || { primary: '#666', secondary: '#888', accent: '#aaa', dark: '#333' };
-  const gen = ART_GENERATORS[t.species];
-  const svgHTML = gen ? gen(palette) : '<svg viewBox="0 0 120 100"><circle cx="60" cy="60" r="20" fill="#666"/></svg>';
+  const svgHTML = glyphSvg(t.species);
+  const glyphRows = S.glyphs[t.species] || emptyGlyphRows();
+  const hasGlyph = !!S.glyphs[t.species];
 
   // Ability pool — render each entry as a row with a select dropdown + remove button,
   // mirroring the +Add UX used for ability effects. Duplicates are filtered from
@@ -221,6 +268,28 @@ function monsterFormHTML(t) {
       </div>`;
   }).join('');
   const canAdd = allAbilityKeys.some(k => !pool.includes(k));
+
+  // Glyph painter: 16x16 grid of clickable cells. Click toggles. Direct-DOM
+  // updates via bindMonsterFormEvents — no full re-render per pixel.
+  const painterCells = [];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const filled = glyphRows[y][x] === '#';
+      painterCells.push(`<div class="gp-cell${filled ? ' filled' : ''}" data-gx="${x}" data-gy="${y}"></div>`);
+    }
+  }
+
+  // Voice section: subtitle + 3 field-note lines. If absent, type-fallbacks
+  // are shown as placeholders so the author sees what they'd be overriding.
+  const subOverride = S.voice.subtitles[t.species] || '';
+  const subFallback = S.voice.subtitles[t.type] || '';
+  const notesOverride = S.voice.notes[t.species] || ['', '', ''];
+  const notesFallback = S.voice.notes[t.type] || ['', '', ''];
+  const noteRow = (i) => `
+    <div class="form-row">
+      <label>Note ${i + 1}</label>
+      <input type="text" class="voice-note" data-voice-note="${i}" value="${escapeAttr(notesOverride[i] || '')}" placeholder="${escapeAttr(notesFallback[i] || 'fallback to type voice…')}">
+    </div>`;
 
   // Growth rate cells: numeric input + grade select. Editing either updates the other.
   const growthCells = ['hp','atk','def','spd'].map(s => {
@@ -274,7 +343,51 @@ function monsterFormHTML(t) {
       <div class="form-section-title">Ability Pool</div>
       <div id="pool-list">${poolRows}</div>
       <button class="btn btn-secondary btn-sm" id="pool-add" ${canAdd ? '' : 'disabled'}>+ Add ability</button>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Glyph
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">(click cells to toggle pixels — 16×16 hand-authored bitmap)</span>
+      </div>
+      <div class="glyph-edit-row">
+        <div class="glyph-painter" id="glyph-painter">${painterCells.join('')}</div>
+        <div class="glyph-painter-side">
+          <div class="glyph-preview-large" id="glyph-preview-large">${glyphSvg(glyphRows)}</div>
+          <div class="glyph-painter-actions">
+            <button class="btn btn-secondary btn-sm" id="glyph-clear">Clear</button>
+            <button class="btn btn-secondary btn-sm" id="glyph-invert">Invert</button>
+          </div>
+          <div class="glyph-painter-meta">
+            <span>${hasGlyph ? 'authored' : 'no glyph yet'}</span>
+            <span id="glyph-pixel-count">${countPixels(glyphRows)} / 256 px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Voice
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">(blank = fall back to ${t.type} voice — placeholders show the fallback)</span>
+      </div>
+      <div class="form-row">
+        <label>Subtitle</label>
+        <input type="text" class="voice-subtitle" data-voice-subtitle value="${escapeAttr(subOverride)}" placeholder="${escapeAttr(subFallback || 'one-line voice tag…')}">
+      </div>
+      ${noteRow(0)}
+      ${noteRow(1)}
+      ${noteRow(2)}
+      <div class="voice-help">
+        Markup: <code>~~strike~~</code> · <code>[[6]]</code> redaction · <code>**gold**</code>
+      </div>
     </div>`;
+}
+
+function countPixels(rows) {
+  let n = 0;
+  for (const r of rows) for (const c of r) if (c === '#') n++;
+  return n;
+}
+
+function escapeAttr(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 // ─── Abilities Tab ───────────────────────────────────────────────────────────
@@ -944,12 +1057,90 @@ function bindMonsterFormEvents() {
   document.querySelectorAll('[data-field]').forEach(el => {
     el.addEventListener('change', () => {
       const field = el.dataset.field;
+      const oldValue = t[field];
       if (el.type === 'checkbox') t[field] = el.checked;
       else t[field] = el.value;
-      // Type changes affect the portrait; passive changes need to refresh the
-      // inline description block. Both go through renderContent.
+      // Renaming the species needs to follow through to glyphs + voice keys
+      // so the new species name keeps its existing artwork and prose.
+      if (field === 'species' && oldValue !== t[field] && oldValue) {
+        if (S.glyphs[oldValue]) {
+          S.glyphs[t[field]] = S.glyphs[oldValue];
+          delete S.glyphs[oldValue];
+          S.dirty.glyphs = true;
+        }
+        for (const k of ['subtitles', 'notes']) {
+          if (S.voice[k][oldValue] != null) {
+            S.voice[k][t[field]] = S.voice[k][oldValue];
+            delete S.voice[k][oldValue];
+            S.dirty.voice = true;
+          }
+        }
+      }
+      // Type changes affect the portrait + voice fallback; passive changes
+      // need to refresh the inline description block. All go through renderContent.
       if (field === 'type' || field === 'primaryPassive' || field === 'secondaryPassive') renderContent();
       S.dirty.templates = true; renderHeader(); renderTabs();
+    });
+  });
+
+  // Glyph painter — direct DOM updates per pixel toggle. Refreshes the live
+  // preview + count without re-rendering the whole form (which would lose
+  // input focus elsewhere).
+  const painter = document.getElementById('glyph-painter');
+  if (painter) {
+    if (!S.glyphs[t.species]) S.glyphs[t.species] = emptyGlyphRows();
+    const previewBox = document.getElementById('glyph-preview-large');
+    const countBox = document.getElementById('glyph-pixel-count');
+    const refreshPreview = () => {
+      if (previewBox) previewBox.innerHTML = glyphSvg(S.glyphs[t.species]);
+      if (countBox) countBox.textContent = `${countPixels(S.glyphs[t.species])} / 256 px`;
+    };
+    painter.querySelectorAll('.gp-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const x = +cell.dataset.gx, y = +cell.dataset.gy;
+        toggleGlyphPixel(S.glyphs[t.species], x, y);
+        cell.classList.toggle('filled');
+        refreshPreview();
+        S.dirty.glyphs = true;
+        renderHeader(); renderTabs();
+      });
+    });
+    const clearBtn = document.getElementById('glyph-clear');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      S.glyphs[t.species] = emptyGlyphRows();
+      renderContent();
+      S.dirty.glyphs = true;
+    });
+    const invertBtn = document.getElementById('glyph-invert');
+    if (invertBtn) invertBtn.addEventListener('click', () => {
+      S.glyphs[t.species] = S.glyphs[t.species].map(r =>
+        r.split('').map(c => c === '#' ? '.' : '#').join(''));
+      renderContent();
+      S.dirty.glyphs = true;
+    });
+  }
+
+  // Voice — subtitle + notes overrides per species. Empty strings fall back
+  // to the type-keyed voice at game-time, so we delete the per-species key
+  // when cleared instead of writing an empty value.
+  const subInput = document.querySelector('[data-voice-subtitle]');
+  if (subInput) {
+    subInput.addEventListener('change', () => {
+      const v = subInput.value.trim();
+      if (v) S.voice.subtitles[t.species] = v;
+      else delete S.voice.subtitles[t.species];
+      S.dirty.voice = true; renderHeader(); renderTabs();
+    });
+  }
+  document.querySelectorAll('[data-voice-note]').forEach(input => {
+    input.addEventListener('change', () => {
+      const idx = +input.dataset.voiceNote;
+      const arr = S.voice.notes[t.species] ? [...S.voice.notes[t.species]] : ['', '', ''];
+      arr[idx] = input.value.trim();
+      const allBlank = arr.every(x => !x);
+      if (allBlank) delete S.voice.notes[t.species];
+      else S.voice.notes[t.species] = arr;
+      S.dirty.voice = true; renderHeader(); renderTabs();
     });
   });
 
@@ -1386,12 +1577,35 @@ async function doCommit(message) {
 
   if (!S.pat) { showStatus('Enter a GitHub PAT first.', true); overlay.classList.add('hidden'); return; }
 
+  // Glyphs and voiceprose carry an _format header row that the game ignores
+  // but readers find helpful. We re-attach those at write time so the file
+  // round-trips cleanly.
+  const glyphsOut = {
+    _format: {
+      size: '16x16', filled: '#', empty: '.',
+      note: 'Each glyph is a 16-element array of 16-char strings. Hand-authored, freehand pixel placement.',
+    },
+    ...S.glyphs,
+  };
+  const voiceOut = {
+    _format: {
+      note: 'Voice-style placeholder prose for the dossier. Markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction, **gold** for the gold accent.',
+      lookup: 'subtitles[species] || subtitles[type]; notes[species] || notes[type]; passives[passiveKey]; afflictions[statusKey]',
+    },
+    subtitles: S.voice.subtitles,
+    notes: S.voice.notes,
+    passives: S.voice.passives,
+    afflictions: S.voice.afflictions,
+  };
+
   const toCommit = [
     S.dirty.templates  && { file: 'templates.json',      data: S.templates },
     S.dirty.abilities  && { file: 'abilities.json',       data: S.abilities },
     S.dirty.passives   && { file: 'passives.json',        data: S.passives },
     S.dirty.statuses   && { file: 'statuseffects.json',   data: S.statuses },
     S.dirty.globals    && { file: 'globals.json',         data: S.globals },
+    S.dirty.glyphs     && { file: 'glyphs.json',          data: glyphsOut },
+    S.dirty.voice      && { file: 'voiceprose.json',      data: voiceOut },
   ].filter(Boolean);
 
   try {
@@ -1399,7 +1613,7 @@ async function doCommit(message) {
       const sha = await getFileSha(file);
       await putFile(file, data, sha, message);
     }
-    S.dirty = { abilities: false, passives: false, templates: false, statuses: false, globals: false };
+    S.dirty = { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false };
     showStatus('Committed! Pages will rebuild shortly.', false);
   } catch (e) {
     showStatus(`Commit failed: ${e.message}`, true);
