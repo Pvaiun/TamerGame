@@ -3,7 +3,7 @@
 A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open `index.html` to run.
 
 ## Architecture in one paragraph
-`src/main.js` awaits `loadData()` (fetches `data/*.json` into named exports on `src/data.js`), then calls `render()`. The whole app is **state mutation + re-render**: modules import `state` from `src/state.js`, mutate it, then call `render()` from `src/ui/render.js`. `render()` clears `#app` and dispatches on `state.screen` to a screen renderer in `src/ui/screens.js` (or `src/ui/battle.js` for the battle screen). There is no virtual DOM, no framework, no router. UI builds DOM via the `el(tag, props, children)` helper in `src/ui/dom.js`.
+`src/main.js` awaits `loadData()` (fetches `data/*.json` into named exports on `src/data.js`), then calls `render()`. The whole app is **state mutation + re-render**: modules import `state` from `src/state.js`, mutate it, then call `render()` from `src/ui/render.js`. `render()` clears `#app` and dispatches on `state.screen` to a screen renderer in `src/ui/screens.js` (or `src/ui/battle.js` for the battle screen). There is no virtual DOM, no framework, no router. UI builds DOM via the `el(tag, props, children)` helper in `src/ui/dom.js`. The visual aesthetic is "document horror" — every screen is a page in a corrupted testimony; creatures are abstract pixel-bitmap glyphs with prose descriptions, not illustrated portraits.
 
 ## File map
 
@@ -14,16 +14,18 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `data/passives.json` — passive dict keyed by passive id; each entry has params + a `codeRef` string naming the function in `passives.js` that consumes them
 - `data/statuseffects.json` — burn/bloom/soaking/cursed/dazed canonical defaults
 - `data/additionaleffects.json` — schema for the effect types that go in an ability's `phases[][]`. Each type has `label`, `desc`, optional `defaultTiming` (`before`/`eachHit`/`after`), optional `modifier: true` for damage-mod-only effects, optional `requires: [...]` for editor warnings, and a `params` map where each param has `type` (`percent`/`multiplier`/`int`/`bool`/`status`/`targets`/`swapTargets`/`statMods`), `default`, and `label`. Engine reads defaults from here when an instance omits a param; the editor uses it to render add/remove rows with editable inputs per type.
+- `data/glyphs.json` — 16×16 hand-authored bitmap glyph per species. Format: each glyph is an array of 16 strings of 16 chars (`#` filled, `.` empty). Rendered as SVG by `src/ui/glyphs.js` (2×2 cells, `shape-rendering=crispEdges`).
+- `data/voiceprose.json` — placeholder voice prose used by the dossier and screens. `subtitles[species|type]` (one-line voice tag), `notes[species|type]` (3-line field notes), `passives[passiveKey]` (single voice line per passive — the mechanical desc lives in `passives.json`), `afflictions[statusKey]` (lowercase prose name). Inline corruption markup: `~~strike~~`, `[[N]]` for an N-char redaction bar, `**gold**` for the gold accent.
 
 ### Core (`src/`)
 - `state.js` — `state` singleton, `pushLog`, `resetGame`, `nextCreatureId`, constants (`TOTAL_WAVES=10`, `BREED_WAVES={3,6,9}`, `MAX_LEVEL=50`)
-- `data.js` — `loadData()` + named exports (`TYPES`, `TYPE_CHART`, `TYPE_PALETTE`, `PASSIVES`, `ABILITIES`, `STATUSES`, `ADDITIONAL_EFFECTS`, `TEMPLATES`, `ALL_ENCOUNTER_SPECIES`)
+- `data.js` — `loadData()` + named exports (`TYPES`, `TYPE_CHART`, `TYPE_PALETTE`, `PASSIVES`, `ABILITIES`, `STATUSES`, `ADDITIONAL_EFFECTS`, `TEMPLATES`, `ALL_ENCOUNTER_SPECIES`, `GLYPHS`, `VOICE`)
 - `creature.js` — `makeCreature`, `gainXp`, `xpToNext`, `growthRank`, `rankColor`, `displayName`, `freshFighter` (the in-battle wrapper)
 - `breeding.js` — `makeChild`, `finalizeBreed` (called on breed waves)
 - `encounter.js` — `generateEnemy(Party)`, `generateBoss(Party)`, `partyAvgLevel`
 - `rng.js` — `rand`, `randi`, `pick`, `pickN`, `sleep`
 - `audio.js` — `sfx(type)` WebAudio bleeps; types: `hit, crit, heal, select, faint, victory, capture, levelup`
-- `art.js` — procedural creature art / palette blending
+- `art.js` — legacy procedural creature SVG generators. **Not used by the game UI** (the dossier renders bitmap glyphs from `data/glyphs.json` instead). Retained only so `tools/editor/` keeps working, plus `blendPalettes` is still called by `breeding.js` for the (currently unused) `creature.palette` field.
 - `version.js` — single-line version string
 
 ### Combat (`src/combat/`)
@@ -35,16 +37,19 @@ A creature-breeding roguelite. Vanilla ES modules, no build step, no deps. Open 
 - `ai.js` — `aiChoose(ef, pf)` returns ability key or `'_swap'`
 
 ### UI (`src/ui/`)
-- `render.js` — `render()` dispatcher; `advanceWave()`
-- `screens.js` — every non-battle screen (`renderStart, renderStarterPick, renderBloodlineReady, renderHeader, renderPreBattle, renderAftermath, renderBreed, renderVictory, renderGameover`)
-- `battle.js` — battle screen layout
-- `cards.js` — creature card rendering
-- `animations.js` — `spawnFloat`, `spawnCallout`, `shakeStage`, `playLunge`, `playRecoil` (DOM/CSS only, no canvas)
+- `render.js` — `render()` dispatcher; `advanceWave()`. Renders the title `// bloodlines` header on every non-battle screen.
+- `screens.js` — every non-battle screen (`renderStart, renderStarterPick, renderBloodlineReady, renderHeader, renderPreBattle, renderAftermath, renderBreed, renderVictory, renderGameover`). Each screen is a `doc-page` opening with a `// page · subject` tag and ending with text-row `▸ doc-button` actions.
+- `battle.js` — dossier battle screen. Two columns of testimony (engagement strip → bench sticker → name → subtitle → field notes inline-with-glyph → hp bar → stat bars → afflictions → passives) with a dual-state action box (action menu / narrative).
+- `cards.js` — `creatureCardEl` (a creature as a doc-card paragraph: glyph + name + subtitle + stat-mini cells + voice/mechanical passive lines), `openInspectModal`, `openAbilityTooltip` (both render as `doc-modal`).
+- `glyphs.js` — `renderGlyph(species)` returns SVG markup with 2×2 pixel cells and `shape-rendering=crispEdges`. Color is `currentColor`; size via CSS.
+- `textCorrupt.js` — `parseProse(input)` consumes the `~~strike~~ / [[N]] / **gold**` markup and returns HTML. `strike()` / `redact()` / `gold()` element builders for direct DOM use.
+- `animations.js` — `spawnFloat`, `spawnCallout`, `shakeStage`, `playLunge`, `playRecoil` (DOM/CSS only — float numbers spawn over the targeted dossier glyph; shake/lunge/recoil are CSS animations on the dossier column).
 - `dom.js` — `el(tag, props, children)`, `attachLongPress`, `app()`, tooltip helpers
+- `hpTween.js` — `applyHpFill(fillEl, fighter)` smoothly tweens a width fill between previous and current HP percentage
 
 ### Assets / tooling
-- `index.html` — single page, `<div id="app">` + `<div id="modal-root">`, loads `src/main.js` as module
-- `styles.css` — all styles (~24 KB, single file)
+- `index.html` — single page, `<div id="app">` + `<div id="modal-root">`, loads IBM Plex Mono and `src/main.js` as module. No canvas, no Phaser.
+- `styles.css` — all styles (single file). Layered as: tokens (`:root`) → corruption text utilities → body/app shell → legacy float/callout + modal scrim → DOSSIER BATTLE SCREEN section → DOCUMENT PAGE LAYOUT section.
 - `tools/editor/` — separate standalone data editor; not loaded by the game
 
 ## Key data schemas

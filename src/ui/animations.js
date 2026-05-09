@@ -1,6 +1,6 @@
 // DOM-based combat animations targeting the dossier columns.
-// Phaser BattleScene is parked; effects float over the relevant glyph portrait
-// or shake the relevant column.
+// Floats spawn over the relevant glyph portrait; shake/lunge/recoil are
+// CSS animations applied to the dossier column for the affected side.
 
 import { el } from './dom.js';
 

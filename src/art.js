@@ -1,5 +1,6 @@
 // Procedural SVG generators per species. Each takes a 4-color palette and
-// returns SVG markup. Used by renderCreatureSvg() to draw portraits.
+// returns SVG markup. Retained for the standalone tools/editor — no
+// longer used by the game (the dossier UI uses bitmap glyphs instead).
 export const ART_GENERATORS = {
   Emberkin: (p) => `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="60" cy="86" rx="32" ry="6" fill="${p.dark}" opacity="0.4"/>
@@ -281,8 +282,3 @@ export function blendPalettes(a, b) {
   };
 }
 
-export function renderCreatureSvg(creature) {
-  const gen = ART_GENERATORS[creature.species];
-  if (!gen) return '<svg viewBox="0 0 120 100"><circle cx="60" cy="60" r="20" fill="#666"/></svg>';
-  return gen(creature.palette);
-}

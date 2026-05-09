@@ -1,197 +1,261 @@
+// Doc-card: a single creature rendered as a paragraph in the dossier
+// document. Replaces the old procedural-art creature card. Used on every
+// non-battle screen for selection and review.
+//
+// Inspect modal and ability tooltip are also rendered in the document
+// aesthetic — same typography, same spacing rules.
+
 import { el, attachLongPress } from './dom.js';
-import { PASSIVES, ABILITIES } from '../data.js';
-import { renderCreatureSvg } from '../art.js';
+import { PASSIVES, ABILITIES, VOICE } from '../data.js';
 import { displayName, growthRank, rankColor, xpToNext } from '../creature.js';
+import { renderGlyph } from './glyphs.js';
+import { parseProse } from './textCorrupt.js';
 
 export function portraitEl(creature, sizePx) {
-  const wrap = el('div', { class: 'creature-portrait', style: sizePx ? `width:${sizePx}px;height:${sizePx}px;` : '' });
-  wrap.innerHTML = renderCreatureSvg(creature);
+  const wrap = el('div', { class: 'doc-card-glyph', style: sizePx ? `width:${sizePx}px;height:${sizePx}px;` : '' });
+  wrap.innerHTML = renderGlyph(creature.species);
   return wrap;
 }
 
 export function creatureCardEl(c, options = {}) {
   const isSelectable = !!options.selectable;
-  const card = el('div', { class: 'creature-card' + (isSelectable ? ' selectable' : '') + (options.selected ? ' selected' : '') + (options.dimmed ? ' dimmed' : '') });
+  let cls = 'doc-card';
+  if (isSelectable)        cls += ' selectable';
+  if (options.selected)    cls += ' selected';
+  if (options.dimmed)      cls += ' dimmed';
+  if (!options.noInspect)  cls += ' inspectable';
+  const card = el('div', { class: cls });
+
   if (!options.noInspect) {
-    card.classList.add('inspectable');
     attachLongPress(card,
       () => openInspectModal(c),
-      isSelectable && options.onclick ? options.onclick : null
-    );
+      isSelectable && options.onclick ? options.onclick : null);
   } else if (isSelectable && options.onclick) {
     card.addEventListener('click', options.onclick);
   }
+
+  card.appendChild(el('span', { class: 'doc-card-marker' }, '▸ '));
   card.appendChild(portraitEl(c));
-  const info = el('div', { class: 'creature-info' });
-  const header = el('div', { class: 'creature-header' });
-  header.appendChild(el('div', { class: 'creature-name' }, displayName(c)));
-  const meta = el('div', { class: 'creature-meta' }, [
-    el('span', { class: 'type-pip ' + c.type }),
-    el('span', { class: 'type-' + c.type }, c.type.toUpperCase()),
-  ]);
-  header.appendChild(meta);
-  info.appendChild(header);
 
-  const statRow = el('div', { class: 'stat-row' + (options.showGrowths ? ' with-growths' : '') });
-  for (const [label, val, growth] of [['HP', c.stats.hp, c.growth.hp], ['ATK', c.stats.atk, c.growth.atk], ['DEF', c.stats.def, c.growth.def], ['SPD', c.stats.spd, c.growth.spd]]) {
-    const s = el('div', { class: 'stat' });
-    s.appendChild(el('div', { class: 'stat-label' }, label));
-    s.appendChild(el('div', { class: 'stat-value' }, String(val)));
-    if (options.showGrowths) {
-      const r = growthRank(growth);
-      s.appendChild(el('div', { class: 'stat-growth rank-' + r, style: `color:${rankColor(r)};border-color:${rankColor(r)};` }, r));
-    }
-    statRow.appendChild(s);
+  const body = el('div', { class: 'doc-card-body' });
+
+  const head = el('div', { class: 'doc-card-head' });
+  head.appendChild(el('span', { class: 'doc-card-name' }, displayName(c).toLowerCase()));
+  head.appendChild(el('span', { class: 'doc-card-meta' },
+    `${c.type} · l${c.level} · #${pad4(c.id)}`));
+  body.appendChild(head);
+
+  const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
+  if (subtitle) {
+    const sub = el('div', { class: 'doc-card-subtitle' });
+    sub.innerHTML = parseProse(subtitle);
+    body.appendChild(sub);
   }
-  info.appendChild(statRow);
 
-  info.appendChild(el('div', { class: 'level-line' }, `LVL ${c.level} · XP ${c.xp}/${xpToNext(c.level)}`));
-  const xpBar = el('div', { class: 'xp-bar' });
-  xpBar.appendChild(el('div', { class: 'xp-fill', style: `width:${Math.min(100, c.xp / xpToNext(c.level) * 100)}%;` }));
-  info.appendChild(xpBar);
+  const stats = el('div', { class: 'doc-card-stats' });
+  const ranks = options.showGrowths ? c.growth : null;
+  for (const k of ['hp', 'atk', 'def', 'spd']) {
+    const cell = el('span', { class: 'stat-mini-cell' });
+    cell.appendChild(el('span', { class: 'stat-mini-label' }, k));
+    cell.appendChild(el('span', { class: 'stat-mini-num' }, pad2(c.stats[k])));
+    if (ranks) {
+      const r = growthRank(ranks[k]);
+      cell.appendChild(el('span', {
+        class: 'stat-mini-rank rank-' + r,
+        style: `color:${rankColor(r)};border-color:${rankColor(r)};`,
+      }, r));
+    }
+    stats.appendChild(cell);
+  }
+  body.appendChild(stats);
+
+  body.appendChild(el('div', { class: 'doc-card-xp' },
+    `xp ${c.xp}/${xpToNext(c.level)}`));
 
   if (c.passives && c.passives.length) {
-    const pline = el('div', { class: 'passive-line' });
-    const parts = c.passives.map((k, i) => {
+    for (const k of c.passives) {
       const p = PASSIVES[k];
-      return p ? (i > 0 ? '◇ ' : '◆ ') + p.name : k;
-    });
-    pline.appendChild(el('span', {}, parts.join('   ')));
-    info.appendChild(pline);
+      const voice = VOICE.passives[k];
+      const mech = (p && p.desc) ? p.desc : '';
+      const prose = voice || mech || '—';
+      const row = el('div', { class: 'doc-card-passive' });
+      row.appendChild(el('span', { class: 'passive-bullet' }, '• '));
+      row.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
+      row.appendChild(el('span', { class: 'passive-sep' }, ' · '));
+      const desc = el('span', { class: 'passive-desc-doc' });
+      desc.innerHTML = parseProse(prose);
+      row.appendChild(desc);
+      body.appendChild(row);
+    }
   }
 
-  card.appendChild(info);
+  card.appendChild(body);
   return card;
 }
 
+// ── inspect modal ────────────────────────────────────────────────────
 export function openInspectModal(c) {
   const root = document.getElementById('modal-root');
   root.innerHTML = '';
   const bg = el('div', { class: 'modal-bg', onclick: (e) => { if (e.target === bg) root.innerHTML = ''; } });
-  const m = el('div', { class: 'modal inspect-modal' });
+  const m = el('div', { class: 'modal doc-modal' });
 
-  const head = el('div', { class: 'inspect-head' });
-  const port = el('div', { class: 'inspect-portrait' });
-  port.innerHTML = renderCreatureSvg(c);
+  m.appendChild(el('div', { class: 'doc-modal-tag' }, '// subject · field record'));
+
+  const head = el('div', { class: 'doc-modal-head' });
+  const port = el('div', { class: 'doc-modal-glyph' });
+  port.innerHTML = renderGlyph(c.species);
   head.appendChild(port);
-  const headInfo = el('div', { class: 'inspect-headinfo' });
-  headInfo.appendChild(el('div', { class: 'inspect-name' }, displayName(c)));
-  headInfo.appendChild(el('div', { class: 'inspect-subhead' }, [
-    el('span', { class: 'type-pip ' + c.type }),
-    el('span', { class: 'type-' + c.type }, c.type.toUpperCase()),
-    el('span', { style: 'color: var(--text-faint); margin: 0 8px;' }, '·'),
-    el('span', {}, `${c.species}`),
-    el('span', { style: 'color: var(--text-faint); margin: 0 8px;' }, '·'),
-    el('span', {}, `LVL ${c.level}`),
-  ]));
+  const headInfo = el('div', { class: 'doc-modal-headinfo' });
+  headInfo.appendChild(el('div', { class: 'doc-modal-name' }, displayName(c).toLowerCase()));
+  const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
+  if (subtitle) {
+    const sub = el('div', { class: 'doc-modal-subtitle' });
+    sub.innerHTML = parseProse(subtitle);
+    headInfo.appendChild(sub);
+  }
+  headInfo.appendChild(el('div', { class: 'doc-modal-meta' },
+    `${c.species.toLowerCase()} · ${c.type} · level ${c.level} · #${pad4(c.id)}`));
   head.appendChild(headInfo);
   m.appendChild(head);
 
-  const sg = el('div', { class: 'inspect-stats' });
-  for (const [label, val, growth] of [['HP', c.stats.hp, c.growth.hp], ['ATK', c.stats.atk, c.growth.atk], ['DEF', c.stats.def, c.growth.def], ['SPD', c.stats.spd, c.growth.spd]]) {
+  // field notes (voice prose)
+  const noteLines = VOICE.notes[c.species] || VOICE.notes[c.type];
+  if (noteLines && noteLines.length) {
+    m.appendChild(el('div', { class: 'sec-label-doc' }, '─ field notes ─'));
+    const prose = el('div', { class: 'doc-modal-notes' });
+    for (const line of noteLines) {
+      const lineEl = el('div', { class: 'fn-line' });
+      lineEl.innerHTML = parseProse(line);
+      prose.appendChild(lineEl);
+    }
+    m.appendChild(prose);
+  }
+
+  // capability with growths
+  m.appendChild(el('div', { class: 'sec-label-doc' }, '─ capability ─'));
+  const sg = el('div', { class: 'doc-modal-stats' });
+  for (const [label, val, growth] of [['hp', c.stats.hp, c.growth.hp], ['atk', c.stats.atk, c.growth.atk], ['def', c.stats.def, c.growth.def], ['spd', c.stats.spd, c.growth.spd]]) {
     const rank = growthRank(growth);
-    const cell = el('div', { class: 'inspect-stat' });
-    cell.appendChild(el('div', { class: 'inspect-stat-label' }, label));
-    cell.appendChild(el('div', { class: 'inspect-stat-value' }, String(val)));
-    const rankWrap = el('div', { class: 'inspect-rank-wrap' });
-    rankWrap.appendChild(el('span', { class: 'inspect-rank-label' }, 'GROWTH'));
-    rankWrap.appendChild(el('span', { class: 'inspect-rank-tag rank-' + rank, style: `color:${rankColor(rank)};border-color:${rankColor(rank)};` }, rank));
-    cell.appendChild(rankWrap);
-    sg.appendChild(cell);
+    const row = el('div', { class: 'doc-modal-stat-row' });
+    row.appendChild(el('span', { class: 'stat-mini-label' }, label));
+    row.appendChild(el('span', { class: 'stat-mini-num' }, pad2(val)));
+    row.appendChild(el('span', {
+      class: 'stat-mini-rank rank-' + rank,
+      style: `color:${rankColor(rank)};border-color:${rankColor(rank)};`,
+    }, `${rank} growth`));
+    sg.appendChild(row);
   }
   m.appendChild(sg);
 
-  m.appendChild(el('div', { class: 'inspect-section-title' }, 'PASSIVES'));
+  // passives
+  m.appendChild(el('div', { class: 'sec-label-doc' }, '─ passives ─'));
   if (c.passives && c.passives.length) {
     for (const k of c.passives) {
       const p = PASSIVES[k];
-      const row = el('div', { class: 'inspect-row' });
-      row.appendChild(el('div', { class: 'inspect-row-name' }, p ? '◆ ' + p.name : k));
-      row.appendChild(el('div', { class: 'inspect-row-desc' }, p ? p.desc : '(unknown)'));
+      const voice = VOICE.passives[k];
+      const mech = (p && p.desc) ? p.desc : '';
+      const showMech = !!voice && !!mech;
+      const row = el('div', { class: 'doc-modal-row passive-line-doc' });
+      const top = el('div', { class: 'passive-prose' });
+      top.appendChild(el('span', { class: 'passive-bullet' }, '• '));
+      top.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
+      top.appendChild(el('span', { class: 'passive-sep' }, ' · '));
+      const desc = el('span', { class: 'passive-desc-doc' });
+      desc.innerHTML = parseProse(voice || mech || '—');
+      top.appendChild(desc);
+      row.appendChild(top);
+      if (showMech) row.appendChild(el('div', { class: 'passive-mech' }, mech));
       m.appendChild(row);
     }
   } else {
-    m.appendChild(el('div', { class: 'inspect-row-desc', style: 'padding: 0 0 8px;' }, '(none)'));
+    m.appendChild(el('div', { class: 'doc-modal-row' }, '— none observed —'));
   }
 
-  m.appendChild(el('div', { class: 'inspect-section-title' }, 'ABILITIES'));
+  // abilities
+  m.appendChild(el('div', { class: 'sec-label-doc' }, '─ cataloged actions ─'));
   for (const k of c.abilities) {
     const a = ABILITIES[k];
-    const row = el('div', { class: 'inspect-row' });
-    const nameRow = el('div', { class: 'inspect-row-name' });
-    if (a && a.element) nameRow.appendChild(el('span', { class: 'type-pip ' + a.element }));
-    nameRow.appendChild(el('span', {}, a ? a.name : k));
-    if (a && a.power && a.power > 0) {
-      const hits = a.hits || 1;
-      const pwTag = hits > 1 ? `pw ${a.power}×${hits}` : `pw ${a.power}`;
-      nameRow.appendChild(el('span', { class: 'inspect-tag' }, pwTag));
+    const row = el('div', { class: 'doc-modal-row ability-doc-row' });
+    const top = el('div', { class: 'ability-doc-top' });
+    top.appendChild(el('span', { class: 'ability-name-doc' }, (a ? a.name : k).toLowerCase()));
+    if (a) {
+      const tail = el('span', { class: 'ability-doc-tail' });
+      const flat = (a.phases || []).flat();
+      const dmg = flat.find(e => e.type === 'damage');
+      if (a.element) tail.appendChild(el('span', { class: 'ability-elem' }, a.element));
+      if (dmg) {
+        if (a.element) tail.appendChild(el('span', {}, ' · '));
+        tail.appendChild(el('span', { class: 'pow-num' }, (dmg.hits || 1) > 1 ? `${dmg.power}×${dmg.hits}` : `${dmg.power}`));
+      }
+      if (a.phases && a.phases.length > 1) {
+        tail.appendChild(el('span', {}, ` · ${a.phases.length}p`));
+      }
+      top.appendChild(tail);
     }
-    if (a && a.priority) {
-      const pTag = a.priority > 0 ? `+${a.priority} prio` : `${a.priority} prio`;
-      nameRow.appendChild(el('span', { class: 'inspect-tag' }, pTag));
+    row.appendChild(top);
+    if (a && a.desc) {
+      row.appendChild(el('div', { class: 'ability-doc-desc' }, a.desc.toLowerCase()));
     }
-    row.appendChild(nameRow);
-    row.appendChild(el('div', { class: 'inspect-row-desc' }, a ? a.desc : '(unknown)'));
     m.appendChild(row);
   }
 
-  const closeRow = el('div', { class: 'modal-actions' });
-  closeRow.appendChild(el('button', { class: 'primary', onclick: () => { root.innerHTML = ''; } }, 'Close'));
-  m.appendChild(closeRow);
+  m.appendChild(el('button', { class: 'doc-button doc-modal-close', onclick: () => { root.innerHTML = ''; } }, '▸ close'));
 
   bg.appendChild(m);
   root.appendChild(bg);
 }
 
-function metaCell(label, val, valCls, wide) {
-  const cell = el('div', { class: 'tooltip-meta-cell' + (wide ? ' wide' : '') });
-  cell.appendChild(el('div', { class: 'tooltip-meta-label' }, label));
-  cell.appendChild(el('div', { class: 'tooltip-meta-val' + (valCls ? ' ' + valCls : '') }, val));
-  return cell;
-}
-
+// ── ability tooltip modal ────────────────────────────────────────────
 export function openAbilityTooltip(abilityKey) {
   const a = ABILITIES[abilityKey];
   if (!a) return;
   const root = document.getElementById('modal-root');
   root.innerHTML = '';
   const bg = el('div', { class: 'modal-bg', onclick: (e) => { if (e.target === bg) root.innerHTML = ''; } });
-  const m = el('div', { class: 'modal ability-tooltip-modal' });
-  m.appendChild(el('div', { class: 'tooltip-name' }, [
-    a.element ? el('span', { class: 'type-pip ' + a.element, style: 'width:9px;height:9px;margin-right:8px;' }) : null,
-    a.name,
-  ].filter(Boolean)));
-  const meta = el('div', { class: 'tooltip-meta' });
+  const m = el('div', { class: 'modal doc-modal narrow' });
+
+  m.appendChild(el('div', { class: 'doc-modal-tag' }, '// action · catalog entry'));
+  m.appendChild(el('div', { class: 'doc-modal-name' }, a.name.toLowerCase()));
+
   const flat = (a.phases || []).flat();
-  if (a.element) meta.appendChild(metaCell('ELEMENT', a.element.toUpperCase(), 'type-' + a.element));
-  if (a.priority) meta.appendChild(metaCell('PRIORITY', (a.priority > 0 ? '+' : '') + a.priority));
-  if (a.phases && a.phases.length > 1) meta.appendChild(metaCell('PHASES', String(a.phases.length)));
-  {
-    const dmg = flat.filter(e => e.type === 'damage');
-    if (dmg.length === 1) {
-      const d = dmg[0];
-      const hits = d.hits || 1;
-      meta.appendChild(metaCell('POWER', hits > 1 ? `${d.power} × ${hits}` : String(d.power)));
-    } else if (dmg.length > 1) {
-      meta.appendChild(metaCell('POWER', dmg.map(d => `${d.power}${(d.hits||1) > 1 ? '×' + (d.hits||1) : ''}`).join(' + ')));
-    }
+  const meta = el('div', { class: 'doc-modal-meta-grid' });
+  if (a.element) metaRow(meta, 'element', a.element);
+  if (a.priority) metaRow(meta, 'priority', (a.priority > 0 ? '+' : '') + a.priority);
+  if (a.phases && a.phases.length > 1) metaRow(meta, 'phases', String(a.phases.length));
+  const dmg = flat.filter(e => e.type === 'damage');
+  if (dmg.length === 1) {
+    const d = dmg[0];
+    metaRow(meta, 'power', (d.hits || 1) > 1 ? `${d.power} × ${d.hits}` : String(d.power));
+  } else if (dmg.length > 1) {
+    metaRow(meta, 'power', dmg.map(d => `${d.power}${(d.hits||1) > 1 ? '×' + (d.hits||1) : ''}`).join(' + '));
   }
   for (const eff of flat) {
     if (eff.type === 'buff' && eff.statMult) {
-      const parts = Object.entries(eff.statMult).filter(([, v]) => v).map(([k, v]) => `${k.toUpperCase()} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
-      if (parts.length) meta.appendChild(metaCell('STAT MOD', parts.join(' '), '', true));
+      const parts = Object.entries(eff.statMult).filter(([, v]) => v).map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
+      if (parts.length) metaRow(meta, 'stat mod', parts.join(' '));
     } else if (eff.type === 'heal_over_time') {
-      meta.appendChild(metaCell('HEAL/TURN', Math.round((eff.percent ?? 0.06) * 100) + '%', '', true));
-      meta.appendChild(metaCell('DURATION', (eff.turns ?? 4) + ' turns'));
+      metaRow(meta, 'heal/turn', Math.round((eff.percent ?? 0.06) * 100) + '%');
+      metaRow(meta, 'duration', (eff.turns ?? 4) + ' turns');
     } else if (eff.type === 'hp_cost') {
-      meta.appendChild(metaCell('HP COST', Math.round((eff.percent ?? 0) * 100) + '%'));
+      metaRow(meta, 'hp cost', Math.round((eff.percent ?? 0) * 100) + '%');
     }
   }
   m.appendChild(meta);
-  m.appendChild(el('div', { class: 'tooltip-desc' }, a.desc));
-  const closeRow = el('div', { class: 'modal-actions' });
-  closeRow.appendChild(el('button', { class: 'primary', onclick: () => { root.innerHTML = ''; } }, 'Close'));
-  m.appendChild(closeRow);
+  if (a.desc) m.appendChild(el('div', { class: 'doc-modal-desc' }, a.desc.toLowerCase()));
+
+  m.appendChild(el('button', { class: 'doc-button doc-modal-close', onclick: () => { root.innerHTML = ''; } }, '▸ close'));
+
   bg.appendChild(m);
   root.appendChild(bg);
 }
+
+function metaRow(parent, label, val) {
+  const r = el('div', { class: 'meta-grid-row' });
+  r.appendChild(el('span', { class: 'meta-grid-label' }, label));
+  r.appendChild(el('span', { class: 'meta-grid-val' }, String(val)));
+  parent.appendChild(r);
+}
+
+function pad2(n) { return String(Math.max(0, n | 0)).padStart(2, '0'); }
+function pad4(n) { return String(Math.max(0, n | 0)).padStart(4, '0'); }
