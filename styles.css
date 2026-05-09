@@ -6,33 +6,13 @@
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Allow selection in text inputs and the battle log so the player can copy if they want */
-  input, textarea, .battle-log {
+  /* Allow selection in text inputs so the player can copy if they want */
+  input, textarea {
     user-select: text;
     -webkit-user-select: text;
   }
   :root {
-    --bg: #0a0a10;
-    --panel: #16161e;
-    --panel-2: #1f1f2a;
-    --border: #2a2a38;
-    --border-hi: #4a4a5e;
-    --text: #e8e8ec;
-    --text-dim: #8a8a98;
-    --text-faint: #5a5a68;
-    --accent: #d4a373;
-    --accent-dim: #8a6a4a;
-    --fire:  #ff7755;
-    --water: #5599ff;
-    --grass: #66cc77;
-    --light: #ffe5a8;
-    --dark:  #aa77cc;
-    --hp: #c84a4a;
-    --hp-bg: #2a1a1a;
-    --eff-good: #5fc878;
-    --eff-bad:  #c86a6a;
-
-    /* ── new aesthetic tokens (dossier / document horror) ─────────── */
+    /* ── document aesthetic tokens ──────────────────────────────────── */
     --doc-bg:        #0a0a0c;
     --doc-rule:      #18181a;
     --ink-100:       #e0e0e2;
@@ -89,354 +69,36 @@
   .doc-gold { color: var(--doc-gold); }
   body {
     font-family: var(--font-mono);
-    background: var(--bg);
-    color: var(--text);
+    background: var(--doc-bg);
+    color: var(--ink-100);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     padding: 16px;
     overflow-x: hidden;
   }
-  #stage-root {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-  #stage-root canvas { display: block; pointer-events: none; }
-  #app { width: 100%; max-width: 920px; position: relative; z-index: 1; }
-  h1 { text-align: center; margin-bottom: 4px; font-size: 28px; letter-spacing: 6px; color: var(--accent); font-weight: 900; }
-  .subtitle { text-align: center; color: var(--text-faint); margin-bottom: 20px; font-size: 11px; letter-spacing: 3px; }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 16px; margin-bottom: 12px; }
-  .panel-title { font-size: 11px; letter-spacing: 3px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; }
-  button { font-family: inherit; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; cursor: pointer; border-radius: 3px; transition: all 0.12s; font-size: 13px; }
-  button:hover:not(:disabled) { background: #2a2a38; border-color: var(--accent); transform: translateY(-1px); }
-  button:active:not(:disabled) { transform: translateY(0); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.primary { background: linear-gradient(180deg, #5a4a2a, #4a3a1a); border-color: var(--accent); color: #fff; font-weight: bold; letter-spacing: 1px; }
-  button.primary:hover:not(:disabled) { background: linear-gradient(180deg, #6a5a3a, #5a4a2a); }
+  #app { width: 100%; max-width: 920px; position: relative; z-index: var(--z-app); }
 
-  .header-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; font-size: 11px; }
-  .header-stat { background: var(--panel); padding: 8px 10px; border-radius: 3px; border: 1px solid var(--border); text-align: center; }
-  .header-stat-label { color: var(--text-faint); font-size: 9px; letter-spacing: 2px; }
-  .header-stat-value { font-weight: bold; font-size: 15px; color: var(--accent); margin-top: 2px; }
-
-  .creature-card {
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
-    padding: 10px; margin-bottom: 8px; cursor: default; transition: all 0.12s;
-    display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: stretch;
-  }
-  .creature-card.selectable { cursor: pointer; }
-  .creature-card.selectable:hover { border-color: var(--accent); background: #25252f; }
-  .creature-card.selected { border-color: var(--accent); background: #2a251f; box-shadow: 0 0 0 1px var(--accent) inset; }
-  .creature-card.dimmed { opacity: 0.5; }
-  .creature-portrait {
-    width: 72px; height: 72px; background: #0d0d14; border-radius: 4px;
-    display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .creature-portrait svg { width: 100%; height: 100%; }
-  .creature-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-  .creature-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
-  .creature-name { font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .creature-meta { font-size: 10px; letter-spacing: 1px; flex-shrink: 0; }
-  .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; font-size: 10px; }
-  .stat { background: #0d0d14; padding: 3px 2px; border-radius: 2px; text-align: center; border: 1px solid #1a1a22; min-width: 0; overflow: hidden; }
-  .stat-label { color: var(--text-faint); font-size: 8px; letter-spacing: 1px; }
-  .stat-value { color: var(--text); font-weight: bold; font-size: 11px; }
-  .stat-growth { font-size: 9px; font-weight: bold; letter-spacing: 0; padding: 0 4px; border: 1px solid; border-radius: 2px; display: inline-block; margin-top: 2px; }
-  .growth-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 2px; }
-  .growth-bar { height: 3px; background: #0d0d14; border-radius: 1px; overflow: hidden; }
-  .growth-fill { height: 100%; background: linear-gradient(90deg, #6a8a4a, #aacc66); }
-  .level-line { font-size: 10px; color: var(--text-dim); }
-  .xp-bar { height: 4px; background: #0d0d14; border-radius: 1px; overflow: hidden; margin-top: 2px; }
-  .xp-fill { height: 100%; background: linear-gradient(90deg, #4a6a8a, #66aacc); transition: width 0.5s; }
-  .passive-line { font-size: 10px; color: var(--accent); margin-top: 2px; line-height: 1.4; word-break: break-word; }
-  .passive-line .passive-extra { color: #c8aacc; }
-
-  /* inspectable cards (when not selectable) */
-  .creature-card.inspectable { cursor: pointer; transition: border-color 0.12s; }
-  .creature-card.inspectable:hover { border-color: var(--border-hi); }
-
-  /* info button on selectable cards */
-  .info-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-    width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: 13px;
-    line-height: 1; flex-shrink: 0; cursor: pointer; transition: all 0.12s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .info-btn:hover { color: var(--accent); border-color: var(--accent); transform: none; background: transparent; }
-
-  /* inspect modal — extends .modal */
-  .inspect-modal { max-width: 540px; max-height: 86vh; overflow-y: auto; padding: 18px; }
-  .inspect-head { display: grid; grid-template-columns: 96px 1fr; gap: 14px; margin-bottom: 14px; align-items: center; }
-  .inspect-portrait { width: 96px; height: 96px; background: #0d0d14; border-radius: 4px; border: 1px solid var(--border); overflow: hidden; }
-  .inspect-portrait svg { width: 100%; height: 100%; }
-  .inspect-headinfo { min-width: 0; }
-  .inspect-name { font-size: 18px; font-weight: bold; color: var(--accent); letter-spacing: 1px; word-break: break-word; }
-  .inspect-subhead { font-size: 11px; letter-spacing: 1px; color: var(--text-dim); margin-top: 4px; display: flex; align-items: center; flex-wrap: wrap; }
-  .inspect-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
-  .inspect-stat { background: #0d0d14; border: 1px solid var(--border); border-radius: 3px; padding: 8px 6px; text-align: center; min-width: 0; overflow: hidden; }
-  .inspect-stat-label { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; }
-  .inspect-stat-value { font-size: 16px; font-weight: bold; color: var(--text); margin: 4px 0; }
-  .inspect-growth-bar { height: 4px; background: #050508; border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
-  .inspect-growth-fill { height: 100%; background: linear-gradient(90deg, #6a8a4a, #aacc66); }
-  .inspect-growth-label { font-size: 8px; color: var(--text-faint); letter-spacing: 0.5px; }
-  .inspect-rank-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
-  .inspect-rank-label { font-size: 8px; color: var(--text-faint); letter-spacing: 1px; }
-  .inspect-rank-tag { font-size: 13px; font-weight: bold; border: 1px solid; padding: 1px 6px; border-radius: 3px; line-height: 1.2; }
-  .inspect-rank-tag.rank-S { box-shadow: 0 0 8px rgba(255, 204, 68, 0.6); background: rgba(255, 204, 68, 0.08); }
-  .inspect-section-title { font-size: 11px; letter-spacing: 3px; color: var(--accent); margin: 14px 0 6px; text-transform: uppercase; border-top: 1px solid var(--border); padding-top: 12px; }
-  .inspect-section-title:first-of-type { /* keep border for consistency */ }
-  .inspect-row { background: #0d0d14; border: 1px solid var(--border); border-radius: 3px; padding: 8px 10px; margin-bottom: 6px; }
-  .inspect-row-name { font-weight: bold; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-  .inspect-row-desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
-  .inspect-tag { font-size: 9px; letter-spacing: 1px; color: var(--text-faint); border: 1px solid var(--border); padding: 1px 5px; border-radius: 2px; margin-left: 6px; }
-
-  /* ability tooltip modal */
-  .ability-tooltip-modal { max-width: 380px; padding: 18px; }
-  .tooltip-name { font-size: 18px; font-weight: bold; color: var(--accent); letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; }
-  .tooltip-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-  .tooltip-meta-cell { background: #0d0d14; border: 1px solid var(--border); border-radius: 3px; padding: 6px 8px; }
-  .tooltip-meta-cell.wide { grid-column: 1 / -1; }
-  .tooltip-meta-label { font-size: 9px; color: var(--text-faint); letter-spacing: 1.5px; }
-  .tooltip-meta-val { font-size: 13px; color: var(--text); font-weight: bold; margin-top: 2px; }
-  .tooltip-desc { font-size: 12px; line-height: 1.5; color: var(--text-dim); margin-bottom: 14px; padding: 8px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-
-  /* responsive: shrink inspect on mobile */
-  @media (max-width: 540px) {
-    .inspect-modal { padding: 14px; }
-    .inspect-head { grid-template-columns: 72px 1fr; gap: 10px; }
-    .inspect-portrait { width: 72px; height: 72px; }
-    .inspect-name { font-size: 15px; }
-    .inspect-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-    .inspect-stat { padding: 6px 3px; }
-    .inspect-stat-value { font-size: 14px; }
-  }
-
-  .type-fire  { color: var(--fire); }
-  .type-water { color: var(--water); }
-  .type-grass { color: var(--grass); }
-  .type-light { color: var(--light); }
-  .type-dark  { color: var(--dark); }
-  .type-pip {
-    display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px;
-    vertical-align: middle;
-  }
-  .type-pip.fire  { background: var(--fire); }
-  .type-pip.water { background: var(--water); }
-  .type-pip.grass { background: var(--grass); }
-  .type-pip.light { background: var(--light); }
-  .type-pip.dark  { background: var(--dark); }
-
-  /* battle */
-  .stage {
-    position: relative; height: 220px;
-    border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 12px;
-  }
-  .floating { position: absolute; font-weight: bold; font-size: 26px; pointer-events: none; animation: float-up 0.95s forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 5; }
-  .floating.crit { font-size: 32px; color: #ffcc55; }
-  .floating.heal { color: #66ee99; }
-  @keyframes float-up { 0%{transform:translateY(0); opacity:1} 100%{transform:translateY(-58px); opacity:0} }
+  /* ── legacy floating + callout (used by combat animations) ───────── */
+  .floating { position: absolute; font-weight: bold; pointer-events: none; animation: float-up 0.95s forwards; z-index: var(--z-fx); }
+  .floating.crit { color: var(--doc-gold); }
+  .floating.heal { color: var(--ink-100); }
+  @keyframes float-up { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-58px); opacity: 0; } }
   .callout {
     position: absolute; left: 50%; top: 30%; transform: translate(-50%, 0);
-    font-weight: 900; font-size: 18px; color: #fff; letter-spacing: 4px;
     pointer-events: none; animation: callout 0.9s forwards;
-    text-shadow: 0 0 6px var(--accent), 0 2px 4px #000;
-    z-index: 6;
+    z-index: var(--z-fx);
   }
-  @keyframes callout { 0%{opacity:0; transform:translate(-50%,10px) scale(0.7)} 30%{opacity:1; transform:translate(-50%,0) scale(1.1)} 80%{opacity:1; transform:translate(-50%,0) scale(1)} 100%{opacity:0; transform:translate(-50%,-12px) scale(1)} }
+  @keyframes callout { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.85); } 30% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 80% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -12px) scale(1); } }
 
-  /* battle hud */
-  .battle-hud { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .bench-row {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;
-  }
-  .bench-slot {
-    background: rgba(13, 13, 20, 0.5); border: 1px dashed var(--border); border-radius: 4px;
-    padding: 8px; display: flex; align-items: center; gap: 10px; min-height: 64px;
-    opacity: 0.85;
-  }
-  .bench-slot.enemy { flex-direction: row-reverse; }
-  .bench-slot.inspectable { cursor: pointer; }
-  .bench-portrait { width: 48px; height: 48px; flex-shrink: 0; }
-  .bench-portrait svg { width: 100%; height: 100%; }
-  .bench-empty { color: var(--text-faint); font-size: 11px; flex: 1; text-align: center; }
-  .bench-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .bench-name-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-  .bench-name { color: var(--text); font-weight: bold; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bench-level { color: var(--accent); font-size: 10px; }
-  .bench-hp-text { font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; }
-  .bench-hp { width: 100%; height: 5px; background: #050508; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
-  .bench-hp-fill { height: 100%; transition: width 0.3s; }
-  .bench-status { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 1px; }
-  .bench-status .status-chip { font-size: 8px; padding: 1px 4px; }
-  .swap-btn {
-    width: 100%; margin-top: 10px; padding: 12px;
-    background: linear-gradient(180deg, #2a2a3a 0%, #1a1a25 100%);
-    border: 2px solid var(--border); border-radius: 6px;
-    color: var(--text); font-weight: bold; font-size: 14px; letter-spacing: 1px;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    cursor: pointer; transition: all 0.12s;
-  }
-  .swap-btn:not(.disabled):hover {
-    border-color: var(--accent); transform: translateY(-2px);
-  }
-  .swap-btn.disabled { opacity: 0.45; cursor: not-allowed; }
-  .swap-btn .swap-icon { font-size: 18px; color: var(--accent); }
-  .actor-hud {
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
-    padding: 10px;
-  }
-  .actor-hud-name { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: bold; font-size: 13px; }
-  .hp-line { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-  .hp-bar { height: 10px; background: var(--hp-bg); border-radius: 2px; overflow: hidden; margin-top: 3px; border: 1px solid #2a1818; }
-  .hp-fill { height: 100%; background: linear-gradient(90deg, #c84a4a, #e86a6a); transition: width 0.42s ease-out; }
-  .hp-fill.low { background: linear-gradient(90deg, #c84a4a, #ee9933); }
-  .hp-fill.critical { background: linear-gradient(90deg, #ee5544, #ff8855); animation: pulse-red 0.9s infinite; }
-  @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.65} }
-  .status-row { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-  .status-chip { font-size: 9px; letter-spacing: 1px; padding: 2px 6px; border-radius: 2px; border: 1px solid; }
-  .status-chip.heal { color: #66ee99; border-color: #66ee99; }
-  .status-chip.burn { color: #ff9966; border-color: #ff9966; }
-  .status-chip.slow { color: #99ccff; border-color: #99ccff; }
-  .status-chip.buff { color: #ffcc66; border-color: #ffcc66; }
-  .status-chip.debuff { color: #ee7777; border-color: #ee7777; }
-  .stat-mod { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
-
-  /* abilities */
-  .ability-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .ability-grid.pokemon { grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-  .ability-btn {
-    text-align: left; padding: 10px 12px; line-height: 1.3; min-height: 60px;
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 3px;
-    position: relative;
-  }
-  .ability-btn.compact { min-height: 48px; padding: 12px 14px; display: flex; align-items: center; }
-  .ability-btn.pokemon-btn {
-    min-height: 76px;
-    padding: 14px 16px;
-    display: flex; align-items: center; justify-content: flex-start;
-    background: linear-gradient(180deg, #1f1f2a 0%, #16161e 100%);
-    border: 2px solid var(--border);
-    border-radius: 6px;
-    font-size: 16px;
-    transition: all 0.12s;
-  }
-  .ability-btn.pokemon-btn:hover:not(:disabled) {
-    border-color: var(--accent);
-    background: linear-gradient(180deg, #2a2a38 0%, #1f1f2a 100%);
-    transform: translateY(-2px);
-  }
-  .ability-btn.pokemon-btn:active:not(:disabled) {
-    transform: translateY(0);
-  }
-  .ability-btn.pokemon-btn.elem-fire  { border-color: rgba(255, 119, 85, 0.5); }
-  .ability-btn.pokemon-btn.elem-water { border-color: rgba(85, 153, 255, 0.5); }
-  .ability-btn.pokemon-btn.elem-grass { border-color: rgba(102, 204, 119, 0.5); }
-  .ability-btn.pokemon-btn.elem-light { border-color: rgba(255, 229, 168, 0.5); }
-  .ability-btn.pokemon-btn.elem-dark  { border-color: rgba(170, 119, 204, 0.5); }
-  .ability-btn .name { font-weight: bold; font-size: 13px; }
-  .ability-btn.compact .name { font-size: 14px; }
-  .ability-btn.pokemon-btn .name { font-size: 16px; letter-spacing: 0.5px; }
-  .ability-btn.pokemon-btn .dmg-value {
-    font-size: 22px; font-weight: bold; color: var(--accent); letter-spacing: 0;
-    margin-top: 2px; line-height: 1.0;
-  }
-  .ability-btn.pokemon-btn .dmg-value.subtle {
-    font-size: 12px; color: var(--text-faint); letter-spacing: 1.5px; font-weight: bold;
-  }
-  .ability-btn.pokemon-btn .dmg-value.subtle.heal { color: #66cc99; }
-  .ability-btn.pokemon-btn { flex-direction: column; align-items: flex-start; justify-content: center; }
-  .ability-btn .desc { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
-  .ability-btn .eff-tag { position: absolute; top: 8px; right: 10px; font-size: 9px; letter-spacing: 1px; }
-  .ability-btn.compact .eff-tag { top: 50%; transform: translateY(-50%); right: 12px; font-size: 11px; font-weight: bold; }
-  .ability-btn.pokemon-btn .eff-tag { top: 8px; right: 10px; font-size: 12px; font-weight: bold; transform: none; }
-  /* Super-effective marker is a star icon in the corner — no green glow which clashes with grass type. */
-  .ability-btn .eff-star {
-    position: absolute; top: 6px; right: 8px; font-size: 18px; color: #ffd966;
-    text-shadow: 0 0 4px rgba(255, 217, 102, 0.8);
-    pointer-events: none;
-  }
-
-  /* log */
-  .battle-log {
-    background: #0a0a12; border: 1px solid var(--border); border-radius: 3px;
-    padding: 10px; max-height: 90px; overflow-y: auto; margin-bottom: 12px;
-    font-size: 11px; line-height: 1.55;
-  }
-  .battle-log .log-line { color: var(--text-dim); }
-  .battle-log .log-line.crit { color: #ffcc55; }
-  .battle-log .log-line.eff { color: var(--accent); }
-
-  /* roster */
-  .roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .reserve-slot {
-    background: #0d0d14; border: 1px dashed var(--border); border-radius: 3px;
-    padding: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim);
-  }
-  .reserve-slot .reserve-portrait { width: 36px; height: 36px; background: #050508; border-radius: 3px; }
-  .reserve-slot .reserve-portrait svg { width: 100%; height: 100%; }
-
-  /* mobile-friendly tweaks for narrow viewports */
-  @media (max-width: 540px) {
-    body { padding: 8px; }
-    h1 { font-size: 22px; letter-spacing: 4px; }
-    .panel { padding: 12px; }
-    .roster-grid { grid-template-columns: 1fr; }
-    .creature-card { grid-template-columns: 60px 1fr; gap: 8px; padding: 8px; }
-    .creature-portrait { width: 60px; height: 60px; }
-    .creature-name { font-size: 12px; }
-    .creature-meta { font-size: 9px; letter-spacing: 0.5px; }
-    .stat-row { gap: 2px; }
-    .stat { padding: 2px 1px; }
-    .stat-label { font-size: 7px; letter-spacing: 0.5px; }
-    .stat-value { font-size: 10px; }
-    .ability-grid:not(.pokemon) { grid-template-columns: 1fr; }
-    .ability-grid.pokemon { gap: 8px; }
-    .ability-btn.pokemon-btn { min-height: 64px; padding: 10px 12px; }
-    .ability-btn.pokemon-btn .name { font-size: 14px; }
-    .header-stats { font-size: 10px; }
-    .header-stat { padding: 6px 4px; }
-    .header-stat-label { font-size: 8px; letter-spacing: 1px; }
-    .header-stat-value { font-size: 13px; }
-    .battle-hud { grid-template-columns: 1fr; gap: 8px; }
-  }
-
-  /* breeding flow */
-  .breed-preview {
-    background: #1a1a24; border: 1px solid var(--accent); border-radius: 4px;
-    padding: 12px; margin-top: 14px;
-  }
-  .ability-pick-btn.picked { background: linear-gradient(180deg, #5a4a2a, #4a3a1a); border-color: var(--accent); }
-
-  /* level up readout */
-  .levelup-card {
-    background: linear-gradient(180deg, #2a2018, #1a1410); border: 1px solid var(--accent); border-radius: 3px;
-    padding: 10px; margin-top: 8px; font-size: 12px;
-  }
-  .levelup-card .levelup-line { color: var(--accent); font-weight: bold; letter-spacing: 1px; }
-  .levelup-card .levelup-deltas { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; }
-  .levelup-card .delta { color: #aacc66; }
-
-  /* modal */
+  /* ── modal scrim ─────────────────────────────────────────────────── */
   .modal-bg {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 100;
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+    z-index: var(--z-modal);
     display: flex; align-items: center; justify-content: center;
     animation: fade 0.18s;
   }
-  @keyframes fade { from{opacity:0} to{opacity:1} }
-  .modal {
-    background: var(--panel); border: 1px solid var(--accent); border-radius: 6px;
-    padding: 24px; max-width: 480px; width: 90%; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
-  }
-  .modal h2 { font-size: 16px; letter-spacing: 3px; color: var(--accent); margin-bottom: 12px; }
-  .modal input {
-    width: 100%; background: #0a0a12; color: var(--text); border: 1px solid var(--border);
-    padding: 10px 12px; font-family: inherit; font-size: 14px; border-radius: 3px; margin-bottom: 14px;
-  }
-  .modal input:focus { outline: none; border-color: var(--accent); }
-  .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
   /* ═══════════════════════════════════════════════════════════════════
      DOSSIER BATTLE SCREEN — testimony as interface. Top-to-bottom: an
@@ -880,9 +542,6 @@
   @keyframes dossier-recoil { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px); } }
   .dossier-col.enemy.recoil-anim { animation-name: dossier-recoil-enemy; }
   @keyframes dossier-recoil-enemy { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
-
-  /* hide the (now unused) phaser stage */
-  #stage-root { display: none; }
 
   /* ═══════════════════════════════════════════════════════════════════
      DOCUMENT PAGE LAYOUT — every non-battle screen is a page in the
