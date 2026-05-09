@@ -117,7 +117,7 @@ export function openInspectModal(c) {
     headInfo.appendChild(sub);
   }
   headInfo.appendChild(el('div', { class: 'doc-modal-meta' },
-    `${c.species.toLowerCase()} · ${typeLabel(c.type)} · level ${c.level} · #${pad4(c.id)}`));
+    `${typeLabel(c.type)} · level ${c.level} · #${pad4(c.id)}`));
   head.appendChild(headInfo);
   m.appendChild(head);
 

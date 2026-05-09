@@ -109,7 +109,7 @@
       ]
     ],
     "effect": "deal 60 fire damage.",
-    "flavor": "a small heat. it reaches them."
+    "flavor": "a small heat. it remembers being larger."
   },
   "inferno": {
     "name": "release the heat",
@@ -144,7 +144,7 @@
       ]
     ],
     "effect": "deal 75 fire damage. cost 25% of max hp.",
-    "flavor": "i give myself. it gives back."
+    "flavor": "i feed it from my own. it eats and ~~gives back~~ takes more."
   },
   "cinder_burst": {
     "name": "spit ash",
@@ -306,7 +306,7 @@
       ]
     ],
     "effect": "deal 30 water damage. heal 100% of damage dealt.",
-    "flavor": "i take from it what it gave."
+    "flavor": "i take from it what it gave. it is ~~fair~~ familiar."
   },
   "brine_lance": {
     "name": "salt",
@@ -489,7 +489,7 @@
       ]
     ],
     "effect": "deal 50 grass damage. apply bloom.",
-    "flavor": "the green carries the brightness."
+    "flavor": "the green carries the brightness. it does not survive it."
   },
   "strangle_vine": {
     "name": "tighten",
@@ -665,7 +665,7 @@
       ]
     ],
     "effect": "enemy def +30%. priority +1.",
-    "flavor": "they will look at me. they will not mean to."
+    "flavor": "they will look at me. they will not mean to. it is **flattering**."
   },
   "aegis_swap": {
     "name": "step into light",
@@ -702,7 +702,7 @@
       ]
     ],
     "effect": "cleanse effects. priority +1.",
-    "flavor": "what was on me lifts."
+    "flavor": "what was on me lifts. i feel **clean**."
   },
   "shade": {
     "name": "slip",
@@ -888,7 +888,7 @@
       ]
     ],
     "effect": "regenerate 6% max hp per turn for 4 turns. priority +1.",
-    "flavor": "i bind what is open. it ~~holds~~ keeps for now."
+    "flavor": "i bind what is open. it ~~closes~~ keeps."
   },
   "tactical_retreat": {
     "name": "step back",
@@ -967,7 +967,7 @@
       ]
     ],
     "effect": "self atk +50%. cost 10% of max hp. priority +1.",
-    "flavor": "everything else can wait."
+    "flavor": "the room narrows. only what i strike is **real**."
   },
   "focus": {
     "name": "settle",
@@ -987,7 +987,7 @@
       ]
     ],
     "effect": "self atk +30%. self def +30%. priority +1.",
-    "flavor": "i breathe. i sharpen. nothing else is in the room with us."
+    "flavor": "i sharpen. nothing else is in the room."
   },
   "stoic": {
     "name": "set",
@@ -1006,6 +1006,6 @@
       ]
     ],
     "effect": "self def +50%. priority +1.",
-    "flavor": "i steady. nothing reaches me yet."
+    "flavor": "i steady. the room narrows around me."
   }
 }
