@@ -49,3 +49,25 @@ function escapeHtml(s) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
+
+// Parses authored prose with inline corruption markup into HTML:
+//   ~~text~~  → <s>text</s>            double-strike
+//   [[N]]     → red bar of N chars     redaction
+//   **text**  → gold accent
+// Authors write field notes / passive prose in this syntax in the JSON.
+export function parseProse(input) {
+  if (input == null) return '';
+  let s = escapeHtml(String(input));
+  s = s.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+  s = s.replace(/\[\[(\d+)\]\]/g, (_, n) => `<span class="redact" style="width:${Math.max(1, +n)}ch;"> </span>`);
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<span class="doc-gold">$1</span>');
+  return s;
+}
+
+// Convenience: emit a span whose innerHTML is the parsed prose.
+export function proseEl(input, tag = 'span', cls = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  e.innerHTML = parseProse(input);
+  return e;
+}

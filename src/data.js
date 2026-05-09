@@ -13,6 +13,12 @@ export let ALL_ENCOUNTER_SPECIES = [];
 export const GLOBALS = { growthThresholds: [] };
 export const PASSIVE_SCHEMA = { triggers: {}, conditions: {}, effects: {} };
 export const GLYPHS = {};
+export const VOICE = {
+  subtitles: {},
+  notes: {},
+  passives: {},
+  afflictions: {},
+};
 
 async function fetchJson(path) {
   const r = await fetch(path);
@@ -21,7 +27,7 @@ async function fetchJson(path) {
 }
 
 export async function loadData() {
-  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs] = await Promise.all([
+  const [types, passives, abilities, statuses, addEffects, templates, globals, passiveSchema, glyphs, voice] = await Promise.all([
     fetchJson('data/types.json'),
     fetchJson('data/passives.json'),
     fetchJson('data/abilities.json'),
@@ -31,6 +37,7 @@ export async function loadData() {
     fetchJson('data/globals.json'),
     fetchJson('data/passivetriggers.json'),
     fetchJson('data/glyphs.json'),
+    fetchJson('data/voiceprose.json'),
   ]);
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
@@ -51,4 +58,8 @@ export async function loadData() {
     if (k.startsWith('_')) continue;
     GLYPHS[k] = v;
   }
+  Object.assign(VOICE.subtitles,   voice.subtitles   || {});
+  Object.assign(VOICE.notes,       voice.notes       || {});
+  Object.assign(VOICE.passives,    voice.passives    || {});
+  Object.assign(VOICE.afflictions, voice.afflictions || {});
 }
