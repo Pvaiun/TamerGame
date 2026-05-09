@@ -1,39 +1,58 @@
+// DOM-based combat animations targeting the dossier columns.
+// Phaser BattleScene is parked; effects float over the relevant glyph portrait
+// or shake the relevant column.
+
 import { el } from './dom.js';
-import { withBattleScene } from '../stage/game.js';
+
+function colFor(side) {
+  return document.querySelector(`.dossier-col.${side}`);
+}
 
 export function spawnFloat(side, text, kind = 'dmg') {
-  const stage = document.getElementById('stage');
-  if (!stage) return;
-  const r = stage.getBoundingClientRect();
+  const col = colFor(side);
+  const target = col ? col.querySelector('.glyph-portrait') : null;
+  if (!target) return;
+  const r = target.getBoundingClientRect();
   const f = el('div', { class: 'floating ' + (kind === 'crit' ? 'crit' : kind === 'heal' ? 'heal' : '') }, text);
   f.style.position = 'fixed';
-  if (side === 'player') f.style.left = `${r.left + 60}px`;
-  else                   f.style.right = `${window.innerWidth - r.right + 60}px`;
-  f.style.top = `${r.bottom - 160}px`;
+  f.style.textAlign = 'center';
+  f.style.minWidth = '80px';
+  f.style.left = `${r.left + r.width / 2 - 40}px`;
+  f.style.top  = `${r.top + 8}px`;
   document.body.appendChild(f);
   setTimeout(() => f.remove(), 1000);
 }
 
 export function spawnCallout(text) {
-  const stage = document.getElementById('stage');
-  if (!stage) return;
-  const r = stage.getBoundingClientRect();
+  const screen = document.querySelector('.dossier-screen');
+  if (!screen) return;
+  const r = screen.getBoundingClientRect();
   const c = el('div', { class: 'callout' }, text);
   c.style.position = 'fixed';
   c.style.left = `${r.left + r.width / 2}px`;
-  c.style.top  = `${r.top + r.height * 0.3}px`;
+  c.style.top  = `${r.top + 60}px`;
   document.body.appendChild(c);
   setTimeout(() => c.remove(), 950);
 }
 
 export function shakeStage() {
-  withBattleScene(s => s.shake());
+  for (const side of ['player', 'enemy']) pulseCol(side, 'shake-pulse');
 }
 
 export function playLunge(side) {
-  withBattleScene(s => s.lunge(side));
+  pulseCol(side, 'lunge-anim');
 }
 
 export function playRecoil(side) {
-  withBattleScene(s => s.recoil(side));
+  pulseCol(side, 'recoil-anim');
+}
+
+function pulseCol(side, cls) {
+  const col = colFor(side);
+  if (!col) return;
+  col.classList.remove(cls);
+  // force reflow so the class can re-apply if already present
+  void col.offsetWidth;
+  col.classList.add(cls);
+  setTimeout(() => col.classList.remove(cls), 600);
 }
