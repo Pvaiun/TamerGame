@@ -439,470 +439,410 @@
   .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
   /* ═══════════════════════════════════════════════════════════════════
-     DOSSIER BATTLE SCREEN — document-aesthetic field report. Replaces
-     .stage / .battle-hud / .ability-grid.pokemon. Old battle CSS above
-     is retained for any non-battle UI that still references it.
+     DOSSIER BATTLE SCREEN — testimony as interface. Top-to-bottom: an
+     engagement strip, two unframed columns of dossier prose with stats,
+     and a dual-state action box at the bottom.
      ═══════════════════════════════════════════════════════════════════ */
 
   .dossier-screen {
     background: var(--doc-bg);
     color: var(--ink-100);
-    border: 1px solid var(--rule-soft);
-    padding: var(--space-4) var(--space-4) var(--space-3);
-    margin-bottom: var(--space-3);
+    padding: var(--space-3) var(--space-4) var(--space-3);
+    margin: 0 auto var(--space-3);
     font-family: var(--font-mono);
     letter-spacing: var(--ls-tight);
+    font-size: var(--fs-body);
+    line-height: 1.5;
   }
 
-  .sec-label {
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-60);
-    text-transform: uppercase;
-    margin-bottom: var(--space-1);
-    border-bottom: 1px solid var(--rule-faint);
-    padding-bottom: 2px;
-  }
+  .doc-blot { color: var(--doc-blood); }
 
   /* engagement strip ──────────────────────────────────────────────── */
   .engagement-strip {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--rule-soft);
-    border: 1px solid var(--rule-soft);
-    margin-bottom: var(--space-3);
-  }
-  .eng-cell {
-    background: var(--doc-bg);
-    padding: var(--space-2) var(--space-3);
-  }
-  .eng-label {
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-60);
-    text-transform: uppercase;
-  }
-  .eng-val {
-    font-size: var(--fs-header-2);
-    color: var(--ink-100);
-    margin-top: 2px;
-    letter-spacing: 1px;
-  }
-
-  /* bench row ─────────────────────────────────────────────────────── */
-  .bench-row-doc {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--rule-faint);
-    margin-bottom: var(--space-3);
-  }
-  .bench-doc {
-    background: var(--doc-bg);
-    border: 1px solid var(--rule-faint);
-    padding: var(--space-2) var(--space-3);
-    display: flex; align-items: center; gap: var(--space-3);
-    min-height: 60px;
-    cursor: pointer;
-  }
-  .bench-doc.enemy { flex-direction: row-reverse; text-align: right; }
-  .bench-doc.enemy .bench-info-doc { align-items: flex-end; }
-  .bench-empty-doc {
-    flex: 1; text-align: center;
-    color: var(--ink-40);
-    font-size: var(--fs-body-tight);
-    letter-spacing: var(--ls-label);
-  }
-  .bench-glyph {
-    width: 44px; height: 44px;
-    color: var(--ink-100);
-    flex-shrink: 0;
-  }
-  .bench-glyph svg { width: 100%; height: 100%; display: block; }
-  .bench-info-doc {
-    flex: 1; min-width: 0;
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .bench-name-doc {
-    font-size: var(--fs-body);
-    color: var(--ink-100);
-    letter-spacing: 1.5px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .bench-meta-doc {
+    display: flex; justify-content: space-between; align-items: baseline;
     font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
     color: var(--ink-60);
-    letter-spacing: var(--ls-tight);
+    text-transform: lowercase;
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--rule-faint);
   }
-  .bench-meta-doc .sep { color: var(--ink-40); }
-  .bench-bar {
-    height: 2px; background: var(--ink-20);
-    margin-top: 2px;
-  }
-  .bench-bar-fill {
-    height: 100%; background: var(--ink-80);
-    transition: width var(--dur-slow) var(--ease-out);
-  }
+  .engagement-strip .eng-sep { color: var(--ink-40); }
+  .engagement-strip .eng-right { color: var(--ink-100); }
 
   /* dossier grid ──────────────────────────────────────────────────── */
   .dossier-grid {
     display: grid; grid-template-columns: 1fr 1px 1fr;
     gap: 0;
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
   }
-  .dossier-divider { background: var(--rule-soft); }
+  .dossier-divider { background: var(--rule-faint); }
   .dossier-col {
-    padding: var(--space-3);
+    padding: 0 var(--space-3);
     display: flex; flex-direction: column; gap: var(--space-3);
+    min-width: 0;
   }
-  .dossier-col.player { padding-right: var(--space-4); }
-  .dossier-col.enemy  { padding-left:  var(--space-4); text-align: right; }
-  .dossier-col.enemy .stat-row-doc { flex-direction: row-reverse; }
-  .dossier-col.enemy .ability-line-doc { flex-direction: row-reverse; }
-  .dossier-col.enemy .passive-line-doc { flex-direction: row-reverse; }
-  .dossier-col.enemy .cond-row { flex-direction: row-reverse; }
+  .dossier-col.player { padding-left: 0;  padding-right: var(--space-4); }
+  .dossier-col.enemy  { padding-left: var(--space-4);  padding-right: 0; }
 
-  /* 1. classification */
-  .dossier-class { line-height: 1.3; }
-  .class-prefix {
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-60);
-    text-transform: uppercase;
-  }
-  .dossier-col.enemy .class-prefix { color: var(--doc-blood); }
-  .class-name {
-    font-size: var(--fs-header);
-    letter-spacing: 2.5px;
-    color: var(--ink-100);
-    margin-top: 2px;
-    word-break: break-word;
-  }
-  .class-meta {
+  /* bench inline (top of column) ──────────────────────────────────── */
+  .bench-inline {
+    display: flex; align-items: center; gap: var(--space-2);
     font-size: var(--fs-label-2);
     color: var(--ink-60);
-    letter-spacing: 1px;
-    margin-top: 3px;
-  }
-  .class-meta .sep { color: var(--ink-40); }
-  .class-id { color: var(--ink-40); }
-
-  /* 2. glyph portrait */
-  .glyph-portrait {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    max-height: 130px;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--ink-100);
-    cursor: pointer;
-    border-top: 1px solid var(--rule-faint);
-    border-bottom: 1px solid var(--rule-faint);
-    padding: var(--space-2) 0;
-  }
-  .glyph-portrait svg {
-    width: 100px; height: 100px; display: block;
-  }
-
-  /* 3. vitals */
-  .dossier-vitals { }
-  .vitals-num-row {
-    font-family: var(--font-mono);
-    margin-top: 2px;
-  }
-  .vitals-num {
-    font-size: 24px;
-    color: var(--ink-100);
-    font-weight: 500;
-    letter-spacing: 1px;
-  }
-  .vitals-slash, .vitals-max {
-    font-size: var(--fs-header-2);
-    color: var(--ink-60);
-  }
-  .vitals-bar {
-    height: 3px; background: var(--ink-20);
-    margin-top: var(--space-1);
-  }
-  .vitals-fill {
-    height: 100%; background: var(--ink-100);
-    transition: width var(--dur-slow) var(--ease-out);
-  }
-
-  /* 4. stat block */
-  .stat-block { }
-  .stat-row-doc {
-    display: flex; align-items: baseline; gap: var(--space-3);
-    padding: 3px 0;
-    font-size: var(--fs-body);
+    letter-spacing: var(--ls-tight);
+    padding-bottom: var(--space-2);
     border-bottom: 1px dotted var(--rule-faint);
+    cursor: pointer;
+    opacity: 0.75;
+    min-height: 22px;
   }
-  .stat-row-doc:last-child { border-bottom: none; }
-  .stat-key {
-    width: 30px; flex-shrink: 0;
-    font-size: var(--fs-label-2);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-60);
-  }
-  .stat-num {
-    flex: 1;
-    font-size: var(--fs-header-2);
-    color: var(--ink-100);
-    letter-spacing: 1px;
-  }
-  .dossier-col.enemy .stat-num { text-align: right; }
-  .stat-mod-doc {
-    font-size: var(--fs-label-2);
-    color: var(--ink-40);
-    letter-spacing: 1px;
-    min-width: 38px;
-    text-align: right;
-  }
-  .dossier-col.enemy .stat-mod-doc { text-align: left; }
-  .stat-mod-pos { color: var(--ink-100); }
-  .stat-mod-neg { color: var(--doc-blood); }
-
-  /* 5. passives */
-  .dossier-passives { }
-  .passive-line-doc {
-    display: flex; gap: var(--space-2);
-    font-size: var(--fs-body);
-    color: var(--ink-100);
-    padding: 2px 0;
-    align-items: baseline;
-  }
-  .passive-line-doc.empty { color: var(--ink-40); font-style: normal; }
-  .passive-num {
-    color: var(--ink-60);
-    font-size: var(--fs-label-2);
-    letter-spacing: 1px;
-    width: 18px;
+  .bench-inline.enemy { flex-direction: row-reverse; text-align: right; }
+  .bench-inline:hover { opacity: 1; }
+  .bench-empty-inline { color: var(--ink-40); font-style: italic; flex: 1; text-align: center; }
+  .bench-glyph-inline {
+    display: inline-block;
+    width: 22px; height: 22px;
+    color: var(--ink-80);
     flex-shrink: 0;
   }
-  .passive-name {
-    flex: 1;
-    letter-spacing: 1px;
-    font-size: var(--fs-body-tight);
-  }
-
-  /* 6. ability roster */
-  .dossier-abilities { }
-  .ability-line-doc {
-    display: flex; align-items: baseline;
-    gap: var(--space-2);
-    padding: 3px 0;
-    font-size: var(--fs-body-tight);
-    border-bottom: 1px dotted var(--rule-faint);
-  }
-  .ability-line-doc:last-child { border-bottom: none; }
-  .ability-name-doc {
-    flex: 1;
-    color: var(--ink-100);
-    letter-spacing: 1px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .ability-tail {
-    display: inline-flex; gap: 4px; align-items: baseline;
-    color: var(--ink-60);
-    font-size: var(--fs-label-2);
-  }
-  .pow-num {
-    color: var(--ink-100);
-    font-size: var(--fs-body);
-    letter-spacing: 0;
-    min-width: 22px;
-    text-align: right;
-  }
-  .pow-tag {
-    color: var(--ink-40);
-    letter-spacing: var(--ls-label);
-    font-size: var(--fs-label);
-  }
-  .eff-mark.good { color: var(--ink-100); font-weight: 700; }
-  .eff-mark.bad  { color: var(--ink-40); }
-
-  /* 7. condition */
-  .dossier-status { }
-  .cond-row {
-    display: flex; align-items: baseline;
-    gap: var(--space-2);
-    padding: 2px 0;
-    font-size: var(--fs-body-tight);
-    letter-spacing: 1px;
-  }
-  .cond-row.empty { color: var(--ink-40); }
-  .cond-name { flex: 1; color: var(--ink-100); }
-  .cond-val  { color: var(--ink-60); font-size: var(--fs-label-2); }
-  .cond-row.burn   .cond-name { color: var(--doc-blood); }
-  .cond-row.heal   .cond-name { color: var(--ink-100); }
-  .cond-row.heal   .cond-name::before { content: '+ '; color: var(--ink-60); }
-  .cond-row.slow   .cond-name { color: var(--ink-80); }
-  .cond-row.debuff .cond-name { color: var(--doc-blood); }
-
-  /* type-pip glyph (small square instead of dot) */
-  .doc-type-pip {
+  .bench-glyph-inline svg { width: 100%; height: 100%; display: block; }
+  .bench-text { display: inline-flex; gap: 2px; align-items: baseline; flex-shrink: 0; }
+  .bench-name-inline { color: var(--ink-100); }
+  .bench-sep, .bench-tag { color: var(--ink-60); }
+  .bench-bar-inline {
     display: inline-block;
-    width: 6px; height: 6px;
-    margin-right: 6px;
-    background: currentColor;
-    vertical-align: middle;
+    width: 60px; height: 2px;
+    background: var(--ink-20);
+    flex-shrink: 0;
   }
-  .doc-type-pip.fire  { color: var(--ink-100); }
-  .doc-type-pip.water { color: var(--ink-100); }
-  .doc-type-pip.grass { color: var(--ink-100); }
-  .doc-type-pip.light { color: var(--ink-100); }
-  .doc-type-pip.dark  { color: var(--doc-blood); }
+  .bench-bar-inline-fill { display: block; height: 100%; background: var(--ink-60); transition: width var(--dur-slow) var(--ease-out); }
+  .bench-inline.enemy .bench-bar-inline-fill { float: right; }
+  .bench-hp-inline { color: var(--ink-60); flex-shrink: 0; }
+  .bench-hp-inline .bench-hp-num { color: var(--ink-80); }
+  .bench-composure { color: var(--ink-60); flex: 1; font-style: italic; }
+  .bench-inline.enemy .bench-composure { text-align: right; }
 
-  /* type tags use letter-shape variants instead of color where possible */
-  .doc-type        { letter-spacing: var(--ls-label); font-size: var(--fs-label); }
-  .doc-type.type-fire,
-  .doc-type.type-water,
-  .doc-type.type-grass,
-  .doc-type.type-light { color: var(--ink-100); }
-  .doc-type.type-dark  { color: var(--doc-blood); }
+  /* title + subtitle ──────────────────────────────────────────────── */
+  .doc-title {
+    font-size: 22px;
+    color: var(--ink-100);
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+    margin-top: var(--space-2);
+    word-break: break-word;
+  }
+  .dossier-col.enemy .doc-title { color: var(--ink-100); }
+  .doc-subtitle {
+    font-size: var(--fs-body);
+    color: var(--ink-80);
+    letter-spacing: 0;
+    margin-top: 2px;
+    margin-bottom: var(--space-2);
+  }
 
-  /* action box ────────────────────────────────────────────────────── */
+  /* section labels ─ name ─ ──────────────────────────────────────── */
+  .sec-label-doc {
+    font-size: var(--fs-label-2);
+    color: var(--ink-60);
+    letter-spacing: var(--ls-label);
+    text-align: center;
+    margin: var(--space-2) 0 var(--space-1);
+  }
+  .dossier-col.enemy .sec-label-doc { text-align: center; }
+
+  /* field notes ───────────────────────────────────────────────────── */
+  .field-notes-block { }
+  .field-notes-body {
+    display: flex; gap: var(--space-3);
+    align-items: flex-start;
+  }
+  .field-notes-body.enemy { flex-direction: row; }
+  .glyph-inline {
+    width: 44px; height: 44px;
+    flex-shrink: 0;
+    color: var(--ink-100);
+    cursor: pointer;
+    margin-top: 2px;
+  }
+  .glyph-inline svg { width: 100%; height: 100%; display: block; }
+  .field-notes-prose {
+    flex: 1; min-width: 0;
+    font-size: var(--fs-body);
+    color: var(--ink-100);
+    line-height: 1.55;
+  }
+  .fn-line { padding: 1px 0; }
+
+  /* hp row ────────────────────────────────────────────────────────── */
+  .hp-row-doc {
+    display: flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+  .hp-label {
+    font-size: var(--fs-label-2);
+    color: var(--ink-60);
+    letter-spacing: var(--ls-label);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .dossier-col.enemy .hp-label { text-align: right; }
+  .hp-bar-doc {
+    flex: 1;
+    height: 8px;
+    background: var(--ink-20);
+    position: relative;
+    border: 1px solid var(--rule-faint);
+  }
+  .hp-bar-doc-fill {
+    display: block;
+    height: 100%;
+    background: var(--ink-100);
+    transition: width var(--dur-slow) var(--ease-out);
+  }
+  .dossier-col.enemy .hp-bar-doc-fill { float: right; }
+  .hp-num {
+    font-size: var(--fs-body);
+    color: var(--ink-100);
+    letter-spacing: 0;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .dossier-col.player .hp-num { text-align: right; }
+  .dossier-col.enemy  .hp-num { text-align: left; }
+  .hp-cur { color: var(--ink-100); }
+  .hp-cur.dim { color: var(--ink-60); }
+  .hp-slash, .hp-max { color: var(--ink-60); }
+
+  /* stat block ────────────────────────────────────────────────────── */
+  .stat-block-doc {
+    display: flex; flex-direction: column; gap: 2px;
+    margin-top: var(--space-1);
+  }
+  .stat-row-bar {
+    display: flex; align-items: center; gap: var(--space-2);
+    font-size: var(--fs-body);
+    padding: 1px 0;
+  }
+  .stat-bar-label {
+    width: 28px; flex-shrink: 0;
+    font-size: var(--fs-label-2);
+    color: var(--ink-60);
+    letter-spacing: var(--ls-label);
+  }
+  .dossier-col.enemy .stat-bar-label { text-align: right; }
+  .stat-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--ink-20);
+    position: relative;
+  }
+  .stat-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--ink-80);
+    transition: width var(--dur-slow) var(--ease-out);
+  }
+  .dossier-col.enemy .stat-bar-fill { float: right; }
+  .stat-bar-num {
+    color: var(--ink-100);
+    min-width: 56px;
+    flex-shrink: 0;
+    font-size: var(--fs-body);
+  }
+  .dossier-col.player .stat-bar-num { text-align: right; }
+  .dossier-col.enemy  .stat-bar-num { text-align: left; }
+  .stat-mod-tag.pos { color: var(--ink-100); }
+  .stat-mod-tag.neg { color: var(--doc-blood); }
+
+  /* afflictions ───────────────────────────────────────────────────── */
+  .afflictions-block { }
+  .afflictions-list {
+    font-size: var(--fs-body);
+    color: var(--ink-100);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .aff-empty { color: var(--ink-40); font-style: italic; }
+  .aff-blot  { color: var(--doc-blood); margin: 0 2px 0 0; }
+  .aff-name  { color: var(--ink-100); }
+  .aff-suffix { color: var(--ink-60); font-size: var(--fs-label-2); margin-left: 2px; }
+  .aff-sep   { color: var(--ink-40); }
+
+  /* passives ──────────────────────────────────────────────────────── */
+  .passives-block { }
+  .passive-line-doc {
+    display: flex; align-items: baseline;
+    gap: var(--space-1);
+    font-size: var(--fs-body);
+    line-height: 1.55;
+    padding: 1px 0;
+  }
+  .passive-bullet { color: var(--ink-100); flex-shrink: 0; }
+  .passive-name-doc { color: var(--ink-100); flex-shrink: 0; }
+  .passive-sep { color: var(--ink-40); flex-shrink: 0; }
+  .passive-desc-doc { color: var(--ink-80); flex: 1; min-width: 0; }
+  .passive-empty { color: var(--ink-40); font-style: italic; padding: 2px 0; }
+
+  /* corruption marks (used everywhere) ─────────────────────────────── */
+  .field-notes-prose s,
+  .doc-subtitle s,
+  .passive-desc-doc s,
+  .narr-text s,
+  .detail-desc s {
+    color: var(--ink-60);
+    text-decoration: line-through;
+    text-decoration-color: var(--ink-60);
+  }
+  .field-notes-prose .doc-gold,
+  .narr-text .doc-gold {
+    color: var(--doc-gold);
+  }
+
+  /* ── action box (dual-state) ─────────────────────────────────────── */
   .action-box {
     border: 1px solid var(--rule-soft);
     background: var(--doc-bg);
     padding: var(--space-3);
     transition: border-color var(--dur-quick) var(--ease-out);
+    min-height: 130px;
   }
   .action-box.state-narrative { border-color: var(--rule-faint); }
-  .state-label {
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
+
+  .menu-prompt {
+    font-size: var(--fs-label-2);
     color: var(--ink-60);
+    letter-spacing: var(--ls-label);
+    padding-bottom: var(--space-2);
     margin-bottom: var(--space-2);
-    text-align: center;
     border-bottom: 1px solid var(--rule-faint);
-    padding-bottom: var(--space-1);
   }
 
-  /* action menu state */
-  .action-menu { }
-  .ability-grid-doc {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
+  /* action menu state — split pane */
+  .action-split {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: var(--space-3);
+    align-items: stretch;
   }
-  .doc-ability-btn {
+  .action-split-rule { background: var(--rule-faint); }
+  .action-list {
+    display: flex; flex-direction: column;
+    gap: 0;
+  }
+  .action-row {
     background: transparent;
-    border: 1px solid var(--rule-soft);
-    color: var(--ink-100);
+    border: 0;
+    color: var(--ink-60);
     font-family: var(--font-mono);
+    font-size: var(--fs-body);
     text-align: left;
-    padding: var(--space-2) var(--space-3);
-    min-height: 64px;
-    border-radius: 0;
-    cursor: pointer;
-    display: flex; flex-direction: column; justify-content: space-between;
-    transition: border-color var(--dur-quick) var(--ease-out),
-                background var(--dur-quick) var(--ease-out);
-  }
-  .doc-ability-btn:hover:not(:disabled) {
-    border-color: var(--ink-100);
-    background: rgba(224, 224, 226, 0.03);
-    transform: none;
-  }
-  .doc-ability-btn:active:not(:disabled) {
-    background: rgba(224, 224, 226, 0.06);
-  }
-  .doc-ability-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .doc-ability-btn.queued {
-    grid-column: 1 / -1;
-    min-height: 80px;
-    border-color: var(--ink-100);
-  }
-  .doc-ability-btn .btn-top {
-    display: flex; align-items: center;
-    font-size: var(--fs-body);
-    letter-spacing: 1.5px;
-  }
-  .doc-ability-btn .btn-name {
-    flex: 1;
-    font-weight: 500;
-  }
-  .doc-ability-btn .btn-queued-prefix {
-    color: var(--ink-60);
-    margin-right: var(--space-2);
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-  }
-  .doc-ability-btn .btn-bot {
-    display: flex; align-items: baseline; gap: var(--space-2);
-    margin-top: var(--space-1);
-  }
-  .btn-pow {
-    font-size: 18px;
-    color: var(--ink-100);
+    padding: var(--space-1) 0;
     letter-spacing: 0;
-    line-height: 1;
-  }
-  .btn-tag {
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-60);
-  }
-  .btn-eff {
-    margin-left: auto;
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-  }
-  .btn-eff.good { color: var(--ink-100); }
-  .btn-eff.bad  { color: var(--ink-40); }
-
-  /* swap button */
-  .swap-btn-doc {
-    width: 100%;
-    background: transparent;
-    border: 1px dashed var(--rule-soft);
-    color: var(--ink-80);
-    font-family: var(--font-mono);
-    padding: var(--space-2) var(--space-3);
-    border-radius: 0;
-    font-size: var(--fs-body);
-    letter-spacing: 1.5px;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    gap: var(--space-2);
-    transition: border-color var(--dur-quick) var(--ease-out),
-                color var(--dur-quick) var(--ease-out);
+    display: flex;
+    align-items: baseline;
+    border-radius: 0;
+    transition: color var(--dur-quick) var(--ease-out);
+    line-height: 1.5;
   }
-  .swap-btn-doc:not(.disabled):hover {
-    border-color: var(--ink-100); color: var(--ink-100);
-    transform: none;
-  }
-  .swap-btn-doc.disabled { opacity: 0.4; cursor: not-allowed; }
-  .swap-btn-doc .swap-arrow { color: var(--ink-60); }
-
-  .menu-hint {
-    text-align: center;
-    font-size: var(--fs-label);
-    letter-spacing: var(--ls-label);
-    color: var(--ink-40);
-    margin-top: var(--space-2);
-  }
-
-  /* narrative state */
-  .narrative {
-    min-height: 110px;
-  }
-  .narr-line {
-    font-size: var(--fs-body);
+  .action-row:hover:not(:disabled),
+  .action-row:focus:not(:disabled) {
     color: var(--ink-100);
-    letter-spacing: 0.3px;
-    line-height: 1.55;
-    padding: 2px 0;
+    background: transparent;
+    border-color: transparent;
+    transform: none;
+    outline: none;
   }
-  .narr-line.empty { color: var(--ink-40); font-style: italic; }
-  .narr-line.crit  { color: var(--doc-gold); }
-  .narr-line.eff   { color: var(--ink-100); }
+  .action-row .action-marker { color: transparent; flex-shrink: 0; width: 14px; }
+  .action-row.is-default { color: var(--ink-100); }
+  .action-row.is-default .action-marker { color: var(--ink-100); }
+  .action-row:hover:not(:disabled) .action-marker { color: var(--ink-100); }
+  /* once user starts hovering, dim the default unless it's the hovered one */
+  .action-list:hover .action-row.is-default:not(:hover) { color: var(--ink-60); }
+  .action-list:hover .action-row.is-default:not(:hover) .action-marker { color: transparent; }
+  .action-row:disabled { color: var(--ink-40); cursor: not-allowed; }
+  .action-row .action-name { flex: 1; }
+  .action-row .action-tag {
+    color: var(--ink-40);
+    font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
+    flex-shrink: 0;
+  }
+  .action-row.swap { margin-top: var(--space-2); border-top: 1px dotted var(--rule-faint); padding-top: var(--space-2); }
+  .action-row.swap.disabled { opacity: 0.4; }
+  .action-row.queued { color: var(--ink-100); }
+  .action-row.queued .action-marker { color: var(--ink-100); }
 
-  /* effective/resisted button accents */
-  .doc-ability-btn.is-effective { border-color: var(--ink-100); }
-  .doc-ability-btn.is-resisted  { opacity: 0.7; }
-  .doc-ability-btn.elem-dark .btn-name { color: var(--ink-100); }
+  .action-detail {
+    color: var(--ink-100);
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    padding-left: var(--space-2);
+  }
+  .detail-meta {
+    color: var(--ink-60);
+    font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
+    margin-bottom: var(--space-1);
+  }
+  .detail-meta .detail-elem,
+  .detail-meta .detail-pow,
+  .detail-meta .detail-tag { color: var(--ink-100); }
+  .detail-desc { color: var(--ink-100); }
+  .detail-phase {
+    margin-top: var(--space-2);
+    color: var(--ink-60);
+    font-style: italic;
+    font-size: var(--fs-body-tight);
+  }
 
-  /* shake animation for damage feedback */
+  /* narrative state ───────────────────────────────────────────────── */
+  .narrative-block { display: flex; flex-direction: column; gap: var(--space-1); }
+  .narr-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    color: var(--ink-100);
+  }
+  .narr-line.primary { font-size: 14px; color: var(--ink-100); }
+  .narr-line.secondary { color: var(--ink-60); font-size: var(--fs-body-tight); }
+  .narr-text { flex: 1; min-width: 0; }
+  .narr-dmg { color: var(--doc-blood); flex-shrink: 0; padding-left: var(--space-3); font-size: 16px; }
+  .narr-footer {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px dotted var(--rule-faint);
+    color: var(--ink-40);
+    font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
+  }
+
+  /* legacy floating/callout, restyled to fit the dossier ──────────── */
+  body > .floating {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+    color: var(--ink-100);
+    text-shadow: 0 0 6px var(--doc-bg), 0 1px 0 var(--doc-bg);
+  }
+  body > .floating.crit { color: var(--doc-gold); font-size: 22px; }
+  body > .floating.heal { color: var(--ink-100); }
+  body > .floating.heal::before { content: '+ '; color: var(--ink-60); }
+  body > .callout {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--ink-100);
+    text-shadow: 0 0 8px var(--doc-bg);
+  }
+
+  /* shake / lunge / recoil — applied by animations.js ─────────────── */
   .dossier-col.shake-pulse { animation: dossier-shake var(--dur-slow) var(--ease-out); }
   @keyframes dossier-shake {
     0%   { transform: translateX(0); }
@@ -913,64 +853,34 @@
     100% { transform: translateX(0); }
   }
   .dossier-col.lunge-anim { animation: dossier-lunge var(--dur-normal) var(--ease-out); }
-  @keyframes dossier-lunge {
-    0%, 100% { transform: translateX(0); }
-    50%      { transform: translateX(6px); }
-  }
+  @keyframes dossier-lunge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
   .dossier-col.enemy.lunge-anim { animation-name: dossier-lunge-enemy; }
-  @keyframes dossier-lunge-enemy {
-    0%, 100% { transform: translateX(0); }
-    50%      { transform: translateX(-6px); }
-  }
+  @keyframes dossier-lunge-enemy { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-6px); } }
   .dossier-col.recoil-anim { animation: dossier-recoil var(--dur-normal) var(--ease-out); }
-  @keyframes dossier-recoil {
-    0%, 100% { transform: translateX(0); }
-    50%      { transform: translateX(-4px); }
-  }
+  @keyframes dossier-recoil { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px); } }
   .dossier-col.enemy.recoil-anim { animation-name: dossier-recoil-enemy; }
-  @keyframes dossier-recoil-enemy {
-    0%, 100% { transform: translateX(0); }
-    50%      { transform: translateX(4px); }
-  }
-
-  /* override the legacy floating/callout styles to fit the dossier aesthetic */
-  .dossier-screen ~ .floating, body > .floating {
-    font-family: var(--font-mono);
-    font-weight: 500;
-    font-size: 22px;
-    letter-spacing: 1px;
-    color: var(--ink-100);
-    text-shadow: 0 0 6px var(--doc-bg), 0 1px 0 var(--doc-bg);
-  }
-  body > .floating.crit { color: var(--doc-gold); font-size: 26px; }
-  body > .floating.heal { color: var(--ink-100); }
-  body > .floating.heal::before { content: '+ '; color: var(--ink-60); }
-  body > .callout {
-    font-family: var(--font-mono);
-    font-weight: 500;
-    font-size: 14px;
-    letter-spacing: 4px;
-    color: var(--ink-100);
-    text-shadow: 0 0 8px var(--doc-bg);
-  }
+  @keyframes dossier-recoil-enemy { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
 
   /* hide the (now unused) phaser stage */
   #stage-root { display: none; }
 
-  /* responsive — narrow viewports */
+  /* responsive — narrow viewports ─────────────────────────────────── */
   @media (max-width: 640px) {
-    .engagement-strip { grid-template-columns: 1fr 1fr; }
+    .dossier-screen { padding: var(--space-2); }
+    .engagement-strip { font-size: var(--fs-label); flex-wrap: wrap; gap: var(--space-1); }
     .dossier-grid { grid-template-columns: 1fr 1px 1fr; }
-    .dossier-col { padding: var(--space-2); gap: var(--space-2); }
-    .dossier-col.player { padding-right: var(--space-2); }
-    .dossier-col.enemy  { padding-left:  var(--space-2); }
-    .glyph-portrait { max-height: 90px; }
-    .glyph-portrait svg { width: 70px; height: 70px; }
-    .class-name { font-size: var(--fs-header-2); letter-spacing: 1.5px; }
-    .vitals-num { font-size: 18px; }
-    .ability-grid-doc { grid-template-columns: 1fr; }
-    .doc-ability-btn { min-height: 52px; }
-    .bench-glyph { width: 32px; height: 32px; }
-    .eng-cell { padding: var(--space-1) var(--space-2); }
-    .eng-val  { font-size: var(--fs-body); }
+    .dossier-col { padding: 0 var(--space-2); gap: var(--space-2); }
+    .dossier-col.player { padding-left: 0; padding-right: var(--space-2); }
+    .dossier-col.enemy  { padding-left: var(--space-2); padding-right: 0; }
+    .doc-title { font-size: 17px; }
+    .glyph-inline { width: 32px; height: 32px; }
+    .bench-glyph-inline { width: 18px; height: 18px; }
+    .bench-bar-inline { width: 36px; }
+    .hp-num { min-width: 60px; font-size: var(--fs-body-tight); }
+    .stat-bar-num { min-width: 40px; font-size: var(--fs-body-tight); }
+    .action-split { grid-template-columns: 1fr; gap: var(--space-2); }
+    .action-split-rule { display: none; }
+    .action-detail { border-top: 1px dotted var(--rule-faint); padding: var(--space-2) 0 0; }
+    .field-notes-body { gap: var(--space-2); }
+    .narr-line.primary { font-size: 13px; }
   }
