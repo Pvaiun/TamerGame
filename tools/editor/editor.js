@@ -5,12 +5,15 @@
 // ─── State ───────────────────────────────────────────────────────────────────
 
 const S = {
-  abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typePalette: {},
+  abilities: {}, passives: {}, statuses: {}, additionalEffects: {}, templates: [], types: [], typeLabels: {}, typePalette: {},
   globals: { growthThresholds: [] },
   passiveSchema: { triggers: {}, conditions: {}, effects: {} },
   glyphs: {},  // keyed by species name, each value is 16-string array
-  voice: { subtitles: {}, notes: {}, passives: {}, afflictions: {} },
-  dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false },
+  voice: {
+    subtitles: {}, notes: {}, passives: {}, afflictions: {},
+    actions: {}, actionDefaults: {}, effectDefaults: {}, events: {},
+  },
+  dirty: { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false, types: false },
   tab: 'monsters',
   monster: null,   // selected template index
   ability: null,   // selected ability key
@@ -38,7 +41,11 @@ async function init() {
       fetch('../../data/voiceprose.json').then(r => r.json()),
     ]);
     S.types = types.TYPES;
+    S.typeLabels = types.TYPE_LABELS || {};
     S.typePalette = types.TYPE_PALETTE;
+    // Cached so the commit pipeline can round-trip the file unchanged for
+    // fields the editor doesn't currently expose for editing.
+    S._typeChartCache = types.TYPE_CHART;
     S.passives = passives;
     S.abilities = abilities;
     S.statuses = statuses;
@@ -52,10 +59,17 @@ async function init() {
       if (k.startsWith('_')) continue;
       S.glyphs[k] = v;
     }
-    Object.assign(S.voice.subtitles,   voice.subtitles   || {});
-    Object.assign(S.voice.notes,       voice.notes       || {});
-    Object.assign(S.voice.passives,    voice.passives    || {});
-    Object.assign(S.voice.afflictions, voice.afflictions || {});
+    // Load every voice table — including the four added since the dossier
+    // rewrite (actions / actionDefaults / effectDefaults / events) so commits
+    // round-trip without dropping data.
+    Object.assign(S.voice.subtitles,      voice.subtitles      || {});
+    Object.assign(S.voice.notes,          voice.notes          || {});
+    Object.assign(S.voice.passives,       voice.passives       || {});
+    Object.assign(S.voice.afflictions,    voice.afflictions    || {});
+    Object.assign(S.voice.actions,        voice.actions        || {});
+    Object.assign(S.voice.actionDefaults, voice.actionDefaults || {});
+    Object.assign(S.voice.effectDefaults, voice.effectDefaults || {});
+    Object.assign(S.voice.events,         voice.events         || {});
   } catch (e) {
     document.getElementById('content').innerHTML = `<p style="padding:20px;color:#d94a3a">Failed to load data: ${e.message}</p>`;
     return;
@@ -310,6 +324,7 @@ function monsterFormHTML(t) {
     <div class="form-section">
       <div class="form-section-title">Identity</div>
       <div class="form-row"><label>Species key</label><input type="text" data-field="species" value="${t.species}"></div>
+      <div class="form-row"><label>Narrative name</label><input type="text" data-field="name" class="voice-subtitle" value="${escapeAttr(t.name || '')}" placeholder="lowercase english-but-wrong phrase…"></div>
       <div class="form-row">
         <label>Type</label>
         <select data-field="type">${typeOpts}</select>
@@ -579,13 +594,30 @@ function abilityFormHTML(key, ab) {
   const phases = ab.phases && ab.phases.length ? ab.phases : [[]];
   const phaseHTML = phases.map((p, i) => phaseFormHTML(p, i, phases.length)).join('');
 
+  // Per-ability action voice overrides — fall back to actionDefaults[element]
+  // when blank. Show the fallback as the input placeholder so authors see
+  // what they'd be overriding.
+  const actVoice  = S.voice.actions[key] || {};
+  const elemVoice = S.voice.actionDefaults[ab.element || 'neutral'] || S.voice.actionDefaults.neutral || {};
+
   return `
     <div class="form-section">
       <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
-      <div class="form-row"><label>Display name</label><input type="text" data-ab-field="name" value="${ab.name}"></div>
-      <div class="form-row"><label>Description</label><textarea data-ab-field="desc">${ab.desc || ''}</textarea></div>
+      <div class="form-row"><label>Display name</label><input type="text" data-ab-field="name" value="${escapeAttr(ab.name)}" placeholder="short verb-led phrase…"></div>
+      <div class="form-row"><label>Effect</label><textarea data-ab-field="effect" rows="2" placeholder="verbose lowercase mechanical text…">${escapeAttr(ab.effect || '')}</textarea></div>
+      <div class="form-row"><label>Flavor</label><textarea data-ab-field="flavor" rows="2" placeholder="optional atmospheric beat (markup ok)…">${escapeAttr(ab.flavor || '')}</textarea></div>
       <div class="form-row"><label>Element</label><select data-ab-field="element">${typeOpts}</select></div>
       <div class="form-row"><label>Priority</label><input type="number" data-ab-field="priority" value="${ab.priority ?? 0}" min="-3" max="3"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Action voice
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+          (combat-log lines for this ability; blank = fall back to ${ab.element || 'neutral'} default)</span>
+      </div>
+      <div class="form-row"><label>Use line</label><input type="text" class="voice-subtitle" data-ab-voice="use" value="${escapeAttr(actVoice.use || '')}" placeholder="${escapeAttr(elemVoice.use || '{actor} uses {name}.')}"></div>
+      <div class="form-row"><label>Hit line</label><input type="text" class="voice-subtitle" data-ab-voice="hit" value="${escapeAttr(actVoice.hit || '')}" placeholder="${escapeAttr(elemVoice.hit || 'they recoil.')}"></div>
+      <div class="form-row"><label>Voice flavor</label><input type="text" class="voice-subtitle" data-ab-voice="flavor" value="${escapeAttr(actVoice.flavor || '')}" placeholder="optional in-combat flavor beat…"></div>
+      <div class="voice-help">Templates: <code>{actor}</code> <code>{target}</code> <code>{name}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Phases
@@ -634,11 +666,14 @@ function passivesTabHTML() {
 function passiveFormHTML(key, pv) {
   if (!pv.triggers) pv.triggers = [];
   const triggerRows = pv.triggers.map((t, i) => triggerEntryHTML(t, i)).join('');
+  const voiceProse = S.voice.passives[key] || '';
   return `
     <div class="form-section">
       <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
-      <div class="form-row"><label>Display name</label><input type="text" data-pv-field="name" value="${pv.name || ''}"></div>
-      <div class="form-row"><label>Description</label><textarea data-pv-field="desc">${pv.desc || ''}</textarea></div>
+      <div class="form-row"><label>Display name</label><input type="text" data-pv-field="name" value="${escapeAttr(pv.name || '')}" placeholder="english-but-wrong phrase…"></div>
+      <div class="form-row"><label>Mechanical desc</label><textarea data-pv-field="desc" rows="2">${escapeAttr(pv.desc || '')}</textarea></div>
+      <div class="form-row"><label>Voice prose</label><input type="text" class="voice-subtitle" data-pv-voice value="${escapeAttr(voiceProse)}" placeholder="short evocative line shown above the mechanical desc…"></div>
+      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Triggers
@@ -822,11 +857,24 @@ function statusFormHTML(key, sv) {
   const showSwap  = sv.percentOnSwap !== undefined;
   const showStacks = sv.stacks !== undefined;
 
+  // Voice prose for this status — { name, apply, tick } from voiceprose.afflictions.
+  const aff = S.voice.afflictions[key] || {};
+
   return `
     <div class="form-section">
       <div class="form-section-title">Identity <span class="list-item-sub" style="font-size:10px">${key}</span></div>
-      <div class="form-row"><label>Display name</label><input type="text" data-sv-field="name" value="${sv.name}"></div>
-      <div class="form-row"><label>Description</label><textarea data-sv-field="desc">${sv.desc || ''}</textarea></div>
+      <div class="form-row"><label>Display name</label><input type="text" data-sv-field="name" value="${escapeAttr(sv.name)}"></div>
+      <div class="form-row"><label>Description</label><textarea data-sv-field="desc">${escapeAttr(sv.desc || '')}</textarea></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Voice
+        <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+          (in-combat prose for this status; <code>name</code> shows in the dossier afflictions list)</span>
+      </div>
+      <div class="form-row"><label>Voice name</label><input type="text" class="voice-subtitle" data-aff-field="name" value="${escapeAttr(aff.name || '')}" placeholder="${escapeAttr(sv.name || 'lowercase noun…')}"></div>
+      <div class="form-row"><label>Apply line</label><input type="text" class="voice-subtitle" data-aff-field="apply" value="${escapeAttr(aff.apply || '')}" placeholder="line shown when the status takes hold…"></div>
+      <div class="form-row"><label>Tick line</label><input type="text" class="voice-subtitle" data-aff-field="tick" value="${escapeAttr(aff.tick || '')}" placeholder="line shown each tick (with damage/heal numeral on the right)…"></div>
+      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Mechanics</div>
@@ -1240,6 +1288,20 @@ function bindAbilityFormEvents() {
     });
   });
 
+  // Per-ability action voice overrides — write to S.voice.actions[abilityKey].
+  // Empty fields delete the key so combat falls back to the element default.
+  document.querySelectorAll('[data-ab-voice]').forEach(input => {
+    input.addEventListener('change', () => {
+      const f = input.dataset.abVoice;  // 'use' | 'hit' | 'flavor'
+      const v = input.value.trim();
+      const cur = S.voice.actions[S.ability] || {};
+      if (v) cur[f] = v; else delete cur[f];
+      if (Object.keys(cur).length === 0) delete S.voice.actions[S.ability];
+      else S.voice.actions[S.ability] = cur;
+      S.dirty.voice = true; renderHeader(); renderTabs();
+    });
+  });
+
   // ── Phase add / remove ─────────────────────────────────────────────────
   const phaseAdd = document.getElementById('phase-add');
   if (phaseAdd) {
@@ -1381,6 +1443,19 @@ function bindStatusFormEvents() {
       S.dirty.statuses = true; renderHeader(); renderTabs();
     });
   });
+
+  // Voice prose for the affliction — { name, apply, tick } in voice.afflictions.
+  document.querySelectorAll('[data-aff-field]').forEach(el => {
+    el.addEventListener('change', () => {
+      const f = el.dataset.affField;
+      const v = el.value.trim();
+      const cur = S.voice.afflictions[S.status] || {};
+      if (v) cur[f] = v; else delete cur[f];
+      if (Object.keys(cur).length === 0) delete S.voice.afflictions[S.status];
+      else S.voice.afflictions[S.status] = cur;
+      S.dirty.voice = true; renderHeader(); renderTabs();
+    });
+  });
 }
 
 function bindPassiveFormEvents() {
@@ -1394,6 +1469,17 @@ function bindPassiveFormEvents() {
       S.dirty.passives = true; renderHeader(); renderTabs();
     });
   });
+
+  // Voice prose — voiceprose.passives[passiveKey], single-string lookup.
+  const voiceInput = document.querySelector('[data-pv-voice]');
+  if (voiceInput) {
+    voiceInput.addEventListener('change', () => {
+      const v = voiceInput.value.trim();
+      if (v) S.voice.passives[S.passive] = v;
+      else delete S.voice.passives[S.passive];
+      S.dirty.voice = true; renderHeader(); renderTabs();
+    });
+  }
 
   // Add trigger.
   const tgAdd = document.getElementById('trigger-add');
@@ -1589,14 +1675,31 @@ async function doCommit(message) {
   };
   const voiceOut = {
     _format: {
-      note: 'Voice-style placeholder prose for the dossier. Markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction, **gold** for the gold accent.',
-      lookup: 'subtitles[species] || subtitles[type]; notes[species] || notes[type]; passives[passiveKey]; afflictions[statusKey]',
+      note: 'Voice-style placeholder prose for the dossier and battle log. Inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent. All prose is lowercase.',
+      lookup: 'Dossier reads: subtitles[species] || subtitles[type]; notes[species] || notes[type]. Battle log reads: actions[abilityKey].use || actionDefaults[element].use; same for hit/flavor. effectDefaults[kind] is consulted when an ability has no damage. afflictions[statusKey].apply / .tick are read on apply / per-turn-tick.',
+      templates: '{actor} = lowercased name of the doer. {target} = lowercased name of the receiver. {name} = ability display name (lowercased). {status} = lowercased affliction name.',
     },
-    subtitles: S.voice.subtitles,
-    notes: S.voice.notes,
-    passives: S.voice.passives,
-    afflictions: S.voice.afflictions,
+    subtitles:      S.voice.subtitles,
+    notes:          S.voice.notes,
+    passives:       S.voice.passives,
+    afflictions:    S.voice.afflictions,
+    actionDefaults: S.voice.actionDefaults,
+    effectDefaults: S.voice.effectDefaults,
+    actions:        S.voice.actions,
+    events:         S.voice.events,
   };
+  // types.json — preserve TYPES + TYPE_CHART + TYPE_PALETTE; sync TYPE_LABELS
+  // from the editable map.
+  const typesOut = {
+    TYPES:        S.types,
+    TYPE_LABELS:  S.typeLabels,
+    TYPE_CHART:   undefined,   // filled below from the existing file shape
+    TYPE_PALETTE: S.typePalette,
+  };
+  // Read the existing file's TYPE_CHART without round-tripping it through the
+  // editor — the editor doesn't expose it for editing, so we need the original.
+  // Stored at load time in a side-cache.
+  if (S._typeChartCache) typesOut.TYPE_CHART = S._typeChartCache;
 
   const toCommit = [
     S.dirty.templates  && { file: 'templates.json',      data: S.templates },
@@ -1606,6 +1709,7 @@ async function doCommit(message) {
     S.dirty.globals    && { file: 'globals.json',         data: S.globals },
     S.dirty.glyphs     && { file: 'glyphs.json',          data: glyphsOut },
     S.dirty.voice      && { file: 'voiceprose.json',      data: voiceOut },
+    S.dirty.types      && { file: 'types.json',           data: typesOut },
   ].filter(Boolean);
 
   try {
@@ -1613,7 +1717,7 @@ async function doCommit(message) {
       const sha = await getFileSha(file);
       await putFile(file, data, sha, message);
     }
-    S.dirty = { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false };
+    S.dirty = { abilities: false, passives: false, templates: false, statuses: false, globals: false, glyphs: false, voice: false, types: false };
     showStatus('Committed! Pages will rebuild shortly.', false);
   } catch (e) {
     showStatus(`Commit failed: ${e.message}`, true);
