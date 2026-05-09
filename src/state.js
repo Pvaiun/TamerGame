@@ -24,12 +24,31 @@ export const state = {
   acting: false,
   pCharge: null,
   eCharge: null,
+  // Index of the log entry currently typewriting in the narrative box. Set
+  // by the log drainer; -1 when nothing is animating. Drives the typewriter
+  // styling on the latest narrative line.
+  typingLogIdx: -1,
 };
 
-export function pushLog(msg, cls = '') {
-  state.log.push({ msg, cls });
-  if (state.log.length > 30) state.log.shift();
+// pushLog accepts a string (legacy plain-text entry) or a structured object
+// of the form { text, damage?, heal?, cls?, anim?, pause? }. Animations on
+// .anim are deferred — they fire when the log drainer reaches the entry, so
+// each event's animation lines up with the line appearing in the UI.
+export function pushLog(text, opts) {
+  let entry;
+  if (text && typeof text === 'object' && !Array.isArray(text)) {
+    entry = { text: text.text || '', cls: '', damage: 0, heal: 0, ...text };
+  } else {
+    const o = (opts && typeof opts === 'object') ? opts : (opts ? { cls: opts } : {});
+    entry = { text: String(text || ''), cls: '', damage: 0, heal: 0, ...o };
+  }
+  state.log.push(entry);
+  if (state.log.length > 60) state.log.shift();
 }
+
+// Compatibility helper for callers that still wrote `entry.msg` to access the
+// log line text. New code should use entry.text.
+export function logText(entry) { return entry ? (entry.text || entry.msg || '') : ''; }
 
 export function resetGame() {
   state.wave = 0;
@@ -46,6 +65,7 @@ export function resetGame() {
   state.postBattleEvents = null;
   state.starterPool = null;
   state.acting = false;
+  state.typingLogIdx = -1;
   state.screen = 'start';
 }
 

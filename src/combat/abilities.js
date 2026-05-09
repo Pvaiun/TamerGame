@@ -4,6 +4,9 @@ import { displayName } from '../creature.js';
 import { hasPassive, applyPostHitPassives, applySelfDmgMult } from './passives.js';
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
+import { drainLog, affApply, eventText } from './log.js';
+
+const lower = (s) => String(s || '').toLowerCase();
 
 // Read a param from an effect instance, falling back to the schema default.
 export function effParam(eff, paramKey) {
@@ -35,14 +38,18 @@ function isModifier(eff) {
 }
 
 // Apply the cursed-on-swap penalty if the swapping-out fighter has cursed status.
-// Pivot Master halves this damage.
+// Pivot Master halves this damage. Animation is deferred to the log entry so
+// it lines up with the line appearing.
 export function applyCursedOnSwap(f, side) {
   if (!f || !f.statuses || !f.statuses.cursed) return 0;
   let dmg = Math.max(1, Math.round(f.creature.maxHp * f.statuses.cursed.percentOnSwap));
   if (hasPassive(f, 'pivot_master')) dmg = Math.max(1, Math.round(dmg * 0.5));
   f.hp = Math.max(0, f.hp - dmg);
-  spawnFloat(side, String(dmg), 'crit');
-  pushLog(`${displayName(f.creature)} suffers ${dmg} from the curse on swap-out!`, 'eff');
+  pushLog(eventText('swap_curse', { actor: lower(displayName(f.creature)) }), {
+    cls: 'eff',
+    damage: dmg,
+    anim: () => spawnFloat(side, String(dmg), 'crit'),
+  });
   return dmg;
 }
 
@@ -74,7 +81,7 @@ function statusOptsFor(_attacker, _statusName) {
 // `lastDmg` is the most-recent hit's damage (0 if not in eachHit context).
 // `helpers` carries cross-module callbacks (performSelfSwap) to avoid circular imports.
 
-function handleEffect(eff, ctx) {
+async function handleEffect(eff, ctx) {
   const { side, oside, attacker, defender, lastDmg, helpers } = ctx;
   switch (eff.type) {
     case 'apply_status': {
@@ -85,13 +92,9 @@ function handleEffect(eff, ctx) {
       const opts     = { ...statusOptsFor(attacker, status) };
       if (turnsOv && turnsOv > 0) opts.turns = turnsOv;
       if (pctOv && pctOv > 0)     opts.pct   = pctOv;
-      const def = STATUSES[status];
-      const log = def ? def.name : status;
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) applyStatus(f, status, opts);
-      const names = fighters.map(f => displayName(f.creature));
-      if (names.length === 1) pushLog(`${names[0]} is afflicted with ${log}.`);
-      else if (names.length > 1) pushLog(`${names.join(' and ')} are afflicted with ${log}!`, 'eff');
+      if (fighters.length) pushLog(affApply(status), { cls: 'eff' });
       return;
     }
     case 'buff': {
@@ -105,10 +108,10 @@ function handleEffect(eff, ctx) {
       }
       const parts = Object.entries(sm)
         .filter(([, v]) => typeof v === 'number' && v !== 0)
-        .map(([k, v]) => `${k.toUpperCase()} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
+        .map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
       if (fighters.length && parts.length) {
-        const names = fighters.map(f => displayName(f.creature)).join(' and ');
-        pushLog(`${names}: ${parts.join(', ')}.`, 'eff');
+        const text = `their grip ~~tightens~~ holds. ${parts.join(', ')}.`;
+        pushLog(text, { cls: 'eff' });
       }
       return;
     }
@@ -120,7 +123,7 @@ function handleEffect(eff, ctx) {
       for (const f of fighters) {
         const perTurn = Math.max(1, Math.round(f.creature.maxHp * percent));
         f.healing = { perTurn, turnsLeft: turns };
-        pushLog(`${displayName(f.creature)} begins healing (+${perTurn}/turn for ${turns}).`);
+        pushLog(`the green begins to keep ${lower(displayName(f.creature))}.`);
       }
       return;
     }
@@ -128,7 +131,7 @@ function handleEffect(eff, ctx) {
       const targets = effParam(eff, 'targets') || ['self'];
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) f.bracingThisTurn = true;
-      if (fighters.length) pushLog(`${fighters.map(f => displayName(f.creature)).join(' and ')} brace.`);
+      if (fighters.length) pushLog(`they brace against the next blow.`);
       return;
     }
     case 'cleanse': {
@@ -145,7 +148,7 @@ function handleEffect(eff, ctx) {
             if (doDebuffs && f.statMods[k] < 0) f.statMods[k] = 0;
           }
         }
-        pushLog(`${displayName(f.creature)} is cleansed.`);
+        pushLog(`what was on ${lower(displayName(f.creature))} lifts.`);
       }
       return;
     }
@@ -153,8 +156,10 @@ function handleEffect(eff, ctx) {
       const pct = effParam(eff, 'percentOfDamage') || 0;
       const healed = applyHeal(attacker, Math.round((lastDmg || 0) * pct));
       if (healed > 0) {
-        spawnFloat(side, `+${healed}`, 'heal');
-        pushLog(`${displayName(attacker.creature)} drains ${healed}.`);
+        pushLog(`${lower(displayName(attacker.creature))} ~~feeds~~ drinks.`, {
+          heal: healed,
+          anim: () => spawnFloat(side, `+${healed}`, 'heal'),
+        });
       }
       return;
     }
@@ -163,14 +168,19 @@ function handleEffect(eff, ctx) {
       let cost = Math.round(attacker.creature.maxHp * pct);
       cost = Math.max(0, Math.round(applySelfDmgMult(attacker, cost)));
       attacker.hp = Math.max(1, attacker.hp - cost);
-      if (cost > 0) spawnFloat(side, String(cost), 'dmg');
+      if (cost > 0) {
+        pushLog(`${lower(displayName(attacker.creature))} pays in itself.`, {
+          damage: cost,
+          anim: () => spawnFloat(side, String(cost), 'dmg'),
+        });
+      }
       return;
     }
     case 'swap': {
       const targets = effParam(eff, 'targets') || ['self'];
-      if (targets.includes('enemy')) doEnemySwap(side, oside, defender);
+      if (targets.includes('enemy')) await doEnemySwap(side, oside, defender);
       if (targets.includes('self') && attacker.hp > 0) {
-        helpers.performSelfSwap(side, attacker, eff);
+        await helpers.performSelfSwap(side, attacker, eff);
       }
       return;
     }
@@ -179,14 +189,16 @@ function handleEffect(eff, ctx) {
   }
 }
 
-function doEnemySwap(side, oside, defender) {
+async function doEnemySwap(side, oside, defender) {
   const oppBench = side === 'player' ? state.ebf : state.bf;
   if (!oppBench || oppBench.hp <= 0) {
-    pushLog(`${displayName(defender.creature)} has nowhere to swap.`, 'eff');
+    pushLog(eventText('swap_none', { actor: lower(displayName(defender.creature)) }), { cls: 'eff' });
+    await drainLog();
     return;
   }
   applyCursedOnSwap(defender, oside);
-  pushLog(`${displayName(defender.creature)} is yanked from the field!`, 'eff');
+  pushLog(eventText('swap_yanked', { actor: lower(displayName(defender.creature)) }), { cls: 'eff' });
+  await drainLog();
   if (side === 'player') {
     const out = state.ef;
     state.ef = state.ebf;
@@ -203,21 +215,21 @@ function doEnemySwap(side, oside, defender) {
   }
 }
 
-// Run all timed effects in a phase that match a given timing band. Returns nothing.
-export function runTimedEffects(timing, phase, ctx) {
+// Run all timed effects in a phase that match a given timing band.
+export async function runTimedEffects(timing, phase, ctx) {
   for (const eff of phase) {
     if (isModifier(eff) || eff.type === 'damage') continue;
     if (effectTiming(eff) !== timing) continue;
-    handleEffect(eff, ctx);
+    await handleEffect(eff, ctx);
   }
 }
 
 // Run effects with timing=eachHit in a phase, called once per landed damage hit.
-export function runEachHitEffects(phase, ctx) {
+export async function runEachHitEffects(phase, ctx) {
   for (const eff of phase) {
     if (isModifier(eff) || eff.type === 'damage') continue;
     if (effectTiming(eff) !== 'eachHit') continue;
-    handleEffect(eff, ctx);
+    await handleEffect(eff, ctx);
   }
 }
 
