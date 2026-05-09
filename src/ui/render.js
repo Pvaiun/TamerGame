@@ -13,9 +13,11 @@ import {
 export function render() {
   const root = app();
   root.innerHTML = '';
-  root.appendChild(el('h1', {}, 'BLOODLINES'));
-  root.appendChild(el('div', { class: 'subtitle' }, 'a creature breeding roguelite'));
-  if (state.screen !== 'start' && state.screen !== 'starter_pick' && state.screen !== 'bloodline_ready' && state.screen !== 'victory' && state.screen !== 'gameover') {
+  if (state.screen !== 'battle') {
+    root.appendChild(el('h1', {}, 'BLOODLINES'));
+    root.appendChild(el('div', { class: 'subtitle' }, 'a creature breeding roguelite'));
+  }
+  if (state.screen !== 'start' && state.screen !== 'starter_pick' && state.screen !== 'bloodline_ready' && state.screen !== 'victory' && state.screen !== 'gameover' && state.screen !== 'battle') {
     root.appendChild(renderHeader());
   }
   switch (state.screen) {
@@ -29,7 +31,9 @@ export function render() {
     case 'victory': renderVictory(); break;
     case 'gameover': renderGameover(); break;
   }
-  if (state.screen !== 'battle') syncBattleScene(null);
+  // Phaser BattleScene is parked: we no longer render creatures on the canvas.
+  // The dossier UI handles all battle visuals; animations are DOM-based.
+  syncBattleScene(null);
 }
 
 // Shared wave-advance helper. Lives here (not in state.js) so it can call render()
