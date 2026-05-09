@@ -67,6 +67,7 @@
     border-radius: 1px;
   }
   .doc-gold { color: var(--doc-gold); }
+  .doc-blood-text { color: var(--doc-blood); }
   body {
     font-family: var(--font-mono);
     background: var(--doc-bg);
