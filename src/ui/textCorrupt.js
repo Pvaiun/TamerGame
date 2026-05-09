@@ -54,6 +54,7 @@ function escapeHtml(s) {
 //   ~~text~~  → <s>text</s>            double-strike
 //   [[N]]     → red bar of N chars     redaction
 //   **text**  → gold accent
+//   !!text!!  → blood-red text         (charged words the document writes anyway)
 // Authors write field notes / passive prose in this syntax in the JSON.
 export function parseProse(input) {
   if (input == null) return '';
@@ -61,6 +62,7 @@ export function parseProse(input) {
   s = s.replace(/~~([^~]+)~~/g, '<s>$1</s>');
   s = s.replace(/\[\[(\d+)\]\]/g, (_, n) => `<span class="redact" style="width:${Math.max(1, +n)}ch;"> </span>`);
   s = s.replace(/\*\*([^*]+)\*\*/g, '<span class="doc-gold">$1</span>');
+  s = s.replace(/!!([^!]+)!!/g, '<span class="doc-blood-text">$1</span>');
   return s;
 }
 
