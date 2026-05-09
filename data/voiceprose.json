@@ -5,53 +5,52 @@
     "templates": "{actor} = lowercased name of the doer. {target} = lowercased name of the receiver. {name} = ability display name (lowercased). {status} = lowercased affliction name."
   },
   "subtitles": {
-    "fire":  "small embered thing.",
-    "water": "thing that does not wet.",
-    "grass": "thing that has waited.",
-    "light": "thing that does not warm.",
-    "dark":  "thing that listens.",
-    "Emberkin":   "first ember.",
-    "Tidewhelp":  "small drowning thing.",
-    "Loamback":   "thing that holds soil.",
-    "Lumenpup":   "small brightness.",
-    "Pyrelord":   "older fire. older than this.",
-    "Magmaw":     "the mouth that does not close.",
-    "Charnel":    "what is left after the fire.",
-    "Deepmaw":    "thing from where the floor is not.",
-    "Hollowoak":  "the trunk that ~~remembers~~ holds.",
-    "Brineback":  "low slow ~~weight~~ presence.",
-    "Mosshorn":   "thing the ground forgot to take back.",
-    "Aurabeast":  "bright thing that does not reassure.",
-    "Shadowmaw":  "thing that opens in the dark.",
-    "Umbragale":  "the wind from the wrong room.",
-    "Cinderling": "spark that does not catch.",
-    "Sproutkin":  "small green thing. growing.",
-    "Wraithfin":  "thin thing that drifts.",
-    "Voidling":   "small piece of nothing.",
-    "Glimmerfox": "quick. brighter than it should be.",
-    "Frostfin":   "cold thing that swims slow.",
-    "Mireling":   "small mud-thing.",
-    "Coralhusk":  "what is left after the soft part.",
-    "Thornling":  "small thing with edges.",
-    "Halowyrm":   "long bright thing.",
-    "Dawnstag":   "antlered. early.",
-    "Vinewyrm":   "long green thing that climbs.",
-    "Bloomback":  "flowering thing.",
-    "Soothlick":  "calms with its tongue.",
-    "Ashmaw":     "soft mouth full of grit.",
-    "Rivergeist": "the water that thinks.",
-    "Nightcreep": "low. patient. close.",
-    "Voidling":   "small piece of nothing."
+    "fire": "something is wrong with its heat.",
+    "water": "it is dry to the touch. it should not be.",
+    "grass": "it has been waiting longer than i have.",
+    "light": "it does not warm what it lights.",
+    "dark": "i ~~saw~~ heard it move.",
+    "Emberkin": "i have been carrying it. i did not know.",
+    "Ashmaw": "it has been ~~hungry~~ patient.",
+    "Cinderling": "no fuel observed. the heat continues.",
+    "Pyrelord": "this has been its room.",
+    "Magmaw": "when it opens i hear another room.",
+    "Soothlick": "it is ~~too~~ very gentle.",
+    "Charnel": "i do not look at it for long.",
+    "Tidewhelp": "it is dry. always dry.",
+    "Rivergeist": "subject does not remain at site of filing.",
+    "Brineback": "it has been here too long.",
+    "Mireling": "i found it where i had left no print.",
+    "Coralhusk": "the soft part is finished.",
+    "Frostfin": "i ~~caught~~ found it. once.",
+    "Deepmaw": "it has been waiting [[6]].",
+    "Loamback": "i mistook it for a stone. then for ~~moss~~ a face.",
+    "Sproutkin": "it is small. it is opening.",
+    "Mosshorn": "it was a stone for a long time.",
+    "Vinewyrm": "it is crossing the room. slowly.",
+    "Bloomback": "it is in flower. the flowers face me.",
+    "Thornling": "do not hold it tightly.",
+    "Hollowoak": "there is nothing inside, [[7]].",
+    "Lumenpup": "it does not cast a shadow.",
+    "Aurabeast": "it has been observing.",
+    "Dawnstag": "it knows when the dawn was.",
+    "Halowyrm": "the light it carries hurts. i look anyway.",
+    "Glimmerfox": "i never saw it begin to move.",
+    "Shadowmaw": "it listens for ~~me~~ us.",
+    "Voidling": "there is a place where it should be.",
+    "Nightcreep": "it ~~comes~~ has already arrived.",
+    "Wraithfin": "it is partly here.",
+    "Umbragale": "the wind is wrong in this room."
   },
   "notes": {
-    "fire":  [
-      "it has been ~~burning~~ smoldering since i found it.",
-      "i feel its heat where it has not been.",
+    "fire": [
+      "it ~~burns~~ smolders where i did not light it.",
+      "i feel its heat after it has gone.",
       "it does not warm me. it warms what i was."
     ],
     "water": [
-      "it is ~~wet~~ damp. it has always been damp.",
-      "the floor does not wet under it.",
+      "it is dry. always dry.",
+      "i hear ~~water~~ something running near it.",
       "i have ~~drowned~~ heard it speak."
     ],
     "grass": [
@@ -61,144 +60,341 @@
     ],
     "light": [
       "it is too ~~bright~~ clear to look at directly.",
-      "the light is not clean.",
-      "it casts a shadow where there is none."
+      "the light it makes is not clean.",
+      "i can still see it when i ~~close~~ shut my eyes."
     ],
-    "dark":  [
+    "dark": [
       "i ~~saw~~ heard it move.",
       "it has been here longer than i thought.",
       "it does not require my eyes to see me."
     ],
     "Emberkin": [
-      "i found it ~~burning~~ glowing in the stove ash.",
-      "it does not consume what it touches.",
-      "i think it is waiting for its real fire."
+      "i found it in my coat. the lining is soaked.",
+      "it ~~hums~~ does not hum, but the floor next to it does.",
+      "it knows my **handwriting**."
+    ],
+    "Ashmaw": [
+      "i feed it the small things. it accepts them.",
+      "it watches the page while i write. it watches the smaller words first.",
+      "i think it is **patient** with me."
+    ],
+    "Cinderling": [
+      "specimen lit at field site, brought through containment door.",
+      "no fuel ~~observed~~ permitted. the spark persists.",
+      "specimen does not require ~~feeding~~ attention. specimen ~~has not~~ has not."
+    ],
+    "Pyrelord": [
+      "this room has always been its room.",
+      "the heat that has lived here is its heat.",
+      "i do not interrupt it. no one has."
+    ],
+    "Magmaw": [
+      "it opens once a day. less, lately.",
+      "what is inside it is not it. what is inside it is ~~bigger~~ farther.",
+      "the air from inside smells of [[8]]."
+    ],
+    "Soothlick": [
+      "in its presence i feel **calm**.",
+      "it cleans the wounds first. it cleans the smaller things inside them after.",
+      "i forget the hour after it has gone."
+    ],
+    "Charnel": [
+      "kept. kept after.",
+      "the floor does not blacken. it is already.",
+      "i do not write what it ~~eats~~ takes."
     ],
     "Tidewhelp": [
-      "it is dry to the touch. always dry.",
-      "i hear ~~water~~ something running near it.",
-      "it follows the way streams follow."
+      "it follows streams that are not in this building.",
+      "i drink water and it watches.",
+      "i am beginning to drink the way it drinks. my throat is fine."
+    ],
+    "Rivergeist": [
+      "rate of travel: not consistent.",
+      "direction of travel: ~~consistent~~ repeatable.",
+      "i hear the building's water in the wrong direction."
+    ],
+    "Brineback": [
+      "the floor under it is white now.",
+      "the brine does not leave it. the room does not leave it.",
+      "i was the second one to be assigned to it."
+    ],
+    "Mireling": [
+      "i found it under what i had not lifted.",
+      "the mud where it sleeps does not dry.",
+      "i do not know what it is small for."
+    ],
+    "Coralhusk": [
+      "phase one: tissue ~~softens~~ has [[7]].",
+      "phase two: what remains has edges.",
+      "i used my hand the once. the hand has [[5]]."
+    ],
+    "Frostfin": [
+      "i do not remember catching it. i do not remember catching it.",
+      "the room is colder where it sits.",
+      "i think it has been the same one. all of them."
+    ],
+    "Deepmaw": [
+      "when i look at it, i look at something further down.",
+      "i do not measure it.",
+      "it has been **waiting**."
     ],
     "Loamback": [
-      "i mistook it for a stone. then for ~~moss~~ a face.",
-      "it grows quietly even when held.",
-      "the ground misses it when it leaves."
+      "it grows ~~quietly~~ patiently even when held.",
+      "the ground misses it when it leaves the room.",
+      "when i set it down, the floor under it is darker."
+    ],
+    "Sproutkin": [
+      "it is opening. that is what it is doing.",
+      "i do not know what is inside.",
+      "i should ~~stop~~ keep watching."
+    ],
+    "Mosshorn": [
+      "the place it sat is colder than the rest of the floor.",
+      "i can hear it shifting at night. once a night.",
+      "no one has measured how long it was a stone for."
+    ],
+    "Vinewyrm": [
+      "i write while it moves. the page ~~tightens~~ holds.",
+      "i was sitting near the door. i am sitting near the wall now. i did not move.",
+      "it knows where my chair is."
+    ],
+    "Bloomback": [
+      "the flowers do not turn with the light. they turn with my chair.",
+      "i ~~picked~~ took one. the rest noticed.",
+      "the smell is **sweet**. that is the worst part."
+    ],
+    "Thornling": [
+      "i tried. my hand ~~bled~~ remembered.",
+      "it does not mean to. i think.",
+      "i can feel where it touched, three days later."
+    ],
+    "Hollowoak": [
+      "i can hear something inside it. there is nothing inside it.",
+      "it has been here longer than the others. all of the others.",
+      "it does not move. that is its **work**."
     ],
     "Lumenpup": [
+      "it makes shadows on me. it does not cast its own.",
       "it is warm. it should be warmer.",
-      "it makes shadows but does not cast them.",
-      "i cannot see it when i ~~close my eyes~~ try to remember it."
+      "i cannot picture it when i ~~close my eyes~~ try to."
+    ],
+    "Aurabeast": [
+      "the room is brighter where it has stood.",
+      "it does not eat. it has been here [[10]].",
+      "i think it has been **writing me down**."
+    ],
+    "Dawnstag": [
+      "i have not seen the morning since it arrived.",
+      "i cannot tell if its antlers are growing. each time i look they are different.",
+      "it does not sleep. it does not need to."
+    ],
+    "Halowyrm": [
+      "it is longer than the room. i have ~~measured~~ counted.",
+      "looking at it hurts. i look anyway.",
+      "when it speaks i do not ~~hear~~ remember it."
+    ],
+    "Glimmerfox": [
+      "it is faster than i am.",
+      "i am not certain it was ever here.",
+      "i write its name and i think of someone ~~else~~ who is not."
+    ],
+    "Shadowmaw": [
+      "it stays low to the floor.",
+      "it has been listening for a long time.",
+      "i think it is waiting for me to ~~speak~~ say its name. i ~~have~~ have not."
+    ],
+    "Voidling": [
+      "i can see what is behind it. it is not behind it.",
+      "it does not occupy a volume. the volume is occupied around it.",
+      "i mark its **name** on the page so i remember it remains."
+    ],
+    "Nightcreep": [
+      "it is closer than it was.",
+      "i did not see it move. nothing did.",
+      "i should ~~not~~ keep writing this down."
+    ],
+    "Wraithfin": [
+      "it ~~is~~ has been here a moment longer than i have looked.",
+      "i can see through it where i would prefer not to.",
+      "it does not breathe. it does not need to. ~~no~~"
+    ],
+    "Umbragale": [
+      "the wind in this room has been wrong since it arrived.",
+      "i can hear another room when it is near. another.",
+      "the page lifts when ~~i~~ it has not."
     ]
   },
   "passives": {
-    "brutal":          "it does not measure how hard.",
-    "swift":           "it ~~moves~~ has moved.",
-    "thick_hide":      "it arrives heavier than it left.",
-    "tide_guard":      "the water answers when it asks.",
-    "iron_grip":       "once it has taken hold of a thing.",
-    "glass_cannon":    "all forward. ~~nothing~~ little behind.",
-    "stone_skin":      "small things do not register.",
-    "bulwark":         "unmoved by indifferent strikes.",
-    "giant_form":      "larger than it was yesterday.",
-    "inferno_heart":   "something hotter sits inside.",
-    "tide_blessed":    "the salt does not leave it.",
-    "verdant_soul":    "green does not heal it. it heals green.",
-    "sunforged":       "hammered out of a brighter place.",
-    "shadowforged":    "hammered out of where light is not.",
-    "predators_edge":  "knows which side is soft.",
-    "tempo":           "keeps a meter i cannot follow.",
-    "lightbearer":     "walks ahead of its own glow.",
-    "cornered":        "worse when it cannot retreat.",
-    "pristine":        "not yet ~~marked~~ touched.",
-    "photosynthesis":  "the light feeds it slowly.",
-    "soul_drain":      "takes a small piece each strike.",
-    "blooming":        "flowers where it has bled.",
-    "vampire_touch":   "every hit is a small drink.",
-    "aquaveil":        "hidden beneath shifting water.",
-    "second_wind":     "stands once after it has fallen.",
-    "warm_blood":      "resists the cold that comes after.",
-    "riposte":         "strikes back without being told.",
-    "iron_will":       "does not bend where others would.",
-    "hex_eater":       "swallows what is laid upon it.",
-    "featherweight":   "weighs less than it should.",
-    "adrenal_surge":   "something opens when it bleeds.",
-    "spite":           "dies hard. dies louder.",
+    "brutal": "it does not measure how hard.",
+    "swift": "it ~~moves~~ has moved.",
+    "thick_hide": "it arrives heavier than it left.",
+    "tide_guard": "the water answers when it asks.",
+    "iron_grip": "once it has hold of a thing.",
+    "glass_cannon": "all forward. ~~nothing~~ little behind.",
+    "stone_skin": "small things do not register.",
+    "bulwark": "unmoved by indifferent strikes.",
+    "giant_form": "larger than it was yesterday.",
+    "inferno_heart": "something hotter sits inside.",
+    "tide_blessed": "the salt does not leave it.",
+    "verdant_soul": "green does not heal it. it heals green.",
+    "sunforged": "hammered out of a brighter place.",
+    "shadowforged": "hammered out of where light is not.",
+    "predators_edge": "knows which side is soft.",
+    "tempo": "keeps a meter i cannot follow.",
+    "lightbearer": "walks ahead of its own glow.",
+    "cornered": "worse when it cannot retreat.",
+    "pristine": "not yet ~~marked~~ touched.",
+    "photosynthesis": "the light feeds it slowly.",
+    "soul_drain": "takes a small piece each strike.",
+    "blooming": "flowers where it has bled.",
+    "vampire_touch": "every hit is a small drink.",
+    "aquaveil": "hidden beneath shifting water.",
+    "second_wind": "stands once after it has fallen.",
+    "warm_blood": "resists the cold that comes after.",
+    "riposte": "strikes back without being told.",
+    "iron_will": "does not bend where others would.",
+    "hex_eater": "swallows what is laid upon it.",
+    "featherweight": "weighs less than it should.",
+    "adrenal_surge": "something ~~opens~~ rises when it bleeds.",
+    "spite": "dies hard. dies louder.",
     "reflective_aura": "what is given returns.",
-    "counterstance":   "waits until struck. then.",
-    "pyromancer":      "the fire ~~obeys~~ listens.",
-    "frostbite":       "cold spreads from where it touches.",
-    "poisonous":       "leaves something behind in the wound.",
-    "curse_weaver":    "speaks small wrongnesses.",
-    "status_lord":     "what it inflicts deepens.",
-    "vanguard":        "first into the thing.",
-    "sentinel":        "does not leave its place.",
-    "tag_out":         "returns when it is needed.",
-    "rearguard":       "covers what cannot defend itself.",
-    "pivot_master":    "turns without warning.",
-    "spotter":         "sees the small ones first.",
-    "twin_soul":       "answers with two voices.",
-    "dark_pact":       "spends what it cannot afford.",
-    "mortal_coil":     "knots itself around the strike.",
-    "slow_burn":       "warms. then warms more.",
-    "berserker":       "worse the lower it goes.",
-    "doubling_down":   "repeats what already worked.",
-    "misty_form":      "not always where i look.",
-    "eldritch_sight":  "sees what i ~~cannot~~ should not.",
-    "reckless_heart":  "does not save itself.",
-    "zealot":          "believes harder than is wise.",
-    "patient_hunter":  "waits longer than it needs to.",
-    "scavenger":       "takes from what is finished.",
-    "echo_form":       "repeats the last sound i made.",
-    "dreadful":        "i do not want to look at it.",
-    "prepared":        "knows what is coming.",
-    "serene":          "shows nothing when struck.",
-    "lucky":           "the dice do not catch it.",
-    "savage":          "does not stop at the kill."
+    "counterstance": "waits until struck. then.",
+    "pyromancer": "the fire ~~obeys~~ listens.",
+    "frostbite": "cold spreads from where it touches.",
+    "poisonous": "leaves something in the wound.",
+    "curse_weaver": "speaks small wrongnesses.",
+    "status_lord": "what it inflicts deepens.",
+    "vanguard": "first into the thing.",
+    "sentinel": "does not leave its place.",
+    "tag_out": "returns when it is needed.",
+    "rearguard": "covers what cannot defend itself.",
+    "pivot_master": "turns without warning.",
+    "spotter": "sees the small ones first.",
+    "twin_soul": "answers with two voices.",
+    "dark_pact": "spends what it cannot afford.",
+    "mortal_coil": "knots itself around the strike.",
+    "slow_burn": "warms. then warms more.",
+    "berserker": "worse the lower it goes.",
+    "doubling_down": "repeats what already worked.",
+    "misty_form": "not always where i look.",
+    "eldritch_sight": "sees what i ~~cannot~~ should not.",
+    "reckless_heart": "does not save itself.",
+    "zealot": "believes harder than is wise.",
+    "patient_hunter": "waits longer than it needs to.",
+    "scavenger": "takes from what is finished.",
+    "echo_form": "repeats the last sound i made.",
+    "dreadful": "i do not want to look at it.",
+    "prepared": "knows what is coming.",
+    "serene": "shows nothing when struck.",
+    "lucky": "the dice do not catch it.",
+    "savage": "does not stop at the kill."
   },
   "afflictions": {
-    "burn":    { "name": "burning",  "apply": "the burn ~~consumes~~ takes.",        "tick": "burn ~~devours~~ spreads." },
-    "bloom":   { "name": "blooming", "apply": "the bloom ~~opens~~ uncoils.",        "tick": "bloom drinks." },
-    "soaking": { "name": "soaking",  "apply": "they are ~~drenched~~ marked.",       "tick": "the soaking weighs." },
-    "cursed":  { "name": "cursed",   "apply": "the curse ~~settles~~ takes hold.",   "tick": "the curse stirs." },
-    "dazed":   { "name": "dazed",    "apply": "they ~~stumble~~ are dazed.",         "tick": "still dazed." }
+    "burn": {
+      "name": "fevering",
+      "apply": "the fevering ~~consumes~~ takes.",
+      "tick": "fevering ~~devours~~ widens."
+    },
+    "bloom": {
+      "name": "opening",
+      "apply": "the opening ~~uncoils~~ begins.",
+      "tick": "the opening ~~drinks~~ holds."
+    },
+    "soaking": {
+      "name": "weighted",
+      "apply": "they are ~~drenched~~ marked by it.",
+      "tick": "the weight persists."
+    },
+    "cursed": {
+      "name": "named",
+      "apply": "the name ~~sticks~~ takes hold.",
+      "tick": "the name ~~speaks~~ reminds."
+    },
+    "dazed": {
+      "name": "still",
+      "apply": "they are ~~stunned~~ still.",
+      "tick": "still."
+    }
   },
   "actionDefaults": {
-    "fire":    { "use": "{actor} burns with {name}.",          "hit": "they ~~smolder~~ catch." },
-    "water":   { "use": "{actor} pulls with {name}.",          "hit": "they ~~drown~~ are soaked." },
-    "grass":   { "use": "{actor} binds with {name}.",          "hit": "they ~~bleed~~ are bound." },
-    "light":   { "use": "{actor} shines with {name}.",         "hit": "they ~~blink away~~ falter." },
-    "dark":    { "use": "{actor} ~~unmakes~~ shadows with {name}.", "hit": "they ~~fade~~ are unmade." },
-    "neutral": { "use": "{actor} strikes with {name}.",        "hit": "they recoil." }
+    "fire": {
+      "use": "{actor} burns with {name}.",
+      "hit": "they ~~smolder~~ catch."
+    },
+    "water": {
+      "use": "{actor} pulls with {name}.",
+      "hit": "they ~~drown~~ are soaked."
+    },
+    "grass": {
+      "use": "{actor} binds with {name}.",
+      "hit": "they ~~bleed~~ are bound."
+    },
+    "light": {
+      "use": "{actor} shines with {name}.",
+      "hit": "they ~~blink~~ falter."
+    },
+    "dark": {
+      "use": "{actor} ~~unmakes~~ shadows with {name}.",
+      "hit": "they ~~fade~~ are unmade."
+    },
+    "neutral": {
+      "use": "{actor} strikes with {name}.",
+      "hit": "they recoil."
+    }
   },
   "effectDefaults": {
-    "heal":    { "use": "{actor} steadies itself.",            "hit": "the green keeps." },
-    "buff":    { "use": "{actor} braces.",                     "hit": "their grip ~~tightens~~ holds." },
-    "debuff":  { "use": "{actor} shakes them.",                "hit": "they slip." },
-    "swap":    { "use": "{actor} steps back.",                 "hit": "they exchange." },
-    "status":  { "use": "{actor} marks them.",                 "hit": "the {status}." },
-    "cleanse": { "use": "{actor} clears itself.",              "hit": "what was on it lifts." },
-    "brace":   { "use": "{actor} braces against the next blow.", "hit": "" },
-    "noop":    { "use": "{actor} ~~hesitates~~ waits.",        "hit": "" }
+    "heal": {
+      "use": "{actor} steadies itself.",
+      "hit": "the green keeps."
+    },
+    "buff": {
+      "use": "{actor} braces.",
+      "hit": "their grip ~~tightens~~ holds."
+    },
+    "debuff": {
+      "use": "{actor} shakes them.",
+      "hit": "they slip."
+    },
+    "swap": {
+      "use": "{actor} steps back.",
+      "hit": "they exchange places."
+    },
+    "status": {
+      "use": "{actor} ~~marks~~ names them.",
+      "hit": "the {status}."
+    },
+    "cleanse": {
+      "use": "{actor} clears itself.",
+      "hit": "what was on it lifts."
+    },
+    "brace": {
+      "use": "{actor} braces against the next blow.",
+      "hit": ""
+    },
+    "noop": {
+      "use": "{actor} ~~hesitates~~ waits.",
+      "hit": ""
+    }
   },
   "events": {
-    "swap_out":      "{actor} steps back.",
-    "swap_in":       "{actor} steps forward.",
-    "swap_yanked":   "{actor} is ~~pulled~~ yanked from the field.",
-    "swap_none":     "{actor} ~~tries~~ has no one to swap to.",
-    "swap_curse":    "the curse takes from {actor} on the way out.",
-    "swap_arrives_buffed": "{actor} arrives bolstered.",
-    "swap_arrives_healed": "{actor} arrives ~~bleeding~~ healed.",
+    "swap_out": "{actor} steps back.",
+    "swap_in": "{actor} steps forward to take its place.",
+    "swap_yanked": "{actor} is ~~pulled~~ yanked from the field.",
+    "swap_none": "{actor} ~~tries~~ has no one to swap to.",
+    "swap_curse": "the name takes from {actor} on the way out.",
+    "swap_arrives_buffed": "{actor} arrives ~~bolstered~~ named-anew.",
+    "swap_arrives_healed": "{actor} arrives ~~bleeding~~ kept.",
     "ability_fizzle": "{actor}'s {name} ~~fails~~ fizzles.",
-    "dazed_skip":    "{actor} cannot ~~remember~~ act.",
-    "evade":         "{target} ~~vanishes~~ is not where it was.",
-    "faint":         "{actor} ~~dies~~ falls still.",
-    "step_in":       "{actor} steps forward to take its place.",
-    "battle_open":   "they are at the door. {enemies}.",
+    "dazed_skip": "{actor} cannot ~~remember~~ act.",
+    "evade": "{target} ~~vanishes~~ is not where it was.",
+    "faint": "{actor} ~~dies~~ falls still.",
+    "step_in": "{actor} steps forward.",
+    "battle_open": "they are at the door. {enemies}.",
     "phase_prepare": "{actor} ~~begins~~ prepares {name}.",
-    "phase_continue":"{actor} continues {name}.",
+    "phase_continue": "{actor} continues {name}.",
     "phase_unleash": "{actor} ~~releases~~ unleashes {name}.",
-    "super":         "it ~~lands deep~~ catches.",
-    "resist":        "it ~~glances~~ slides off.",
-    "crit_tag":      "the wound ~~opens~~ takes."
+    "super": "it ~~lands deep~~ catches.",
+    "resist": "it ~~glances~~ slides off.",
+    "crit_tag": "the wound ~~opens~~ takes."
   }
 }

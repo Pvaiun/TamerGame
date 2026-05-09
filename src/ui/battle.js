@@ -42,11 +42,11 @@ function engagementStripEl() {
   left.appendChild(el('span', { class: 'eng-sep' }, ' · '));
   left.appendChild(el('span', {}, `depth ${roman(state.wave)}`));
   left.appendChild(el('span', { class: 'eng-sep' }, ' · '));
-  left.appendChild(el('span', {}, `wave ${pad2(state.wave)} of ${pad2(TOTAL_WAVES)}`));
+  left.appendChild(el('span', {}, `descent ${pad2(state.wave)} of ${pad2(TOTAL_WAVES)}`));
 
   const right = el('div', { class: 'eng-right' }, [
     el('span', { class: 'doc-blot' }, '●'),
-    ' hostile',
+    ' they are here',
   ]);
 
   return el('div', { class: 'engagement-strip' }, [left, right]);

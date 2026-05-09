@@ -1,6 +1,6 @@
 {
   "strike": {
-    "name": "Strike",
+    "name": "strike",
     "priority": 0,
     "phases": [
       [
@@ -11,10 +11,10 @@
       ]
     ],
     "effect": "deal 50 neutral damage.",
-    "flavor": ""
+    "flavor": "i hit it. there is no other word for what i did."
   },
   "heavy_blow": {
-    "name": "Heavy Blow",
+    "name": "press",
     "priority": -2,
     "phases": [
       [
@@ -25,10 +25,10 @@
       ]
     ],
     "effect": "deal 80 neutral damage. priority -2.",
-    "flavor": ""
+    "flavor": "all of my weight, downward. it ~~breaks~~ holds."
   },
   "quick_jab": {
-    "name": "Quick Jab",
+    "name": "jab",
     "priority": 2,
     "phases": [
       [
@@ -39,10 +39,10 @@
       ]
     ],
     "effect": "deal 30 neutral damage. priority +2.",
-    "flavor": ""
+    "flavor": "i was already hitting it."
   },
   "double_strike": {
-    "name": "Double Strike",
+    "name": "thrash",
     "priority": 0,
     "phases": [
       [
@@ -54,10 +54,10 @@
       ]
     ],
     "effect": "deal 40 neutral damage, 2 times.",
-    "flavor": ""
+    "flavor": "i hit it. then i hit it again before i ~~thought~~ decided."
   },
   "reckless": {
-    "name": "Reckless Charge",
+    "name": "throw all",
     "priority": 0,
     "phases": [
       [
@@ -72,10 +72,10 @@
       ]
     ],
     "effect": "deal 90 neutral damage. cost 15% of max hp.",
-    "flavor": ""
+    "flavor": "i give it everything. some of what i give is mine."
   },
   "pyre": {
-    "name": "Pyre",
+    "name": "kindle",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -94,10 +94,10 @@
       ]
     ],
     "effect": "deal 38 fire damage. apply burn.",
-    "flavor": ""
+    "flavor": "i set the air around it. it catches."
   },
   "ember": {
-    "name": "Ember",
+    "name": "spark",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -109,10 +109,10 @@
       ]
     ],
     "effect": "deal 60 fire damage.",
-    "flavor": ""
+    "flavor": "a small heat. it remembers being larger."
   },
   "inferno": {
-    "name": "Inferno",
+    "name": "release the heat",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -125,10 +125,10 @@
       ]
     ],
     "effect": "release: deal 100 fire damage.",
-    "flavor": ""
+    "flavor": "first i fold it inward. then i let it out."
   },
   "self_immolate": {
-    "name": "Self-Immolate",
+    "name": "burn inward",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -144,10 +144,10 @@
       ]
     ],
     "effect": "deal 75 fire damage. cost 25% of max hp.",
-    "flavor": ""
+    "flavor": "i feed it from my own. it eats and ~~gives back~~ takes more."
   },
   "cinder_burst": {
-    "name": "Cinder Burst",
+    "name": "spit ash",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -167,10 +167,10 @@
       ]
     ],
     "effect": "deal 35 fire damage, 2 times. apply burn.",
-    "flavor": ""
+    "flavor": "what is left in my mouth. it goes."
   },
   "smoldering": {
-    "name": "Smoldering Touch",
+    "name": "smolder",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -189,10 +189,10 @@
       ]
     ],
     "effect": "deal 25 fire damage. apply burn.",
-    "flavor": ""
+    "flavor": "the heat comes after, slower than the strike."
   },
   "phoenix_dive": {
-    "name": "Phoenix Dive",
+    "name": "fold into fire",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -208,10 +208,10 @@
       ]
     ],
     "effect": "deal 55 fire damage. heal 50% of damage dealt.",
-    "flavor": ""
+    "flavor": "i become heat. i drink what i strike."
   },
   "pyroclasm": {
-    "name": "Pyroclasm",
+    "name": "open the kiln",
     "element": "fire",
     "priority": 0,
     "phases": [
@@ -227,10 +227,10 @@
       ]
     ],
     "effect": "apply burn.",
-    "flavor": ""
+    "flavor": "everything inside it opens at once."
   },
   "surge": {
-    "name": "Surge",
+    "name": "rise",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -249,10 +249,10 @@
       ]
     ],
     "effect": "deal 38 water damage. apply soaking.",
-    "flavor": ""
+    "flavor": "the water knows where to go."
   },
   "drench": {
-    "name": "Drench",
+    "name": "drown",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -264,10 +264,10 @@
       ]
     ],
     "effect": "deal 60 water damage.",
-    "flavor": ""
+    "flavor": "the water reaches places i did not know it could."
   },
   "maelstrom": {
-    "name": "Maelstrom",
+    "name": "circle them",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -287,10 +287,10 @@
       ]
     ],
     "effect": "release: deal 100 water damage, apply soaking.",
-    "flavor": ""
+    "flavor": "the water remembers where they tried to go."
   },
   "lifestream": {
-    "name": "Lifestream",
+    "name": "drink the wound",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -306,10 +306,10 @@
       ]
     ],
     "effect": "deal 30 water damage. heal 100% of damage dealt.",
-    "flavor": ""
+    "flavor": "i take from it what it gave. it is ~~fair~~ familiar."
   },
   "brine_lance": {
-    "name": "Brine Lance",
+    "name": "salt",
     "element": "water",
     "priority": 1,
     "phases": [
@@ -328,10 +328,10 @@
       ]
     ],
     "effect": "deal 60 water damage. apply soaking. priority +1.",
-    "flavor": ""
+    "flavor": "the wound takes longer to ~~close~~ forget."
   },
   "tidal_pull": {
-    "name": "Tidal Pull",
+    "name": "draw under",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -346,10 +346,10 @@
       ]
     ],
     "effect": "release: force opponent to swap.",
-    "flavor": ""
+    "flavor": "i pull what is here away from itself."
   },
   "vapor_cloak": {
-    "name": "Vapor Cloak",
+    "name": "step into steam",
     "element": "water",
     "priority": 1,
     "phases": [
@@ -366,10 +366,10 @@
       ]
     ],
     "effect": "self def +30%. priority +1.",
-    "flavor": ""
+    "flavor": "i am where i was. they cannot ~~find~~ see it."
   },
   "glacial_hold": {
-    "name": "Glacial Hold",
+    "name": "still them",
     "element": "water",
     "priority": 0,
     "phases": [
@@ -388,10 +388,10 @@
       ]
     ],
     "effect": "deal 25 water damage. apply soaking.",
-    "flavor": ""
+    "flavor": "the cold holds them in place."
   },
   "bramble": {
-    "name": "Bramble",
+    "name": "bind",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -410,10 +410,10 @@
       ]
     ],
     "effect": "deal 38 grass damage. apply bloom.",
-    "flavor": ""
+    "flavor": "the green takes the shape of teeth."
   },
   "verdant_slash": {
-    "name": "Verdant Slash",
+    "name": "rake",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -425,10 +425,10 @@
       ]
     ],
     "effect": "deal 60 grass damage.",
-    "flavor": ""
+    "flavor": "small hooks. they do not let go."
   },
   "overgrowth": {
-    "name": "Overgrowth",
+    "name": "grow over",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -448,10 +448,10 @@
       ]
     ],
     "effect": "release: deal 100 grass damage, apply bloom.",
-    "flavor": ""
+    "flavor": "there is more of them than there should be."
   },
   "spore_cloud": {
-    "name": "Spore Cloud",
+    "name": "open the spore",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -467,10 +467,10 @@
       ]
     ],
     "effect": "apply bloom.",
-    "flavor": ""
+    "flavor": "i release what was held in. the air ~~softens~~ thickens."
   },
   "photonic_lash": {
-    "name": "Photonic Lash",
+    "name": "light-lash",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -489,10 +489,10 @@
       ]
     ],
     "effect": "deal 50 grass damage. apply bloom.",
-    "flavor": ""
+    "flavor": "the green carries the brightness. it does not survive it."
   },
   "strangle_vine": {
-    "name": "Strangle Vine",
+    "name": "tighten",
     "element": "grass",
     "priority": 0,
     "phases": [
@@ -508,10 +508,10 @@
       ]
     ],
     "effect": "deal 45 grass damage. deal up to 0.5\u00d7 more damage to wounded targets.",
-    "flavor": ""
+    "flavor": "the more open the wound, the deeper it ~~goes~~ reaches."
   },
   "healing_wind": {
-    "name": "Healing Wind",
+    "name": "let the green pass",
     "element": "grass",
     "priority": 1,
     "phases": [
@@ -526,10 +526,10 @@
       ]
     ],
     "effect": "apply bloom. priority +1.",
-    "flavor": ""
+    "flavor": "it goes through us. some stays."
   },
   "fertile_ground": {
-    "name": "Fertile Ground",
+    "name": "take root",
     "element": "grass",
     "priority": 1,
     "phases": [
@@ -546,10 +546,10 @@
       ]
     ],
     "effect": "enemy atk +25%. priority +1.",
-    "flavor": ""
+    "flavor": "what i am doing is older than i am."
   },
   "radiance": {
-    "name": "Radiance",
+    "name": "burn clean",
     "element": "light",
     "priority": 0,
     "phases": [
@@ -567,10 +567,10 @@
       ]
     ],
     "effect": "deal 38 light damage. cleanse effects.",
-    "flavor": ""
+    "flavor": "the light leaves nothing on them."
   },
   "sunbeam": {
-    "name": "Sunbeam",
+    "name": "shine",
     "element": "light",
     "priority": 0,
     "phases": [
@@ -582,10 +582,10 @@
       ]
     ],
     "effect": "deal 60 light damage.",
-    "flavor": ""
+    "flavor": "the line lands. i do not look at it directly."
   },
   "solar_flare": {
-    "name": "Solar Flare",
+    "name": "open the bright",
     "element": "light",
     "priority": 0,
     "phases": [
@@ -605,10 +605,10 @@
       ]
     ],
     "effect": "release: deal 100 light damage, apply dazed.",
-    "flavor": ""
+    "flavor": "i gather it. then i am too much of it."
   },
   "dawn_strike": {
-    "name": "Dawn Strike",
+    "name": "first blow",
     "element": "light",
     "priority": 1,
     "phases": [
@@ -627,10 +627,10 @@
       ]
     ],
     "effect": "deal 35 light damage. apply dazed. priority +1.",
-    "flavor": ""
+    "flavor": "i strike before they have agreed to be here."
   },
   "glowing_mark": {
-    "name": "Glowing Mark",
+    "name": "name in light",
     "element": "light",
     "priority": 1,
     "phases": [
@@ -645,10 +645,10 @@
       ]
     ],
     "effect": "apply dazed. priority +1.",
-    "flavor": ""
+    "flavor": "they are easier to see. so are the next blows."
   },
   "beacon": {
-    "name": "Beacon",
+    "name": "stand bright",
     "element": "light",
     "priority": 1,
     "phases": [
@@ -665,10 +665,10 @@
       ]
     ],
     "effect": "enemy def +30%. priority +1.",
-    "flavor": ""
+    "flavor": "they will look at me. they will not mean to. it is **flattering**."
   },
   "aegis_swap": {
-    "name": "Aegis Swap",
+    "name": "step into light",
     "element": "light",
     "priority": 3,
     "phases": [
@@ -685,10 +685,10 @@
       ]
     ],
     "effect": "swap with the bench. priority +3.",
-    "flavor": ""
+    "flavor": "i go behind. another comes forward, ~~bright~~ warmed."
   },
   "cleansing_light": {
-    "name": "Cleansing Light",
+    "name": "wash it",
     "element": "light",
     "priority": 1,
     "phases": [
@@ -702,10 +702,10 @@
       ]
     ],
     "effect": "cleanse effects. priority +1.",
-    "flavor": ""
+    "flavor": "what was on me lifts. i feel **clean**."
   },
   "shade": {
-    "name": "Shade",
+    "name": "slip",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -721,10 +721,10 @@
       ]
     ],
     "effect": "deal 38 dark damage. ignore 50% of defense.",
-    "flavor": ""
+    "flavor": "i touch them past their guard."
   },
   "umbral_slash": {
-    "name": "Umbral Slash",
+    "name": "open them dark",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -736,10 +736,10 @@
       ]
     ],
     "effect": "deal 60 dark damage.",
-    "flavor": ""
+    "flavor": "the wound is deeper than the cut."
   },
   "hex": {
-    "name": "Hex",
+    "name": "name it badly",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -755,10 +755,10 @@
       ]
     ],
     "effect": "release: apply cursed.",
-    "flavor": ""
+    "flavor": "i write the wrong word for it. i let it wear it."
   },
   "soulrend": {
-    "name": "Soulrend",
+    "name": "take a piece",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -774,10 +774,10 @@
       ]
     ],
     "effect": "deal 75 dark damage. cost 20% of max hp.",
-    "flavor": ""
+    "flavor": "i pay in my own. it pays in more."
   },
   "shadow_step": {
-    "name": "Shadow Step",
+    "name": "step into gap",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -795,10 +795,10 @@
       ]
     ],
     "effect": "deal 35 dark damage. swap with the bench.",
-    "flavor": ""
+    "flavor": "i was here. now i am ~~not~~ behind it."
   },
   "cursed_bond": {
-    "name": "Cursed Bond",
+    "name": "tie it to me",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -814,10 +814,10 @@
       ]
     ],
     "effect": "apply cursed.",
-    "flavor": ""
+    "flavor": "what happens to it ~~happens~~ has happened."
   },
   "eclipse_slash": {
-    "name": "Eclipse Slash",
+    "name": "blot",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -841,10 +841,10 @@
       ]
     ],
     "effect": "deal 50 dark damage. apply cursed. deal 50% more damage to cursed targets.",
-    "flavor": ""
+    "flavor": "the wound goes ~~dim~~ inward."
   },
   "witherer": {
-    "name": "Witherer",
+    "name": "unmake",
     "element": "dark",
     "priority": 0,
     "phases": [
@@ -870,10 +870,10 @@
       ]
     ],
     "effect": "deal 45 dark damage. apply cursed. apply soaking.",
-    "flavor": ""
+    "flavor": "i ~~kill~~ unmake the small parts."
   },
   "mend": {
-    "name": "Mend",
+    "name": "keep",
     "priority": 1,
     "phases": [
       [
@@ -888,10 +888,10 @@
       ]
     ],
     "effect": "regenerate 6% max hp per turn for 4 turns. priority +1.",
-    "flavor": ""
+    "flavor": "i bind what is open. it ~~closes~~ keeps."
   },
   "tactical_retreat": {
-    "name": "Tactical Retreat",
+    "name": "step back",
     "priority": 3,
     "phases": [
       [
@@ -905,10 +905,10 @@
       ]
     ],
     "effect": "swap with the bench. priority +3.",
-    "flavor": ""
+    "flavor": "the bench takes the next ~~one~~ blow."
   },
   "pivot_strike": {
-    "name": "Pivot Strike",
+    "name": "step through",
     "priority": 1,
     "phases": [
       [
@@ -925,10 +925,10 @@
       ]
     ],
     "effect": "deal 40 neutral damage. swap with the bench. priority +1.",
-    "flavor": ""
+    "flavor": "i am where i was not. the blow lands as i leave."
   },
   "vanguard_call": {
-    "name": "Vanguard Call",
+    "name": "send forward",
     "priority": 3,
     "phases": [
       [
@@ -944,10 +944,10 @@
       ]
     ],
     "effect": "swap with the bench. priority +3.",
-    "flavor": ""
+    "flavor": "i call the next of them. it does not ask why."
   },
   "fury": {
-    "name": "Fury",
+    "name": "rage forward",
     "priority": 1,
     "phases": [
       [
@@ -967,10 +967,10 @@
       ]
     ],
     "effect": "self atk +50%. cost 10% of max hp. priority +1.",
-    "flavor": ""
+    "flavor": "the room narrows. only what i strike is **real**."
   },
   "focus": {
-    "name": "Focus",
+    "name": "settle",
     "priority": 1,
     "phases": [
       [
@@ -987,10 +987,10 @@
       ]
     ],
     "effect": "self atk +30%. self def +30%. priority +1.",
-    "flavor": ""
+    "flavor": "i sharpen. nothing else is in the room."
   },
   "stoic": {
-    "name": "Stoic",
+    "name": "set",
     "priority": 1,
     "phases": [
       [
@@ -1006,6 +1006,6 @@
       ]
     ],
     "effect": "self def +50%. priority +1.",
-    "flavor": ""
+    "flavor": "i steady. the room narrows around me."
   }
 }
