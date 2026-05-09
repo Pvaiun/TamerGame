@@ -74,6 +74,20 @@ export function hitLine(attacker, defender, ability) {
   return fillTemplate(v.hit, { actor: name(attacker), target: name(defender), name: (ability.name || '').toLowerCase() });
 }
 
+// Optional flavor beat — present only when the ability has authored flavor
+// text in voiceprose.actions[id].flavor (or actionDefaults[element].flavor,
+// though the canonical schema leaves element-default flavor empty). Returns
+// '' when there's no flavor — callers skip the beat in that case.
+export function flavorLine(attacker, ability) {
+  const v = abilityVoice(ability);
+  const f = ability && ability.flavor;
+  // Per-ability data field on the ability itself takes precedence over voice
+  // overrides because flavor lives next to the gameplay data in abilities.json.
+  if (f) return fillTemplate(f, { actor: name(attacker), name: (ability.name || '').toLowerCase() });
+  if (v.flavor) return fillTemplate(v.flavor, { actor: name(attacker), name: (ability.name || '').toLowerCase() });
+  return '';
+}
+
 export function effectLine(kind, attacker, defender, extras) {
   const v = effectVoice(kind);
   const vars = { actor: attacker ? name(attacker) : '', target: defender ? name(defender) : '', ...(extras || {}) };

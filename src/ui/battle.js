@@ -386,97 +386,83 @@ function actionMenuEl() {
     return wrap;
   }
 
-  const split = el('div', { class: 'action-split' });
   const list = el('div', { class: 'action-list' });
-  const detail = el('div', { class: 'action-detail' });
-  let initialKey = null;
-
   const abilities = state.pf.creature.abilities;
   abilities.forEach((k, i) => {
     const a = ABILITIES[k];
     if (!a) return;
-    const row = el('button', { class: 'action-row' + (i === 0 ? ' is-default' : '') });
-    if (state.acting) row.disabled = true;
-    row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-    row.appendChild(el('span', { class: 'action-name' }, a.name.toLowerCase()));
-    row.appendChild(actionRowHintEl(a));
-
-    row.addEventListener('mouseenter', () => fillDetail(detail, k));
-    row.addEventListener('focus',      () => fillDetail(detail, k));
-    attachLongPress(row,
-      () => openAbilityTooltip(k),
-      state.acting ? null : () => playerAct(k));
-    list.appendChild(row);
-    if (i === 0) initialKey = k;
+    list.appendChild(buildActionRow(k, a, i === 0));
   });
 
-  // swap row
+  // swap row — same shape as the ability rows so the menu reads as one
+  // list of choices. Effect line is a flavor-tinted prose explanation.
   const canSwap = state.bf && state.bf.hp > 0 && !state.acting;
-  const swap = el('button', { class: 'action-row swap' + (canSwap ? '' : ' disabled') });
+  const swap = el('button', { class: 'action-row rich swap' + (canSwap ? '' : ' disabled') });
   swap.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-  const swapText = state.bf
-    ? `step back · ${displayName(state.bf.creature).toLowerCase()} forward`
-    : 'step back · no one to send';
-  swap.appendChild(el('span', { class: 'action-name' }, swapText));
-  swap.appendChild(el('span', { class: 'action-tag swap' }, ' swap'));
+  const body = el('div', { class: 'action-row-body' });
+  body.appendChild(el('div', { class: 'action-row-name' },
+    state.bf ? `step back · ${displayName(state.bf.creature).toLowerCase()} forward` : 'step back'));
+  body.appendChild(el('div', { class: 'action-row-effect' },
+    state.bf ? 'pass the turn. the bench takes the next blow.' : 'no companion is ready.'));
+  swap.appendChild(body);
   if (canSwap) swap.addEventListener('click', () => playerSwap());
   else swap.disabled = true;
-  swap.addEventListener('mouseenter', () => fillSwapDetail(detail));
-  swap.addEventListener('focus',      () => fillSwapDetail(detail));
   list.appendChild(swap);
 
-  if (initialKey) fillDetail(detail, initialKey);
-
-  split.appendChild(list);
-  split.appendChild(el('div', { class: 'action-split-rule' }));
-  split.appendChild(detail);
-  wrap.appendChild(split);
+  wrap.appendChild(list);
   return wrap;
 }
 
-function fillDetail(node, key) {
-  const a = ABILITIES[key];
-  if (!a) return;
-  node.innerHTML = '';
-  const meta = el('div', { class: 'detail-meta' });
-  if (a.element) meta.appendChild(el('span', { class: 'detail-elem' }, `${a.element}`));
-  const power = phasePowerFor(a, 0);
-  if (power > 0) {
-    if (a.element) meta.appendChild(el('span', {}, ' · '));
-    const dmg = abilityDamageEffect(a);
-    const hits = (dmg && dmg.hits) || 1;
-    meta.appendChild(el('span', { class: 'detail-pow' },
-      hits > 1 ? `${dmg.power}×${hits} damage` : `${power} damage`));
-  } else {
-    if (a.element) meta.appendChild(el('span', {}, ' · '));
-    meta.appendChild(el('span', { class: 'detail-tag' }, abilityKindTag(a) || 'effect'));
-  }
-  if (meta.children.length) node.appendChild(meta);
+// One ability row, rendered as a self-contained block with name + effect +
+// optional flavor. Effect carries the verbose mechanical text; flavor is
+// the atmospheric beat (only shown if non-empty in abilities.json).
+function buildActionRow(key, a, isDefault) {
+  const row = el('button', { class: 'action-row rich' + (isDefault ? ' is-default' : '') });
+  if (state.acting) row.disabled = true;
 
-  if (a.desc) {
-    const desc = el('div', { class: 'detail-desc' });
-    desc.innerHTML = parseProse(a.desc.toLowerCase());
-    node.appendChild(desc);
+  row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
+
+  const body = el('div', { class: 'action-row-body' });
+
+  // Name line + right-side gameplay hint (element matchup mark)
+  const nameLine = el('div', { class: 'action-row-nameline' });
+  nameLine.appendChild(el('span', { class: 'action-row-name' }, (a.name || '').toLowerCase()));
+  const matchup = matchupTagEl(a);
+  if (matchup) nameLine.appendChild(matchup);
+  body.appendChild(nameLine);
+
+  // Effect (mechanical, verbose, voice-register)
+  if (a.effect) {
+    const eff = el('div', { class: 'action-row-effect' });
+    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+    body.appendChild(eff);
   }
-  if (a.phases && a.phases.length > 1) {
-    node.appendChild(el('div', { class: 'detail-phase' },
-      `${a.phases.length} phases · resolves over consecutive turns.`));
+
+  // Flavor (atmospheric — present only if authored)
+  if (a.flavor) {
+    const fl = el('div', { class: 'action-row-flavor' });
+    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    body.appendChild(fl);
   }
+
+  row.appendChild(body);
+
+  attachLongPress(row,
+    () => openAbilityTooltip(key),
+    state.acting ? null : () => playerAct(key));
+
+  return row;
 }
 
-function fillSwapDetail(node) {
-  node.innerHTML = '';
-  if (!state.bf) {
-    node.appendChild(el('div', { class: 'detail-desc' }, 'no companion is ready.'));
-    return;
-  }
-  const c = state.bf.creature;
-  node.appendChild(el('div', { class: 'detail-meta' }, [
-    el('span', { class: 'detail-tag' }, 'swap'),
-  ]));
-  const desc = el('div', { class: 'detail-desc' });
-  desc.innerHTML = parseProse(`step back. ${displayName(c).toLowerCase()} steps forward to take the next blow.`);
-  node.appendChild(desc);
+// Element-matchup mark (a small + or − floated to the right of the name)
+// for the player's current target. Returns null if the ability has no
+// element or there's no enemy to match against.
+function matchupTagEl(a) {
+  if (!a.element || !state.ef || !state.ef.creature) return null;
+  if (!abilityHasDamage(a)) return null;
+  const m = TYPE_CHART[a.element]?.[state.ef.creature.type];
+  if (m == null || m === 1) return null;
+  return el('span', { class: 'action-row-matchup ' + (m > 1 ? 'good' : 'bad') }, m > 1 ? '+' : '−');
 }
 
 function queuedActionRow() {
@@ -484,33 +470,33 @@ function queuedActionRow() {
   const a = ABILITIES[q.key];
   const total = (a && a.phases ? a.phases.length : 1);
   const isLast = q.phaseIdx === total - 1;
-  const split = el('div', { class: 'action-split' });
   const list = el('div', { class: 'action-list' });
 
-  const row = el('button', { class: 'action-row queued is-default' });
+  const row = el('button', { class: 'action-row rich queued is-default' });
   if (state.acting) row.disabled = true;
   row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-  row.appendChild(el('span', { class: 'action-name' },
+  const body = el('div', { class: 'action-row-body' });
+  body.appendChild(el('div', { class: 'action-row-name' },
     isLast ? `release · ${(a ? a.name : '?').toLowerCase()}`
            : `continue · ${(a ? a.name : '?').toLowerCase()} (${q.phaseIdx + 1}/${total})`));
+  if (a && a.effect) {
+    const eff = el('div', { class: 'action-row-effect' });
+    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+    body.appendChild(eff);
+  }
+  if (a && a.flavor) {
+    const fl = el('div', { class: 'action-row-flavor' });
+    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    body.appendChild(fl);
+  }
+  body.appendChild(el('div', { class: 'action-row-phase' },
+    `phase ${q.phaseIdx + 1} of ${total}.`));
+  row.appendChild(body);
   attachLongPress(row,
     () => openAbilityTooltip(q.key),
     state.acting ? null : () => playerAct(null));
   list.appendChild(row);
-
-  const detail = el('div', { class: 'action-detail' });
-  if (a) {
-    const desc = el('div', { class: 'detail-desc' });
-    desc.innerHTML = parseProse((a.desc || '').toLowerCase());
-    detail.appendChild(desc);
-    detail.appendChild(el('div', { class: 'detail-phase' },
-      `phase ${q.phaseIdx + 1} of ${total}.`));
-  }
-
-  split.appendChild(list);
-  split.appendChild(el('div', { class: 'action-split-rule' }));
-  split.appendChild(detail);
-  return split;
+  return list;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -559,29 +545,6 @@ function abilityKindTag(a) {
 }
 
 // Right-side gameplay hint on each action row: power value for damage
-// abilities, a short kind tag otherwise, plus a small +/− mark for
-// element matchup against the current target.
-function actionRowHintEl(a) {
-  const wrap = el('span', { class: 'action-tag' });
-  const power = phasePowerFor(a, 0);
-  const isMulti = a.phases && a.phases.length > 1;
-  if (power > 0) {
-    const dmg = abilityDamageEffect(a);
-    const hits = (dmg && dmg.hits) || 1;
-    wrap.appendChild(el('span', { class: 'action-pow' },
-      hits > 1 ? `${dmg.power}×${hits}` : String(power)));
-    if (isMulti) wrap.appendChild(el('span', { class: 'action-multi' }, ` ·${a.phases.length}p`));
-    if (a.element && state.ef && state.ef.creature) {
-      const m = TYPE_CHART[a.element]?.[state.ef.creature.type];
-      if (m > 1)      wrap.appendChild(el('span', { class: 'eff-mark good' }, ' +'));
-      else if (m < 1) wrap.appendChild(el('span', { class: 'eff-mark bad'  }, ' −'));
-    }
-  } else if (isMulti) {
-    wrap.appendChild(el('span', { class: 'action-multi' }, `${a.phases.length}p`));
-  } else {
-    const t = abilityKindTag(a);
-    if (t) wrap.appendChild(el('span', {}, t));
-    else   wrap.appendChild(el('span', {}, '·'));
-  }
-  return wrap;
-}
+// (actionRowHintEl removed — element matchup is now rendered inline in the
+// rich row's name line via matchupTagEl; the verbose effect string carries
+// power and phase info without a separate tag column.)
