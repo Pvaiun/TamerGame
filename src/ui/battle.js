@@ -315,37 +315,24 @@ function actionBoxEl() {
 
 function narrativeEl() {
   const wrap = el('div', { class: 'narrative-block' });
-  // Render the last few entries chronologically (oldest top, newest bottom)
-  // so the eye reads downward to the line currently typing.
-  const showCount = 4;
-  const startIdx = Math.max(0, state.log.length - showCount);
-  const slice = state.log.slice(startIdx);
-  const typingIdx = state.typingLogIdx; // global index in state.log
-  if (slice.length === 0) {
+  // Single-line pokemon style: only the current event is visible. When the
+  // next event fires, this entry is replaced wholesale.
+  const entry = state.log.length ? state.log[state.log.length - 1] : null;
+  const typingIdx = state.typingLogIdx;
+  if (!entry) {
     wrap.appendChild(el('div', { class: 'narr-line primary' }, '—'));
-  } else {
-    slice.forEach((entry, i) => {
-      const globalIdx = startIdx + i;
-      const isLatest = globalIdx === state.log.length - 1;
-      const isTyping = globalIdx === typingIdx;
-      const cls = 'narr-line ' + (isLatest ? 'primary ' : 'secondary ') + (entry.cls || '');
-      const line = el('div', { class: cls });
-      const text = el('span', { class: 'narr-text' });
-      const html = parseProse(String(entry.text || '').toLowerCase());
-      if (isTyping) {
-        text.innerHTML = typewriterizeHTML(html, 22);
-      } else {
-        text.innerHTML = html;
-      }
-      line.appendChild(text);
-      if (entry.damage > 0) {
-        line.appendChild(el('span', { class: 'narr-dmg' }, `−${entry.damage}`));
-      } else if (entry.heal > 0) {
-        line.appendChild(el('span', { class: 'narr-heal' }, `+${entry.heal}`));
-      }
-      wrap.appendChild(line);
-    });
+    return wrap;
   }
+  const isTyping = (state.log.length - 1) === typingIdx;
+  const line = el('div', { class: 'narr-line primary ' + (entry.cls || '') });
+  const text = el('span', { class: 'narr-text' });
+  const html = parseProse(String(entry.text || '').toLowerCase());
+  if (isTyping) text.innerHTML = typewriterizeHTML(html, 22);
+  else          text.innerHTML = html;
+  line.appendChild(text);
+  if (entry.damage > 0)    line.appendChild(el('span', { class: 'narr-dmg' },  `−${entry.damage}`));
+  else if (entry.heal > 0) line.appendChild(el('span', { class: 'narr-heal' }, `+${entry.heal}`));
+  wrap.appendChild(line);
   return wrap;
 }
 
