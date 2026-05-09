@@ -135,7 +135,7 @@
 
   /* dossier grid ──────────────────────────────────────────────────── */
   .dossier-grid {
-    display: grid; grid-template-columns: 2fr 1px 1fr;
+    display: grid; grid-template-columns: 1fr 1px 1fr;
     gap: 0;
     margin-bottom: var(--space-4);
   }
@@ -357,21 +357,6 @@
     margin-top: 1px;
   }
   .passive-empty { color: var(--ink-40); font-style: italic; padding: 2px 0; }
-
-  /* player-side emphasis ──────────────────────────────────────────────
-     The player column is the testimony's "me / it" side — the thing the
-     reader is actually directing. Scaled up so the asymmetry between
-     "this is yours" and "this is across the line" reads at a glance. */
-  .dossier-col.player .doc-title { font-size: 30px; letter-spacing: 0.5px; line-height: 1.05; }
-  .dossier-col.player .doc-subtitle { font-size: var(--fs-header-2); }
-  .dossier-col.player .glyph-inline { width: 72px; height: 72px; }
-  .dossier-col.player .field-notes-prose { font-size: var(--fs-header-2); line-height: 1.55; }
-  .dossier-col.player .hp-num { font-size: var(--fs-header-2); min-width: 96px; }
-  .dossier-col.player .hp-bar-doc { height: 10px; }
-  .dossier-col.player .stat-bar { height: 8px; }
-  .dossier-col.player .stat-bar-num { font-size: var(--fs-header-2); }
-  .dossier-col.player .passive-prose { font-size: var(--fs-header-2); }
-  .dossier-col.player .afflictions-list { font-size: var(--fs-header-2); }
 
   /* corruption marks (used everywhere) ─────────────────────────────── */
   .field-notes-prose s,
@@ -967,22 +952,16 @@
   @media (max-width: 640px) {
     .dossier-screen { padding: var(--space-2); }
     .engagement-strip { font-size: var(--fs-label); flex-wrap: wrap; gap: var(--space-1); }
-    /* On narrow viewports, keep the 2:1 ratio so the player still dominates
-       but compress padding so the enemy column doesn't lose readability. */
-    .dossier-grid { grid-template-columns: 2fr 1px 1fr; }
-    .dossier-col { padding: 0 var(--space-1); gap: var(--space-2); }
+    .dossier-grid { grid-template-columns: 1fr 1px 1fr; }
+    .dossier-col { padding: 0 var(--space-2); gap: var(--space-2); }
     .dossier-col.player { padding-left: 0; padding-right: var(--space-2); }
     .dossier-col.enemy  { padding-left: var(--space-2); padding-right: 0; }
-    .doc-title { font-size: 15px; }
-    .dossier-col.player .doc-title { font-size: 22px; }
-    .dossier-col.player .glyph-inline { width: 52px; height: 52px; }
-    .glyph-inline { width: 28px; height: 28px; }
+    .doc-title { font-size: 17px; }
+    .glyph-inline { width: 32px; height: 32px; }
     .bench-glyph-inline { width: 18px; height: 18px; }
     .bench-bar-inline { width: 36px; }
-    .hp-num { min-width: 56px; font-size: var(--fs-body-tight); }
-    .dossier-col.player .hp-num { font-size: var(--fs-body); min-width: 70px; }
+    .hp-num { min-width: 60px; font-size: var(--fs-body-tight); }
     .stat-bar-num { min-width: 40px; font-size: var(--fs-body-tight); }
-    .dossier-col.player .stat-bar-num { font-size: var(--fs-body); }
     .action-split { grid-template-columns: 1fr; gap: var(--space-2); }
     .action-split-rule { display: none; }
     .action-detail { border-top: 1px dotted var(--rule-faint); padding: var(--space-2) 0 0; }
