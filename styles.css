@@ -462,6 +462,83 @@
   .action-row.queued { color: var(--ink-100); }
   .action-row.queued .action-marker { color: var(--ink-100); }
 
+  /* rich action rows — name + effect + optional flavor stacked vertically.
+     This is the v2 layout: each ability is a self-contained block, no
+     split-pane detail. Visual hierarchy is name (bold/large) → effect
+     (medium/dim) → flavor (small/dimmer). */
+  .action-row.rich {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--space-2) 0;
+    border-bottom: 1px dotted var(--rule-faint);
+    line-height: 1.45;
+  }
+  .action-row.rich:last-child { border-bottom: none; }
+  .action-row.rich .action-marker {
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .action-row-body { flex: 1; min-width: 0; }
+  .action-row-nameline {
+    display: flex; align-items: baseline;
+    gap: var(--space-2);
+  }
+  .action-row-name {
+    font-size: var(--fs-header);
+    color: var(--ink-100);
+    letter-spacing: 0.5px;
+    flex: 1;
+  }
+  .action-row.rich.is-default .action-row-name,
+  .action-row.rich:hover:not(:disabled) .action-row-name { color: var(--ink-100); }
+  .action-list:hover .action-row.rich.is-default:not(:hover) .action-row-name { color: var(--ink-80); }
+  .action-row-effect {
+    color: var(--ink-80);
+    font-size: var(--fs-body);
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+  .action-row.rich.is-default .action-row-effect { color: var(--ink-100); }
+  .action-row.rich:hover:not(:disabled) .action-row-effect { color: var(--ink-100); }
+  .action-list:hover .action-row.rich.is-default:not(:hover) .action-row-effect { color: var(--ink-80); }
+  .action-row-flavor {
+    color: var(--ink-60);
+    font-size: var(--fs-body-tight);
+    margin-top: 3px;
+    letter-spacing: 0;
+    line-height: 1.55;
+  }
+  .action-row-flavor s { color: var(--ink-40); }
+  .action-row-flavor .doc-gold { color: var(--doc-gold); }
+  .action-row-phase {
+    color: var(--ink-60);
+    font-size: var(--fs-label-2);
+    letter-spacing: var(--ls-label);
+    margin-top: var(--space-1);
+  }
+  .action-row-matchup {
+    flex-shrink: 0;
+    font-size: var(--fs-header-2);
+    letter-spacing: 0;
+    width: 1.5ch;
+    text-align: right;
+  }
+  .action-row-matchup.good { color: var(--ink-100); font-weight: 700; }
+  .action-row-matchup.bad  { color: var(--ink-40); }
+
+  /* inspect-modal & ability-tooltip flavor styling */
+  .ability-doc-flavor,
+  .doc-modal-flavor {
+    color: var(--ink-60);
+    font-size: var(--fs-body-tight);
+    margin-top: 4px;
+    line-height: 1.55;
+  }
+  .ability-doc-flavor s,
+  .doc-modal-flavor s { color: var(--ink-40); }
+  .ability-doc-flavor .doc-gold,
+  .doc-modal-flavor .doc-gold { color: var(--doc-gold); }
+
   .action-detail {
     color: var(--ink-100);
     font-size: var(--fs-body);
@@ -497,6 +574,7 @@
   }
   .narr-line.primary { font-size: 14px; color: var(--ink-100); }
   .narr-line.secondary { color: var(--ink-60); font-size: var(--fs-body-tight); }
+  .narr-line.flavor { color: var(--ink-80); font-style: italic; }
   .narr-text { flex: 1; min-width: 0; }
   .narr-dmg  { color: var(--doc-blood); flex-shrink: 0; padding-left: var(--space-3); font-size: 16px; }
   .narr-heal { color: var(--ink-100);   flex-shrink: 0; padding-left: var(--space-3); font-size: 14px; }

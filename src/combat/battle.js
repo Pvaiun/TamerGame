@@ -16,7 +16,7 @@ import {
 } from './abilities.js';
 import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
-import { drainLog, snapLog, useLine, hitLine, eventText } from './log.js';
+import { drainLog, snapLog, useLine, hitLine, flavorLine, eventText } from './log.js';
 
 const lower = (s) => String(s || '').toLowerCase();
 
@@ -301,6 +301,11 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
   } else {
     pushLog(useLine(attacker, ability), { anim: () => playLunge(side) });
     await drainLog();
+    const flavor = flavorLine(attacker, ability);
+    if (flavor) {
+      pushLog(flavor, { cls: 'flavor' });
+      await drainLog();
+    }
   }
 
   // 1. Before-timed effects.

@@ -5,8 +5,18 @@ import { hasPassive, applyPostHitPassives, applySelfDmgMult } from './passives.j
 import { applyStatus, cleanseStatuses, applyHeal } from './status.js';
 import { spawnFloat } from '../ui/animations.js';
 import { drainLog, affApply, eventText } from './log.js';
+import { VOICE } from '../data.js';
 
 const lower = (s) => String(s || '').toLowerCase();
+
+// Look up a per-effect-kind voice template (from voiceprose.effectDefaults)
+// with templating against the supplied vars. Falls back to a generic line.
+function effectLine(kind, fallback, vars) {
+  const v = VOICE.effectDefaults[kind];
+  const tmpl = (v && (v.hit || v.use)) || fallback || '';
+  if (!tmpl) return '';
+  return tmpl.replace(/\{(\w+)\}/g, (_, k) => (vars && vars[k] != null ? String(vars[k]) : ''));
+}
 
 // Read a param from an effect instance, falling back to the schema default.
 export function effParam(eff, paramKey) {
@@ -110,8 +120,9 @@ async function handleEffect(eff, ctx) {
         .filter(([, v]) => typeof v === 'number' && v !== 0)
         .map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
       if (fighters.length && parts.length) {
-        const text = `their grip ~~tightens~~ holds. ${parts.join(', ')}.`;
-        pushLog(text, { cls: 'eff' });
+        const isBuff = parts.some(p => p.includes('+'));
+        const base = effectLine(isBuff ? 'buff' : 'debuff', isBuff ? 'their grip ~~tightens~~ holds.' : 'they slip.');
+        pushLog(`${base} ${parts.join(', ')}.`, { cls: 'eff' });
       }
       return;
     }
@@ -123,7 +134,7 @@ async function handleEffect(eff, ctx) {
       for (const f of fighters) {
         const perTurn = Math.max(1, Math.round(f.creature.maxHp * percent));
         f.healing = { perTurn, turnsLeft: turns };
-        pushLog(`the green begins to keep ${lower(displayName(f.creature))}.`);
+        pushLog(effectLine('heal', 'the green keeps.', { actor: lower(displayName(f.creature)) }));
       }
       return;
     }
@@ -131,7 +142,9 @@ async function handleEffect(eff, ctx) {
       const targets = effParam(eff, 'targets') || ['self'];
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) f.bracingThisTurn = true;
-      if (fighters.length) pushLog(`they brace against the next blow.`);
+      if (fighters.length) {
+        pushLog(effectLine('brace', 'they brace against the next blow.', { actor: lower(displayName(fighters[0].creature)) }));
+      }
       return;
     }
     case 'cleanse': {
@@ -148,7 +161,7 @@ async function handleEffect(eff, ctx) {
             if (doDebuffs && f.statMods[k] < 0) f.statMods[k] = 0;
           }
         }
-        pushLog(`what was on ${lower(displayName(f.creature))} lifts.`);
+        pushLog(effectLine('cleanse', `what was on ${lower(displayName(f.creature))} lifts.`, { actor: lower(displayName(f.creature)) }));
       }
       return;
     }

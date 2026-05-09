@@ -194,8 +194,15 @@ export function openInspectModal(c) {
       top.appendChild(tail);
     }
     row.appendChild(top);
-    if (a && a.desc) {
-      row.appendChild(el('div', { class: 'ability-doc-desc' }, a.desc.toLowerCase()));
+    if (a && a.effect) {
+      const eff = el('div', { class: 'ability-doc-desc' });
+      eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+      row.appendChild(eff);
+    }
+    if (a && a.flavor) {
+      const fl = el('div', { class: 'ability-doc-flavor' });
+      fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+      row.appendChild(fl);
     }
     m.appendChild(row);
   }
@@ -242,7 +249,16 @@ export function openAbilityTooltip(abilityKey) {
     }
   }
   m.appendChild(meta);
-  if (a.desc) m.appendChild(el('div', { class: 'doc-modal-desc' }, a.desc.toLowerCase()));
+  if (a.effect) {
+    const desc = el('div', { class: 'doc-modal-desc' });
+    desc.innerHTML = parseProse(String(a.effect).toLowerCase());
+    m.appendChild(desc);
+  }
+  if (a.flavor) {
+    const fl = el('div', { class: 'doc-modal-flavor' });
+    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    m.appendChild(fl);
+  }
 
   m.appendChild(el('button', { class: 'doc-button doc-modal-close', onclick: () => { root.innerHTML = ''; } }, '▸ close'));
 
