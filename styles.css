@@ -31,7 +31,62 @@
     --hp-bg: #2a1a1a;
     --eff-good: #5fc878;
     --eff-bad:  #c86a6a;
+
+    /* ── new aesthetic tokens (dossier / document horror) ─────────── */
+    --doc-bg:        #0a0a0c;
+    --doc-rule:      #18181a;
+    --ink-100:       #e0e0e2;
+    --ink-80:        #888888;
+    --ink-60:        #666666;
+    --ink-40:        #444444;
+    --ink-20:        #222222;
+    --doc-blood:     #c8302a;
+    --doc-gold:      #d4a428;
+
+    --rule-faint:    rgba(224, 224, 226, 0.06);
+    --rule-soft:     rgba(224, 224, 226, 0.12);
+    --rule-strong:   rgba(224, 224, 226, 0.20);
+
+    --font-mono:     'IBM Plex Mono', 'Courier New', Courier, monospace;
+
+    --fs-label:      8px;
+    --fs-label-2:    9px;
+    --fs-body-tight: 10px;
+    --fs-body:       11px;
+    --fs-header-2:   13px;
+    --fs-header:     14px;
+    --ls-label:      2.5px;
+    --ls-header:     3px;
+    --ls-tight:      0.5px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 32px;
+
+    --z-stage: 0;
+    --z-app:   1;
+    --z-fx:    50;
+    --z-modal: 100;
+
+    --dur-quick:   120ms;
+    --dur-normal:  240ms;
+    --dur-slow:    420ms;
+    --ease-out:    cubic-bezier(0.2, 0.6, 0.2, 1);
   }
+
+  /* ── document corruption text utilities ─────────────────────────── */
+  .strike-pair s { color: var(--ink-60); text-decoration: line-through; text-decoration-color: var(--ink-60); }
+  .redact {
+    display: inline-block;
+    background: var(--doc-blood);
+    height: 1em;
+    vertical-align: -0.15em;
+    border-radius: 1px;
+  }
+  .doc-gold { color: var(--doc-gold); }
   body {
     font-family: 'Courier New', 'Courier', monospace;
     background: var(--bg);
