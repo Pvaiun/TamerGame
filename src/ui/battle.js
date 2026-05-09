@@ -8,7 +8,7 @@
 // enemy side. The enemy's hp values are redacted; only the bar fill reads.
 
 import { el, attachLongPress, app } from './dom.js';
-import { ABILITIES, PASSIVES, VOICE } from '../data.js';
+import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
 import { state, TOTAL_WAVES } from '../state.js';
 import { displayName } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
@@ -277,14 +277,23 @@ function passivesEl(c) {
   }
   for (const k of list) {
     const p = PASSIVES[k];
-    const proseDesc = VOICE.passives[k] || (p && p.desc) || '—';
+    const voice = VOICE.passives[k];
+    const mech = (p && p.desc) ? p.desc : '';
+    const prose = voice || mech || '—';
+    const showMech = !!voice && !!mech;
+
     const row = el('div', { class: 'passive-line-doc' });
-    row.appendChild(el('span', { class: 'passive-bullet' }, '•'));
-    row.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
-    row.appendChild(el('span', { class: 'passive-sep' }, ' · '));
+    const top = el('div', { class: 'passive-prose' });
+    top.appendChild(el('span', { class: 'passive-bullet' }, '•'));
+    top.appendChild(el('span', { class: 'passive-name-doc' }, p ? p.name : k));
+    top.appendChild(el('span', { class: 'passive-sep' }, ' · '));
     const desc = el('span', { class: 'passive-desc-doc' });
-    desc.innerHTML = parseProse(proseDesc);
-    row.appendChild(desc);
+    desc.innerHTML = parseProse(prose);
+    top.appendChild(desc);
+    row.appendChild(top);
+    if (showMech) {
+      row.appendChild(el('div', { class: 'passive-mech' }, mech));
+    }
     wrap.appendChild(row);
   }
   return wrap;
@@ -355,8 +364,7 @@ function actionMenuEl() {
     if (state.acting) row.disabled = true;
     row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
     row.appendChild(el('span', { class: 'action-name' }, a.name.toLowerCase()));
-    const tag = abilityKindTag(a);
-    if (tag) row.appendChild(el('span', { class: 'action-tag' }, ` ${tag}`));
+    row.appendChild(actionRowHintEl(a));
 
     row.addEventListener('mouseenter', () => fillDetail(detail, k));
     row.addEventListener('focus',      () => fillDetail(detail, k));
@@ -513,4 +521,32 @@ function abilityKindTag(a) {
   if (flat.some(e => e.type === 'cleanse'))        return 'cleanse';
   if (flat.some(e => e.type === 'bracing'))        return 'brace';
   return null;
+}
+
+// Right-side gameplay hint on each action row: power value for damage
+// abilities, a short kind tag otherwise, plus a small +/− mark for
+// element matchup against the current target.
+function actionRowHintEl(a) {
+  const wrap = el('span', { class: 'action-tag' });
+  const power = phasePowerFor(a, 0);
+  const isMulti = a.phases && a.phases.length > 1;
+  if (power > 0) {
+    const dmg = abilityDamageEffect(a);
+    const hits = (dmg && dmg.hits) || 1;
+    wrap.appendChild(el('span', { class: 'action-pow' },
+      hits > 1 ? `${dmg.power}×${hits}` : String(power)));
+    if (isMulti) wrap.appendChild(el('span', { class: 'action-multi' }, ` ·${a.phases.length}p`));
+    if (a.element && state.ef && state.ef.creature) {
+      const m = TYPE_CHART[a.element]?.[state.ef.creature.type];
+      if (m > 1)      wrap.appendChild(el('span', { class: 'eff-mark good' }, ' +'));
+      else if (m < 1) wrap.appendChild(el('span', { class: 'eff-mark bad'  }, ' −'));
+    }
+  } else if (isMulti) {
+    wrap.appendChild(el('span', { class: 'action-multi' }, `${a.phases.length}p`));
+  } else {
+    const t = abilityKindTag(a);
+    if (t) wrap.appendChild(el('span', {}, t));
+    else   wrap.appendChild(el('span', {}, '·'));
+  }
+  return wrap;
 }
