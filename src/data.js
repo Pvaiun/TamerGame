@@ -18,6 +18,10 @@ export const VOICE = {
   notes: {},
   passives: {},
   afflictions: {},
+  actions: {},
+  actionDefaults: {},
+  effectDefaults: {},
+  events: {},
 };
 
 async function fetchJson(path) {
@@ -44,6 +48,9 @@ export async function loadData() {
   Object.assign(TYPE_PALETTE, types.TYPE_PALETTE);
   Object.assign(PASSIVES, passives);
   Object.assign(ABILITIES, abilities);
+  // Stamp each ability with its own key so combat code can look up voice
+  // prose by ability id without re-deriving the key from a reverse lookup.
+  for (const [k, a] of Object.entries(ABILITIES)) a._key = k;
   Object.assign(STATUSES, statuses);
   Object.assign(ADDITIONAL_EFFECTS, addEffects);
   TEMPLATES.length = 0;
@@ -58,8 +65,12 @@ export async function loadData() {
     if (k.startsWith('_')) continue;
     GLYPHS[k] = v;
   }
-  Object.assign(VOICE.subtitles,   voice.subtitles   || {});
-  Object.assign(VOICE.notes,       voice.notes       || {});
-  Object.assign(VOICE.passives,    voice.passives    || {});
-  Object.assign(VOICE.afflictions, voice.afflictions || {});
+  Object.assign(VOICE.subtitles,      voice.subtitles      || {});
+  Object.assign(VOICE.notes,          voice.notes          || {});
+  Object.assign(VOICE.passives,       voice.passives       || {});
+  Object.assign(VOICE.afflictions,    voice.afflictions    || {});
+  Object.assign(VOICE.actions,        voice.actions        || {});
+  Object.assign(VOICE.actionDefaults, voice.actionDefaults || {});
+  Object.assign(VOICE.effectDefaults, voice.effectDefaults || {});
+  Object.assign(VOICE.events,         voice.events         || {});
 }

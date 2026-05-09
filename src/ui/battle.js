@@ -9,6 +9,7 @@
 
 import { el, attachLongPress, app } from './dom.js';
 import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
+import { affName as voiceAffName } from '../combat/log.js';
 import { state, TOTAL_WAVES } from '../state.js';
 import { displayName } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
@@ -255,11 +256,11 @@ function afflictionsEl(f) {
 function activeAfflictions(f) {
   const out = [];
   const s = f.statuses || {};
-  if (s.burn)    out.push({ label: VOICE.afflictions.burn    || 'burning',  suffix: `${s.burn.turns}t` });
-  if (s.bloom)   out.push({ label: VOICE.afflictions.bloom   || 'blooming', suffix: `${s.bloom.turns}t` });
-  if (s.soaking) out.push({ label: VOICE.afflictions.soaking || 'soaking',  suffix: `${s.soaking.turns}t` });
-  if (s.cursed)  out.push({ label: VOICE.afflictions.cursed  || 'cursed',   suffix: `${s.cursed.turns}t` });
-  if (s.dazed)   out.push({ label: VOICE.afflictions.dazed   || 'dazed',    suffix: `${s.dazed.turns}t` });
+  if (s.burn)    out.push({ label: voiceAffName('burn'),    suffix: `${s.burn.turns}t` });
+  if (s.bloom)   out.push({ label: voiceAffName('bloom'),   suffix: `${s.bloom.turns}t` });
+  if (s.soaking) out.push({ label: voiceAffName('soaking'), suffix: `${s.soaking.turns}t` });
+  if (s.cursed)  out.push({ label: voiceAffName('cursed'),  suffix: `${s.cursed.turns}t` });
+  if (s.dazed)   out.push({ label: voiceAffName('dazed'),   suffix: `${s.dazed.turns}t` });
   if (f.healing && f.healing.turnsLeft > 0) {
     out.push({ label: 'healing', suffix: `${f.healing.turnsLeft}t` });
   }
@@ -314,32 +315,66 @@ function actionBoxEl() {
 
 function narrativeEl() {
   const wrap = el('div', { class: 'narrative-block' });
-  const lines = state.log.slice(-3).reverse();
-  if (lines.length === 0) {
-    wrap.appendChild(el('div', { class: 'narr-line primary' }, '— silence —'));
+  // Render the last few entries chronologically (oldest top, newest bottom)
+  // so the eye reads downward to the line currently typing.
+  const showCount = 4;
+  const startIdx = Math.max(0, state.log.length - showCount);
+  const slice = state.log.slice(startIdx);
+  const typingIdx = state.typingLogIdx; // global index in state.log
+  if (slice.length === 0) {
+    wrap.appendChild(el('div', { class: 'narr-line primary' }, '—'));
   } else {
-    lines.forEach((entry, i) => {
-      const cls = 'narr-line ' + (i === 0 ? 'primary ' : 'secondary ') + (entry.cls || '');
+    slice.forEach((entry, i) => {
+      const globalIdx = startIdx + i;
+      const isLatest = globalIdx === state.log.length - 1;
+      const isTyping = globalIdx === typingIdx;
+      const cls = 'narr-line ' + (isLatest ? 'primary ' : 'secondary ') + (entry.cls || '');
       const line = el('div', { class: cls });
       const text = el('span', { class: 'narr-text' });
-      text.innerHTML = parseProse((entry.msg || '').toString().toLowerCase());
+      const html = parseProse(String(entry.text || '').toLowerCase());
+      if (isTyping) {
+        text.innerHTML = typewriterizeHTML(html, 22);
+      } else {
+        text.innerHTML = html;
+      }
       line.appendChild(text);
-      const dmg = extractDamage(entry.msg || '');
-      if (dmg !== null && i === 0) {
-        line.appendChild(el('span', { class: 'narr-dmg' }, ` ${dmg < 0 ? '' : '−'}${Math.abs(dmg)}`));
+      if (entry.damage > 0) {
+        line.appendChild(el('span', { class: 'narr-dmg' }, `−${entry.damage}`));
+      } else if (entry.heal > 0) {
+        line.appendChild(el('span', { class: 'narr-heal' }, `+${entry.heal}`));
       }
       wrap.appendChild(line);
     });
   }
-  wrap.appendChild(el('div', { class: 'narr-footer' }, '▸ awaiting next event'));
   return wrap;
 }
 
-function extractDamage(msg) {
-  // crude: pull a leading number from "Deals 47 damage." or similar.
-  const m = String(msg).match(/(\d+)\s+damage/i);
-  if (m) return parseInt(m[1], 10);
-  return null;
+// Wrap each character of the parsed prose HTML in a <span class="tw-char">
+// with a CSS animation-delay = idx*ms so characters fade in sequentially.
+// Markup wrappers (s, .redact, .doc-gold) are preserved.
+function typewriterizeHTML(html, msPerChar) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  let charIdx = 0;
+  function walk(node) {
+    if (node.nodeType === 3) { // text
+      const text = node.textContent;
+      const frag = document.createDocumentFragment();
+      for (const ch of text) {
+        const span = document.createElement('span');
+        span.className = 'tw-char';
+        span.style.animationDelay = (charIdx++ * msPerChar) + 'ms';
+        span.textContent = ch;
+        frag.appendChild(span);
+      }
+      node.parentNode.replaceChild(frag, node);
+    } else if (node.nodeType === 1) {
+      const children = Array.from(node.childNodes);
+      for (const c of children) walk(c);
+    }
+  }
+  walk(tmp);
+  return tmp.innerHTML;
 }
 
 function actionMenuEl() {

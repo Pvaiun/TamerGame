@@ -1,7 +1,8 @@
 {
   "_format": {
-    "note": "Voice-style placeholder prose for the dossier. Uses inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent. All prose is lowercase. Authors should rewrite per-creature later — this is a stub layer.",
-    "lookup": "Dossier reads: subtitles[creature] || subtitles[type]; notes[creature] || notes[type]; passives[passiveKey]; afflictions[statusKey]"
+    "note": "Voice-style placeholder prose for the dossier and battle log. Inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent. All prose is lowercase.",
+    "lookup": "Dossier reads: subtitles[species] || subtitles[type]; notes[species] || notes[type]. Battle log reads: actions[abilityKey].use || actionDefaults[element].use; same for hit/flavor. effectDefaults[kind] is consulted when an ability has no damage. afflictions[statusKey].apply / .tick are read on apply / per-turn-tick.",
+    "templates": "{actor} = lowercased name of the doer. {target} = lowercased name of the receiver. {name} = ability display name (lowercased). {status} = lowercased affliction name."
   },
   "subtitles": {
     "fire":  "small embered thing.",
@@ -155,10 +156,49 @@
     "savage":          "does not stop at the kill."
   },
   "afflictions": {
-    "burn":    "burning",
-    "bloom":   "blooming",
-    "soaking": "soaking",
-    "cursed":  "cursed",
-    "dazed":   "dazed"
+    "burn":    { "name": "burning",  "apply": "the burn ~~consumes~~ takes.",        "tick": "burn ~~devours~~ spreads." },
+    "bloom":   { "name": "blooming", "apply": "the bloom ~~opens~~ uncoils.",        "tick": "bloom drinks." },
+    "soaking": { "name": "soaking",  "apply": "they are ~~drenched~~ marked.",       "tick": "the soaking weighs." },
+    "cursed":  { "name": "cursed",   "apply": "the curse ~~settles~~ takes hold.",   "tick": "the curse stirs." },
+    "dazed":   { "name": "dazed",    "apply": "they ~~stumble~~ are dazed.",         "tick": "still dazed." }
+  },
+  "actionDefaults": {
+    "fire":    { "use": "{actor} burns with {name}.",          "hit": "they ~~smolder~~ catch." },
+    "water":   { "use": "{actor} pulls with {name}.",          "hit": "they ~~drown~~ are soaked." },
+    "grass":   { "use": "{actor} binds with {name}.",          "hit": "they ~~bleed~~ are bound." },
+    "light":   { "use": "{actor} shines with {name}.",         "hit": "they ~~blink away~~ falter." },
+    "dark":    { "use": "{actor} ~~unmakes~~ shadows with {name}.", "hit": "they ~~fade~~ are unmade." },
+    "neutral": { "use": "{actor} strikes with {name}.",        "hit": "they recoil." }
+  },
+  "effectDefaults": {
+    "heal":    { "use": "{actor} steadies itself.",            "hit": "the green keeps." },
+    "buff":    { "use": "{actor} braces.",                     "hit": "their grip ~~tightens~~ holds." },
+    "debuff":  { "use": "{actor} shakes them.",                "hit": "they slip." },
+    "swap":    { "use": "{actor} steps back.",                 "hit": "they exchange." },
+    "status":  { "use": "{actor} marks them.",                 "hit": "the {status}." },
+    "cleanse": { "use": "{actor} clears itself.",              "hit": "what was on it lifts." },
+    "brace":   { "use": "{actor} braces against the next blow.", "hit": "" },
+    "noop":    { "use": "{actor} ~~hesitates~~ waits.",        "hit": "" }
+  },
+  "events": {
+    "swap_out":      "{actor} steps back.",
+    "swap_in":       "{actor} steps forward.",
+    "swap_yanked":   "{actor} is ~~pulled~~ yanked from the field.",
+    "swap_none":     "{actor} ~~tries~~ has no one to swap to.",
+    "swap_curse":    "the curse takes from {actor} on the way out.",
+    "swap_arrives_buffed": "{actor} arrives bolstered.",
+    "swap_arrives_healed": "{actor} arrives ~~bleeding~~ healed.",
+    "ability_fizzle": "{actor}'s {name} ~~fails~~ fizzles.",
+    "dazed_skip":    "{actor} cannot ~~remember~~ act.",
+    "evade":         "{target} ~~vanishes~~ is not where it was.",
+    "faint":         "{actor} ~~dies~~ falls still.",
+    "step_in":       "{actor} steps forward to take its place.",
+    "battle_open":   "they are at the door. {enemies}.",
+    "phase_prepare": "{actor} ~~begins~~ prepares {name}.",
+    "phase_continue":"{actor} continues {name}.",
+    "phase_unleash": "{actor} ~~releases~~ unleashes {name}.",
+    "super":         "it ~~lands deep~~ catches.",
+    "resist":        "it ~~glances~~ slides off.",
+    "crit_tag":      "the wound ~~opens~~ takes."
   }
 }

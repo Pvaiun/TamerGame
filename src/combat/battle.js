@@ -16,18 +16,25 @@ import {
 } from './abilities.js';
 import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../ui/animations.js';
 import { render } from '../ui/render.js';
+import { drainLog, snapLog, useLine, hitLine, eventText } from './log.js';
+
+const lower = (s) => String(s || '').toLowerCase();
 
 // Self-swap helper. Used by the `swap` effect when target=self.
 // `swapEff` is the effect instance, which carries optional buffOnSwap/healOnSwap.
 async function performSelfSwap(side, attacker, swapEff) {
   const benchFighter = side === 'player' ? state.bf : state.ebf;
   if (!benchFighter || benchFighter.hp <= 0) {
-    pushLog(`${displayName(attacker.creature)} tried to swap, but no ally is ready.`, 'eff');
+    pushLog(eventText('swap_none', { actor: lower(displayName(attacker.creature)) }), { cls: 'eff' });
+    await drainLog();
     return;
   }
   applyCursedOnSwap(attacker, side);
-  pushLog(`${displayName(attacker.creature)} swaps to the bench.`, 'eff');
-  sfx('select');
+  pushLog(eventText('swap_out', { actor: lower(displayName(attacker.creature)) }), {
+    cls: 'eff',
+    anim: () => sfx('select'),
+  });
+  await drainLog();
   if (side === 'player') {
     const out = state.pf;
     state.pf = state.bf;
@@ -49,20 +56,23 @@ async function performSelfSwap(side, attacker, swapEff) {
     for (const [k, v] of Object.entries(buffOnSwap)) {
       if (typeof v === 'number' && v !== 0) { incoming.statMods[k] = (incoming.statMods[k] || 0) + v; any = true; }
     }
-    if (any) pushLog(`${displayName(incoming.creature)} arrives bolstered.`, 'eff');
+    if (any) pushLog(eventText('swap_arrives_buffed', { actor: lower(displayName(incoming.creature)) }), { cls: 'eff' });
   }
   const healOnSwap = swapEff?.healOnSwap || 0;
   if (healOnSwap > 0) {
     const amt = Math.round(incoming.creature.maxHp * healOnSwap);
     const healed = applyHeal(incoming, amt);
     if (healed > 0) {
-      spawnFloat(side, `+${healed}`, 'heal');
-      pushLog(`${displayName(incoming.creature)} arrives healed for ${healed}.`);
+      pushLog(eventText('swap_arrives_healed', { actor: lower(displayName(incoming.creature)) }), {
+        heal: healed,
+        anim: () => spawnFloat(side, `+${healed}`, 'heal'),
+      });
     }
   }
   applySwapInPassives(incoming, attacker, side, { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName });
   incoming.onBench = false;
   attacker.onBench = true;
+  await drainLog();
 }
 
 function applyBattleStartPassives(pf, ef) {
@@ -84,8 +94,9 @@ export function beginBattle() {
   if (state.bf) applyBattleStartPassives(state.bf, state.ef);
   if (state.ebf) applyBattleStartPassives(state.ebf, state.pf);
   state.log = [];
-  const enemiesDesc = state.enemyParty.map(e => displayName(e)).join(' and ');
-  pushLog(`Wild ${enemiesDesc} appear.`);
+  const enemiesDesc = state.enemyParty.map(e => lower(displayName(e))).join(' and ');
+  pushLog(eventText('battle_open', { enemies: enemiesDesc }), { cls: 'eff' });
+  snapLog();
   state.acting = false;
   state.screen = 'battle';
   render();
@@ -94,7 +105,7 @@ export function beginBattle() {
 function fizzleQueued(f) {
   if (!f || !f.queuedAbility) return;
   const ab = ABILITIES[f.queuedAbility.key];
-  if (ab) pushLog(`${displayName(f.creature)}'s ${ab.name} fizzles!`, 'eff');
+  if (ab) pushLog(eventText('ability_fizzle', { actor: lower(displayName(f.creature)), name: lower(ab.name) }), { cls: 'eff' });
   f.queuedAbility = null;
 }
 
@@ -105,8 +116,11 @@ export async function playerSwap() {
   state.acting = true;
   applyCursedOnSwap(state.pf, 'player');
   fizzleQueued(state.pf);
-  pushLog(`${displayName(state.pf.creature)} swaps to the bench.`, 'eff');
-  sfx('select');
+  pushLog(eventText('swap_out', { actor: lower(displayName(state.pf.creature)) }), {
+    cls: 'eff',
+    anim: () => sfx('select'),
+  });
+  await drainLog();
   const out = state.pf;
   state.pf = state.bf;
   state.bf = out;
@@ -115,8 +129,8 @@ export async function playerSwap() {
   state.bf.onBench = true;
   const swapCbs = { applyHeal, cleanseStatuses, spawnFloat, pushLog, displayName };
   applySwapInPassives(state.pf, out, 'player', swapCbs);
-  render();
-  await sleep(500);
+  pushLog(eventText('swap_in', { actor: lower(displayName(state.pf.creature)) }), { cls: 'eff' });
+  await drainLog();
   if (state.ef.hp > 0 && state.pf.hp > 0) {
     let enemyAbility, enemyPhaseIdx = 0;
     if (state.ef.queuedAbility) {
@@ -125,15 +139,13 @@ export async function playerSwap() {
     } else {
       enemyAbility = ABILITIES[aiChoose(state.ef, state.pf)];
     }
-    tickStartOfTurn(state.ef, 'enemy');
+    await tickStartOfTurn(state.ef, 'enemy');
     if (state.ef.hp > 0) {
       await resolveAction('enemy', state.ef, state.pf, enemyAbility, enemyPhaseIdx);
-      render();
-      await sleep(500);
     }
   }
-  if (state.bf && state.bf.hp > 0) tickFighterStatuses(state.bf, 'player', true);
-  if (state.ebf && state.ebf.hp > 0) tickFighterStatuses(state.ebf, 'enemy', true);
+  if (state.bf && state.bf.hp > 0) await tickFighterStatuses(state.bf, 'player', true);
+  if (state.ebf && state.ebf.hp > 0) await tickFighterStatuses(state.ebf, 'enemy', true);
   await handleFaintsIfAny();
   state.acting = false;
   render();
@@ -141,17 +153,19 @@ export async function playerSwap() {
 
 export async function handleFaintsIfAny() {
   if (state.pf.hp <= 0) {
-    pushLog(`${displayName(state.pf.creature)} fainted!`, 'eff');
-    sfx('faint');
+    pushLog(eventText('faint', { actor: lower(displayName(state.pf.creature)) }), {
+      cls: 'eff',
+      anim: () => sfx('faint'),
+    });
+    await drainLog();
     if (state.bf && state.bf.hp > 0) {
-      pushLog(`${displayName(state.bf.creature)} steps in.`, 'eff');
       const out = state.pf;
       state.pf = state.bf;
       state.bf = out;
       state.activeIdx = 1 - state.activeIdx;
       if (state.pf) state.pf.queuedAbility = null;
-      render();
-      await sleep(700);
+      pushLog(eventText('step_in', { actor: lower(displayName(state.pf.creature)) }), { cls: 'eff' });
+      await drainLog();
     } else {
       state.screen = 'gameover';
       render();
@@ -159,21 +173,21 @@ export async function handleFaintsIfAny() {
     }
   }
   if (state.ef.hp <= 0) {
-    pushLog(`${displayName(state.ef.creature)} fainted!`, 'eff');
-    sfx('faint');
+    pushLog(eventText('faint', { actor: lower(displayName(state.ef.creature)) }), {
+      cls: 'eff',
+      anim: () => sfx('faint'),
+    });
+    await drainLog();
     if (state.ebf && state.ebf.hp > 0) {
-      pushLog(`${displayName(state.ebf.creature)} steps in.`, 'eff');
       const out = state.ef;
       state.ef = state.ebf;
       state.ebf = out;
       state.enemyActiveIdx = 1 - state.enemyActiveIdx;
       state.enemy = state.enemyParty[state.enemyActiveIdx];
       if (state.ef) state.ef.queuedAbility = null;
-      render();
-      await sleep(700);
+      pushLog(eventText('step_in', { actor: lower(displayName(state.ef.creature)) }), { cls: 'eff' });
+      await drainLog();
     } else {
-      render();
-      await sleep(700);
       finishBattleIfDone();
       return false;
     }
@@ -229,27 +243,28 @@ export async function playerAct(abilityKey) {
     if (state.pf.hp <= 0 || state.ef.hp <= 0) break;
     const attacker = side === 'player' ? state.pf : state.ef;
     const defender = side === 'player' ? state.ef : state.pf;
-    tickStartOfTurn(attacker, side);
+    await tickStartOfTurn(attacker, side);
     if (attacker.hp <= 0) break;
     if (swapping) {
       applyCursedOnSwap(state.ef, 'enemy');
       fizzleQueued(state.ef);
-      pushLog(`${displayName(state.ef.creature)} swaps to its bench.`, 'eff');
+      pushLog(eventText('swap_out', { actor: lower(displayName(state.ef.creature)) }), {
+        cls: 'eff',
+        anim: () => sfx('select'),
+      });
+      await drainLog();
       const out = state.ef;
       state.ef = state.ebf;
       state.ebf = out;
       state.enemyActiveIdx = 1 - state.enemyActiveIdx;
       state.enemy = state.enemyParty[state.enemyActiveIdx];
-      sfx('select');
     } else {
       await resolveAction(side, attacker, defender, ability, phaseIdx);
     }
-    render();
-    await sleep(550);
   }
 
-  if (state.bf && state.bf.hp > 0) tickFighterStatuses(state.bf, 'player', true);
-  if (state.ebf && state.ebf.hp > 0) tickFighterStatuses(state.ebf, 'enemy', true);
+  if (state.bf && state.bf.hp > 0) await tickFighterStatuses(state.bf, 'player', true);
+  if (state.ebf && state.ebf.hp > 0) await tickFighterStatuses(state.ebf, 'enemy', true);
 
   const cont = await handleFaintsIfAny();
   if (!cont) return;
@@ -271,35 +286,40 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
   const helpers = { performSelfSwap };
   const baseCtx = { side, oside, attacker, defender, helpers, lastDmg: 0 };
 
-  // Phase log line
+  // Phase log line — for multi-phase abilities, the prepare/continue/unleash
+  // beat takes the place of the regular use line. For single-phase, the
+  // attacker's voice "use" line plays with their lunge animation.
   if (phases.length > 1) {
-    if (phaseIdx === 0)                     pushLog(`${displayName(attacker.creature)} prepares ${ability.name}!`, 'eff');
-    else if (phaseIdx === phases.length - 1) pushLog(`${displayName(attacker.creature)} unleashes ${ability.name}!`, 'eff');
-    else                                     pushLog(`${displayName(attacker.creature)} continues ${ability.name}.`, 'eff');
+    const evt = phaseIdx === 0 ? 'phase_prepare'
+              : phaseIdx === phases.length - 1 ? 'phase_unleash'
+              : 'phase_continue';
+    pushLog(eventText(evt, { actor: lower(displayName(attacker.creature)), name: lower(ability.name) }), {
+      cls: 'eff',
+      anim: () => playLunge(side),
+    });
+    await drainLog();
   } else {
-    pushLog(`${displayName(attacker.creature)} uses ${ability.name}.`);
+    pushLog(useLine(attacker, ability), { anim: () => playLunge(side) });
+    await drainLog();
   }
 
   // 1. Before-timed effects.
-  runTimedEffects('before', phase, baseCtx);
+  await runTimedEffects('before', phase, baseCtx);
+  await drainLog();
 
   // 2. Dazed check.
   if (attacker.statuses && attacker.statuses.dazed && Math.random() < 0.5) {
-    pushLog(`${displayName(attacker.creature)} is dazed and can't act!`, 'eff');
+    pushLog(eventText('dazed_skip', { actor: lower(displayName(attacker.creature)) }), { cls: 'eff' });
+    await drainLog();
     advanceQueue(attacker, ability, phaseIdx);
     return;
   }
 
   // 3. Damage effects (and eachHit-timed effects per landed hit).
   const dmgEffects = phase.filter(e => e.type === 'damage');
-  if (dmgEffects.length > 0) {
-    playLunge(side);
-    await sleep(180);
-  }
   for (const dmgEff of dmgEffects) {
     const targetKeys = effParam(dmgEff, 'targets') || ['enemy'];
     const hits = effParam(dmgEff, 'hits') || 1;
-    // For each target the damage effect names, run the hit loop.
     for (const tk of targetKeys) {
       const targetSide = (tk === 'self' || tk === 'bench') ? side : oside;
       const fighters = resolveTargetsForDamage(tk, side, attacker, defender);
@@ -308,30 +328,44 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
           if (target.hp <= 0 || attacker.hp <= 0) break;
           const result = calculateDamage(attacker, target, ability, dmgEff, phase);
           if (result.evaded) {
-            spawnFloat(targetSide, 'EVADE', 'heal');
-            sfx('select');
-            pushLog(`${displayName(target.creature)} evades the attack!`, 'eff');
+            pushLog(eventText('evade', { target: lower(displayName(target.creature)) }), {
+              cls: 'eff',
+              anim: () => { spawnFloat(targetSide, 'evade', 'heal'); sfx('select'); },
+            });
+            await drainLog();
             continue;
           }
           target.hp = Math.max(0, target.hp - result.dmg);
-          spawnFloat(targetSide, String(result.dmg), result.crit ? 'crit' : 'dmg');
-          if (h === 0) {
-            if (result.mult > 1) spawnCallout('SUPER EFFECTIVE');
-            else if (result.mult < 1) spawnCallout('NOT VERY...');
+          const hitText = hitLine(attacker, target, ability);
+          const cls = result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : '');
+          pushLog(hitText, {
+            text: hitText,
+            damage: result.dmg,
+            cls,
+            anim: () => {
+              spawnFloat(targetSide, String(result.dmg), result.crit ? 'crit' : 'dmg');
+              if (result.crit) sfx('crit'); else sfx('hit');
+              shakeStage();
+              playRecoil(targetSide);
+            },
+          });
+          await drainLog();
+          if (h === 0 && result.mult !== 1) {
+            const evt = result.mult > 1 ? 'super' : 'resist';
+            pushLog(eventText(evt), { cls: result.mult > 1 ? '' : '' });
+            await drainLog();
           }
-          if (result.crit) sfx('crit'); else sfx('hit');
-          shakeStage(); playRecoil(targetSide);
-          pushLog(`Deals ${result.dmg} damage${result.crit ? ' (CRIT)' : ''}.${result.mult > 1 ? ' Super effective!' : result.mult < 1 ? ' Not very effective.' : ''}`, result.crit ? 'crit' : (result.mult !== 1 ? 'eff' : ''));
           processPostHit(side, oside, attacker, target, ability, result);
-          runEachHitEffects(phase, { ...baseCtx, defender: target, lastDmg: result.dmg });
-          if (h < hits - 1) await sleep(220);
+          await runEachHitEffects(phase, { ...baseCtx, defender: target, lastDmg: result.dmg });
+          await drainLog();
         }
       }
     }
   }
 
   // 4. After-timed effects.
-  runTimedEffects('after', phase, baseCtx);
+  await runTimedEffects('after', phase, baseCtx);
+  await drainLog();
 
   // Advance phase queue.
   advanceQueue(attacker, ability, phaseIdx);
