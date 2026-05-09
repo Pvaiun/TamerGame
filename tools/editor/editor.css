@@ -133,8 +133,8 @@ select option { background: var(--surface); color: var(--text); font-weight: 400
 .chip:hover { border-color: var(--accent); }
 
 /* ── Portrait ── */
-.portrait-box { width: 100px; height: 84px; background: var(--surface); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
-.portrait-box svg { width: 100%; height: 100%; }
+.portrait-box { width: 84px; height: 84px; background: #0a0a0c; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); padding: 8px; color: #e0e0e2; }
+.portrait-box svg { width: 100%; height: 100%; display: block; }
 
 /* ── Kind badge ── */
 .kind-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: var(--surface2); color: var(--text-dim); text-transform: uppercase; }
