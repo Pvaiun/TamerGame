@@ -386,77 +386,93 @@ function actionMenuEl() {
     return wrap;
   }
 
+  // Split-pane: titles on the left, focused-ability detail on the right.
+  // Hovering / focusing a row updates the detail pane; the first row is
+  // the default focus.
+  const split = el('div', { class: 'action-split' });
   const list = el('div', { class: 'action-list' });
+  const detail = el('div', { class: 'action-detail' });
+  let initialKey = null;
+
   const abilities = state.pf.creature.abilities;
   abilities.forEach((k, i) => {
     const a = ABILITIES[k];
     if (!a) return;
-    list.appendChild(buildActionRow(k, a, i === 0));
+    const row = el('button', { class: 'action-row' + (i === 0 ? ' is-default' : '') });
+    if (state.acting) row.disabled = true;
+    row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
+    row.appendChild(el('span', { class: 'action-name' }, (a.name || '').toLowerCase()));
+    const matchup = matchupTagEl(a);
+    if (matchup) row.appendChild(matchup);
+
+    row.addEventListener('mouseenter', () => fillDetail(detail, k));
+    row.addEventListener('focus',      () => fillDetail(detail, k));
+    attachLongPress(row,
+      () => openAbilityTooltip(k),
+      state.acting ? null : () => playerAct(k));
+    list.appendChild(row);
+    if (i === 0) initialKey = k;
   });
 
-  // swap row — same shape as the ability rows so the menu reads as one
-  // list of choices. Effect line is a flavor-tinted prose explanation.
+  // swap row — sits in the same titles list, with its own detail content
   const canSwap = state.bf && state.bf.hp > 0 && !state.acting;
-  const swap = el('button', { class: 'action-row rich swap' + (canSwap ? '' : ' disabled') });
+  const swap = el('button', { class: 'action-row swap' + (canSwap ? '' : ' disabled') });
   swap.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-  const body = el('div', { class: 'action-row-body' });
-  body.appendChild(el('div', { class: 'action-row-name' },
+  swap.appendChild(el('span', { class: 'action-name' },
     state.bf ? `step back · ${displayName(state.bf.creature).toLowerCase()} forward` : 'step back'));
-  body.appendChild(el('div', { class: 'action-row-effect' },
-    state.bf ? 'pass the turn. the bench takes the next blow.' : 'no companion is ready.'));
-  swap.appendChild(body);
+  swap.appendChild(el('span', { class: 'action-tag swap' }, ' swap'));
   if (canSwap) swap.addEventListener('click', () => playerSwap());
   else swap.disabled = true;
+  swap.addEventListener('mouseenter', () => fillSwapDetail(detail));
+  swap.addEventListener('focus',      () => fillSwapDetail(detail));
   list.appendChild(swap);
 
-  wrap.appendChild(list);
+  if (initialKey) fillDetail(detail, initialKey);
+
+  split.appendChild(list);
+  split.appendChild(el('div', { class: 'action-split-rule' }));
+  split.appendChild(detail);
+  wrap.appendChild(split);
   return wrap;
 }
 
-// One ability row, rendered as a self-contained block with name + effect +
-// optional flavor. Effect carries the verbose mechanical text; flavor is
-// the atmospheric beat (only shown if non-empty in abilities.json).
-function buildActionRow(key, a, isDefault) {
-  const row = el('button', { class: 'action-row rich' + (isDefault ? ' is-default' : '') });
-  if (state.acting) row.disabled = true;
-
-  row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-
-  const body = el('div', { class: 'action-row-body' });
-
-  // Name line + right-side gameplay hint (element matchup mark)
-  const nameLine = el('div', { class: 'action-row-nameline' });
-  nameLine.appendChild(el('span', { class: 'action-row-name' }, (a.name || '').toLowerCase()));
-  const matchup = matchupTagEl(a);
-  if (matchup) nameLine.appendChild(matchup);
-  body.appendChild(nameLine);
-
-  // Effect (mechanical, verbose, voice-register)
+// Right-pane detail for the focused ability — verbose effect + optional
+// flavor + phase note. Both effect and flavor go through parseProse so
+// authored markup (~~strike~~, [[N]], **gold**) renders.
+function fillDetail(node, key) {
+  const a = ABILITIES[key];
+  if (!a) return;
+  node.innerHTML = '';
   if (a.effect) {
-    const eff = el('div', { class: 'action-row-effect' });
+    const eff = el('div', { class: 'detail-effect' });
     eff.innerHTML = parseProse(String(a.effect).toLowerCase());
-    body.appendChild(eff);
+    node.appendChild(eff);
   }
-
-  // Flavor (atmospheric — present only if authored)
   if (a.flavor) {
-    const fl = el('div', { class: 'action-row-flavor' });
+    const fl = el('div', { class: 'detail-flavor' });
     fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
-    body.appendChild(fl);
+    node.appendChild(fl);
   }
-
-  row.appendChild(body);
-
-  attachLongPress(row,
-    () => openAbilityTooltip(key),
-    state.acting ? null : () => playerAct(key));
-
-  return row;
+  if (a.phases && a.phases.length > 1) {
+    node.appendChild(el('div', { class: 'detail-phase' },
+      `${a.phases.length} phases · resolves over consecutive turns.`));
+  }
 }
 
-// Element-matchup mark (a small + or − floated to the right of the name)
-// for the player's current target. Returns null if the ability has no
-// element or there's no enemy to match against.
+function fillSwapDetail(node) {
+  node.innerHTML = '';
+  if (!state.bf) {
+    node.appendChild(el('div', { class: 'detail-effect' }, 'no companion is ready.'));
+    return;
+  }
+  const c = state.bf.creature;
+  const eff = el('div', { class: 'detail-effect' });
+  eff.innerHTML = parseProse(`pass the turn. ${displayName(c).toLowerCase()} steps forward to take the next blow.`);
+  node.appendChild(eff);
+}
+
+// Element-matchup mark — small + or − beside the name when the ability
+// has element advantage/disadvantage against the current enemy.
 function matchupTagEl(a) {
   if (!a.element || !state.ef || !state.ef.creature) return null;
   if (!abilityHasDamage(a)) return null;
@@ -470,33 +486,38 @@ function queuedActionRow() {
   const a = ABILITIES[q.key];
   const total = (a && a.phases ? a.phases.length : 1);
   const isLast = q.phaseIdx === total - 1;
+  const split = el('div', { class: 'action-split' });
   const list = el('div', { class: 'action-list' });
 
-  const row = el('button', { class: 'action-row rich queued is-default' });
+  const row = el('button', { class: 'action-row queued is-default' });
   if (state.acting) row.disabled = true;
   row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-  const body = el('div', { class: 'action-row-body' });
-  body.appendChild(el('div', { class: 'action-row-name' },
+  row.appendChild(el('span', { class: 'action-name' },
     isLast ? `release · ${(a ? a.name : '?').toLowerCase()}`
            : `continue · ${(a ? a.name : '?').toLowerCase()} (${q.phaseIdx + 1}/${total})`));
-  if (a && a.effect) {
-    const eff = el('div', { class: 'action-row-effect' });
-    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
-    body.appendChild(eff);
-  }
-  if (a && a.flavor) {
-    const fl = el('div', { class: 'action-row-flavor' });
-    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
-    body.appendChild(fl);
-  }
-  body.appendChild(el('div', { class: 'action-row-phase' },
-    `phase ${q.phaseIdx + 1} of ${total}.`));
-  row.appendChild(body);
   attachLongPress(row,
     () => openAbilityTooltip(q.key),
     state.acting ? null : () => playerAct(null));
   list.appendChild(row);
-  return list;
+
+  const detail = el('div', { class: 'action-detail' });
+  if (a && a.effect) {
+    const eff = el('div', { class: 'detail-effect' });
+    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+    detail.appendChild(eff);
+  }
+  if (a && a.flavor) {
+    const fl = el('div', { class: 'detail-flavor' });
+    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    detail.appendChild(fl);
+  }
+  detail.appendChild(el('div', { class: 'detail-phase' },
+    `phase ${q.phaseIdx + 1} of ${total}.`));
+
+  split.appendChild(list);
+  split.appendChild(el('div', { class: 'action-split-rule' }));
+  split.appendChild(detail);
+  return split;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -522,6 +543,7 @@ function composureWord(f) {
 }
 
 function abilityFlatEffects(a) { return (a && a.phases ? a.phases : []).flat(); }
+function abilityHasDamage(a) { return abilityFlatEffects(a).some(e => e.type === 'damage'); }
 function abilityDamageEffect(a) {
   const phase0 = (a.phases && a.phases[0]) || [];
   return phase0.find(e => e.type === 'damage');
