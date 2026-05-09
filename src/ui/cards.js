@@ -6,7 +6,9 @@
 // aesthetic — same typography, same spacing rules.
 
 import { el, attachLongPress } from './dom.js';
-import { PASSIVES, ABILITIES, VOICE } from '../data.js';
+import { PASSIVES, ABILITIES, VOICE, TYPE_LABELS } from '../data.js';
+
+const typeLabel = (t) => (TYPE_LABELS && TYPE_LABELS[t]) || t;
 import { displayName, growthRank, rankColor, xpToNext } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
 import { parseProse } from './textCorrupt.js';
@@ -42,7 +44,7 @@ export function creatureCardEl(c, options = {}) {
   const head = el('div', { class: 'doc-card-head' });
   head.appendChild(el('span', { class: 'doc-card-name' }, displayName(c).toLowerCase()));
   head.appendChild(el('span', { class: 'doc-card-meta' },
-    `${c.type} · l${c.level} · #${pad4(c.id)}`));
+    `${typeLabel(c.type)} · l${c.level} · #${pad4(c.id)}`));
   body.appendChild(head);
 
   const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
@@ -115,7 +117,7 @@ export function openInspectModal(c) {
     headInfo.appendChild(sub);
   }
   headInfo.appendChild(el('div', { class: 'doc-modal-meta' },
-    `${c.species.toLowerCase()} · ${c.type} · level ${c.level} · #${pad4(c.id)}`));
+    `${c.species.toLowerCase()} · ${typeLabel(c.type)} · level ${c.level} · #${pad4(c.id)}`));
   head.appendChild(headInfo);
   m.appendChild(head);
 

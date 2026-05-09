@@ -29,10 +29,10 @@ export async function drainLog() {
     if (entry.anim) { try { entry.anim(); } catch (e) { console.error(e); } }
     render();
     const charCount = (entry.text || '').length;
-    const typeMs  = Math.max(280, Math.round(charCount * 22));
+    const typeMs  = Math.max(380, Math.round(charCount * 28));
     const dwellMs = entry.pause != null
       ? entry.pause
-      : (entry.cls === 'crit' ? 700 : (entry.damage || entry.heal ? 480 : 360));
+      : (entry.cls === 'crit' ? 1200 : (entry.damage || entry.heal ? 900 : 700));
     await sleep(typeMs + dwellMs);
   }
   state.typingLogIdx = -1;

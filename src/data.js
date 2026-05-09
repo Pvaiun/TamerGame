@@ -4,6 +4,7 @@
 export let TYPES = [];
 export let TYPE_CHART = {};
 export let TYPE_PALETTE = {};
+export const TYPE_LABELS = {};
 export let PASSIVES = {};
 export let ABILITIES = {};
 export let STATUSES = {};
@@ -46,6 +47,7 @@ export async function loadData() {
   TYPES = types.TYPES;
   Object.assign(TYPE_CHART, types.TYPE_CHART);
   Object.assign(TYPE_PALETTE, types.TYPE_PALETTE);
+  Object.assign(TYPE_LABELS, types.TYPE_LABELS || {});
   Object.assign(PASSIVES, passives);
   Object.assign(ABILITIES, abilities);
   // Stamp each ability with its own key so combat code can look up voice

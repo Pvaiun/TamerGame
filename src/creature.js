@@ -1,5 +1,5 @@
 import { rand, pickN } from './rng.js';
-import { TYPE_PALETTE, GLOBALS } from './data.js';
+import { TYPE_PALETTE, TEMPLATES, GLOBALS } from './data.js';
 import { MAX_LEVEL, nextCreatureId } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
@@ -92,7 +92,9 @@ export function rankColor(r) {
 }
 
 export function displayName(c) {
-  return c.customName || `${c.species} L${c.level}`;
+  if (c.customName) return c.customName;
+  const t = TEMPLATES.find(x => x.species === c.species);
+  return (t && t.name) || c.species;
 }
 
 // In-battle wrapper around a creature. Holds mutable battle state (hp, statuses, mods)
