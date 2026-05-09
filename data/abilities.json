@@ -11,7 +11,7 @@
       ]
     ],
     "effect": "deal 50 neutral damage.",
-    "flavor": "i hit it. there is no other word for what i did."
+    "flavor": "i hit it. the word for what i did is shorter than the wound."
   },
   "heavy_blow": {
     "name": "press",
@@ -25,7 +25,7 @@
       ]
     ],
     "effect": "deal 80 neutral damage. priority -2.",
-    "flavor": "all of my weight, downward. it ~~breaks~~ holds."
+    "flavor": "all of my weight, downward. it ~~breaks~~ holds. !!i hear it!!."
   },
   "quick_jab": {
     "name": "jab",
@@ -72,7 +72,7 @@
       ]
     ],
     "effect": "deal 90 neutral damage. cost 15% of max hp.",
-    "flavor": "i give it everything. some of what i give is mine."
+    "flavor": "everything i have. !!some of it is mine!!."
   },
   "pyre": {
     "name": "kindle",
@@ -94,7 +94,7 @@
       ]
     ],
     "effect": "deal 38 fire damage. apply burn.",
-    "flavor": "i set the air around it. it catches."
+    "flavor": "the air around it catches first."
   },
   "ember": {
     "name": "spark",
@@ -249,7 +249,7 @@
       ]
     ],
     "effect": "deal 38 water damage. apply soaking.",
-    "flavor": "the water knows where to go."
+    "flavor": "the water knows where to go. !!it has been there before!!."
   },
   "drench": {
     "name": "drown",
@@ -366,7 +366,7 @@
       ]
     ],
     "effect": "self def +30%. priority +1.",
-    "flavor": "i am where i was. they cannot ~~find~~ see it."
+    "flavor": "the steam takes my shape. they ~~find~~ strike where i was."
   },
   "glacial_hold": {
     "name": "still them",
@@ -388,7 +388,7 @@
       ]
     ],
     "effect": "deal 25 water damage. apply soaking.",
-    "flavor": "the cold holds them in place."
+    "flavor": "the cold holds them in place. i feel it on my own ~~hands~~ shoulders."
   },
   "bramble": {
     "name": "bind",
@@ -721,7 +721,7 @@
       ]
     ],
     "effect": "deal 38 dark damage. ignore 50% of defense.",
-    "flavor": "i touch them past their guard."
+    "flavor": "i touch them past their guard. !!the touch lingers!!."
   },
   "umbral_slash": {
     "name": "open them dark",
@@ -870,7 +870,7 @@
       ]
     ],
     "effect": "deal 45 dark damage. apply cursed. apply soaking.",
-    "flavor": "i ~~kill~~ unmake the small parts."
+    "flavor": "i ~~kill~~ unmake the small parts. !!the small parts notice!!."
   },
   "mend": {
     "name": "keep",
@@ -944,7 +944,7 @@
       ]
     ],
     "effect": "swap with the bench. priority +3.",
-    "flavor": "i call the next of them. it does not ask why."
+    "flavor": "i call. another comes. !!it does not ask why!!."
   },
   "fury": {
     "name": "rage forward",
@@ -967,7 +967,7 @@
       ]
     ],
     "effect": "self atk +50%. cost 10% of max hp. priority +1.",
-    "flavor": "the room narrows. only what i strike is **real**."
+    "flavor": "the room narrows to what i can reach. only what i strike is **real**."
   },
   "focus": {
     "name": "settle",
@@ -1006,6 +1006,6 @@
       ]
     ],
     "effect": "self def +50%. priority +1.",
-    "flavor": "i steady. the room narrows around me."
+    "flavor": "i set. nothing reaches me yet."
   }
 }
