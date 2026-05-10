@@ -14,7 +14,7 @@ export function render() {
   root.innerHTML = '';
   if (state.screen !== 'battle') {
     root.appendChild(el('h1', {}, 'BLOODLINES'));
-    root.appendChild(el('div', { class: 'subtitle' }, 'ten descents · one file'));
+    root.appendChild(el('div', { class: 'subtitle' }, 'Ten descents · one file'));
   }
   if (state.screen !== 'start' && state.screen !== 'starter_pick' && state.screen !== 'bloodline_ready' && state.screen !== 'victory' && state.screen !== 'gameover' && state.screen !== 'battle') {
     root.appendChild(renderHeader());

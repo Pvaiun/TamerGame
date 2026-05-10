@@ -5,7 +5,7 @@ import { spawnFloat } from '../ui/animations.js';
 import { STATUSES } from '../data.js';
 import { drainLog, affTick, eventText } from './log.js';
 
-const lower = (s) => String(s || '').toLowerCase();
+const lower = (s) => String(s || '');
 
 // Apply or refresh a status. Params fall back to canonical defaults in statuseffects.json.
 export function applyStatus(f, type, opts) {
@@ -91,7 +91,7 @@ export async function tickStartOfTurn(f, side) {
     f.healing.turnsLeft--;
     if (f.healing.turnsLeft <= 0) f.healing = null;
     if (healed > 0) {
-      pushLog('the green steadies.', {
+      pushLog('The wound holds.', {
         heal: healed,
         anim: () => spawnFloat(side, `+${healed}`, 'heal'),
       });

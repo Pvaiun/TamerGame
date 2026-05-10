@@ -126,7 +126,6 @@
     font-size: var(--fs-label-2);
     letter-spacing: var(--ls-label);
     color: var(--ink-60);
-    text-transform: lowercase;
     padding-bottom: var(--space-2);
     margin-bottom: var(--space-3);
     border-bottom: 1px solid var(--rule-faint);
@@ -790,7 +789,6 @@
     padding: var(--space-1) var(--space-2);
     cursor: pointer;
     border-radius: 0;
-    text-transform: lowercase;
     display: inline-flex; align-items: baseline; gap: 2px;
     transition: color var(--dur-quick) var(--ease-out);
   }
@@ -844,7 +842,6 @@
     transition: color var(--dur-quick) var(--ease-out),
                 border-color var(--dur-quick) var(--ease-out);
     display: inline-flex; align-items: baseline;
-    text-transform: lowercase;
   }
   .pick-btn:hover:not(:disabled) {
     color: var(--ink-100); border-color: var(--rule-soft); background: transparent;
@@ -1000,7 +997,6 @@
     font-weight: 500;
     text-align: left;
     margin: 0 0 2px 0;
-    text-transform: lowercase;
   }
   h1::before { content: '// '; color: var(--ink-60); }
   .subtitle {
@@ -1010,7 +1006,6 @@
     color: var(--ink-60);
     text-align: left;
     margin: 0 0 var(--space-4) 0;
-    text-transform: lowercase;
   }
 
   /* override the legacy default button styling on doc-pages so old

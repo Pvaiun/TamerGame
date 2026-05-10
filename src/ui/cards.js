@@ -42,7 +42,7 @@ export function creatureCardEl(c, options = {}) {
   const body = el('div', { class: 'doc-card-body' });
 
   const head = el('div', { class: 'doc-card-head' });
-  head.appendChild(el('span', { class: 'doc-card-name', html: parseProse(displayName(c).toLowerCase()) }));
+  head.appendChild(el('span', { class: 'doc-card-name', html: parseProse(displayName(c)) }));
   head.appendChild(el('span', { class: 'doc-card-meta' },
     `${typeLabel(c.type)} · l${c.level} · #${pad4(c.id)}`));
   body.appendChild(head);
@@ -109,7 +109,7 @@ export function openInspectModal(c) {
   port.innerHTML = renderGlyph(c.species);
   head.appendChild(port);
   const headInfo = el('div', { class: 'doc-modal-headinfo' });
-  headInfo.appendChild(el('div', { class: 'doc-modal-name', html: parseProse(displayName(c).toLowerCase()) }));
+  headInfo.appendChild(el('div', { class: 'doc-modal-name', html: parseProse(displayName(c)) }));
   const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
   if (subtitle) {
     const sub = el('div', { class: 'doc-modal-subtitle' });
@@ -124,7 +124,7 @@ export function openInspectModal(c) {
   // field notes (voice prose, with wave-fill for the protagonist)
   const noteLines = getDossierNotes(c);
   if (noteLines && noteLines.length) {
-    m.appendChild(el('div', { class: 'sec-label-doc' }, '─ field notes ─'));
+    m.appendChild(el('div', { class: 'sec-label-doc' }, '─ Patient file ─'));
     const prose = el('div', { class: 'doc-modal-notes' });
     for (const line of noteLines) {
       const lineEl = el('div', { class: 'fn-line' });
@@ -180,7 +180,7 @@ export function openInspectModal(c) {
     const a = ABILITIES[k];
     const row = el('div', { class: 'doc-modal-row ability-doc-row' });
     const top = el('div', { class: 'ability-doc-top' });
-    top.appendChild(el('span', { class: 'ability-name-doc' }, (a ? a.name : k).toLowerCase()));
+    top.appendChild(el('span', { class: 'ability-name-doc' }, a ? a.name : k));
     if (a) {
       const tail = el('span', { class: 'ability-doc-tail' });
       const flat = (a.phases || []).flat();
@@ -198,12 +198,12 @@ export function openInspectModal(c) {
     row.appendChild(top);
     if (a && a.effect) {
       const eff = el('div', { class: 'ability-doc-desc' });
-      eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+      eff.innerHTML = parseProse(String(a.effect));
       row.appendChild(eff);
     }
     if (a && a.flavor) {
       const fl = el('div', { class: 'ability-doc-flavor' });
-      fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+      fl.innerHTML = parseProse(String(a.flavor));
       row.appendChild(fl);
     }
     m.appendChild(row);
@@ -225,7 +225,7 @@ export function openAbilityTooltip(abilityKey) {
   const m = el('div', { class: 'modal doc-modal narrow' });
 
   m.appendChild(el('div', { class: 'doc-modal-tag' }, '// action · catalog entry'));
-  m.appendChild(el('div', { class: 'doc-modal-name' }, a.name.toLowerCase()));
+  m.appendChild(el('div', { class: 'doc-modal-name' }, a.name));
 
   const flat = (a.phases || []).flat();
   const meta = el('div', { class: 'doc-modal-meta-grid' });
@@ -253,12 +253,12 @@ export function openAbilityTooltip(abilityKey) {
   m.appendChild(meta);
   if (a.effect) {
     const desc = el('div', { class: 'doc-modal-desc' });
-    desc.innerHTML = parseProse(String(a.effect).toLowerCase());
+    desc.innerHTML = parseProse(String(a.effect));
     m.appendChild(desc);
   }
   if (a.flavor) {
     const fl = el('div', { class: 'doc-modal-flavor' });
-    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    fl.innerHTML = parseProse(String(a.flavor));
     m.appendChild(fl);
   }
 

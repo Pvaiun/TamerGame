@@ -27,7 +27,7 @@
       "quick_jab",
       "vanguard_call"
     ],
-    "name": "the bedside"
+    "name": "[Bedside]"
   },
   {
     "species": "Ashmaw",
@@ -55,7 +55,7 @@
       "pyroclasm",
       "fury"
     ],
-    "name": "still hungry"
+    "name": "[Still hungry]"
   },
   {
     "species": "Cinderling",
@@ -83,7 +83,7 @@
       "shadow_step",
       "double_strike"
     ],
-    "name": "the only one home"
+    "name": "[Only one home]"
   },
   {
     "species": "Pyrelord",
@@ -111,7 +111,7 @@
       "fury",
       "strike"
     ],
-    "name": "the father, present"
+    "name": "[Father, present]"
   },
   {
     "species": "Magmaw",
@@ -138,7 +138,7 @@
       "smoldering",
       "ember"
     ],
-    "name": "the door he opened"
+    "name": "[Door he opened]"
   },
   {
     "species": "Soothlick",
@@ -166,7 +166,7 @@
       "tactical_retreat",
       "ember"
     ],
-    "name": "she still tucks them in"
+    "name": "[Tucks them in at night]"
   },
   {
     "species": "Charnel",
@@ -195,7 +195,7 @@
       "double_strike",
       "soulrend"
     ],
-    "name": "she walked here from [[6]]"
+    "name": "[Walked here from [[6]]]"
   },
   {
     "species": "Tidewhelp",
@@ -224,7 +224,7 @@
       "tactical_retreat",
       "vapor_cloak"
     ],
-    "name": "the brother who came back wrong"
+    "name": "[Brother came back wrong]"
   },
   {
     "species": "Rivergeist",
@@ -251,7 +251,7 @@
       "aegis_swap",
       "glacial_hold"
     ],
-    "name": "she keeps leaving"
+    "name": "[Keeps leaving]"
   },
   {
     "species": "Brineback",
@@ -279,7 +279,7 @@
       "heavy_blow",
       "drench"
     ],
-    "name": "what the husband kept"
+    "name": "[Husband kept her]"
   },
   {
     "species": "Mireling",
@@ -307,7 +307,7 @@
       "aegis_swap",
       "glacial_hold"
     ],
-    "name": "she kept asking about the pond"
+    "name": "[Asks about the pond]"
   },
   {
     "species": "Coralhusk",
@@ -335,7 +335,7 @@
       "glacial_hold",
       "beacon"
     ],
-    "name": "the shell that answers"
+    "name": "[Shell that answers]"
   },
   {
     "species": "Frostfin",
@@ -363,7 +363,7 @@
       "tidal_pull",
       "double_strike"
     ],
-    "name": "she froze waiting"
+    "name": "[Froze waiting]"
   },
   {
     "species": "Deepmaw",
@@ -391,7 +391,7 @@
       "brine_lance",
       "soulrend"
     ],
-    "name": "what the basement is for"
+    "name": "[What the basement is for]"
   },
   {
     "species": "Loamback",
@@ -420,7 +420,7 @@
       "verdant_slash",
       "spore_cloud"
     ],
-    "name": "on the waiting list"
+    "name": "[On the waiting list]"
   },
   {
     "species": "Sproutkin",
@@ -449,7 +449,7 @@
       "photonic_lash",
       "tactical_retreat"
     ],
-    "name": "she keeps opening it"
+    "name": "[Keeps opening it]"
   },
   {
     "species": "Mosshorn",
@@ -477,7 +477,7 @@
       "beacon",
       "spore_cloud"
     ],
-    "name": "moved overnight"
+    "name": "[Moved overnight]"
   },
   {
     "species": "Vinewyrm",
@@ -506,7 +506,7 @@
       "double_strike",
       "pivot_strike"
     ],
-    "name": "she crawled the length of the hall"
+    "name": "[Crawled the length of the hall]"
   },
   {
     "species": "Bloomback",
@@ -534,7 +534,7 @@
       "healing_wind",
       "heavy_blow"
     ],
-    "name": "the garden in him"
+    "name": "[Garden in him]"
   },
   {
     "species": "Thornling",
@@ -561,7 +561,7 @@
       "pivot_strike",
       "double_strike"
     ],
-    "name": "do not reach in"
+    "name": "[Do not reach in]"
   },
   {
     "species": "Hollowoak",
@@ -589,7 +589,7 @@
       "spore_cloud",
       "beacon"
     ],
-    "name": "can't remember names"
+    "name": "[Cannot remember names]"
   },
   {
     "species": "Lumenpup",
@@ -619,7 +619,7 @@
       "dawn_strike",
       "vanguard_call"
     ],
-    "name": "patient 0413"
+    "name": "[Patient 0413]"
   },
   {
     "species": "Aurabeast",
@@ -648,7 +648,7 @@
       "dawn_strike",
       "reckless"
     ],
-    "name": "the one who took the notes"
+    "name": "[Took the notes]"
   },
   {
     "species": "Dawnstag",
@@ -676,7 +676,7 @@
       "double_strike",
       "pivot_strike"
     ],
-    "name": "the firstborn"
+    "name": "[Firstborn]"
   },
   {
     "species": "Halowyrm",
@@ -704,7 +704,7 @@
       "beacon",
       "aegis_swap"
     ],
-    "name": "she shines through her gown"
+    "name": "[Shines through her gown]"
   },
   {
     "species": "Glimmerfox",
@@ -733,7 +733,7 @@
       "shadow_step",
       "glowing_mark"
     ],
-    "name": "the dog that didn't"
+    "name": "[Dog that did not]"
   },
   {
     "species": "Shadowmaw",
@@ -762,7 +762,7 @@
       "reckless",
       "eclipse_slash"
     ],
-    "name": "the one who heard us"
+    "name": "[Heard us]"
   },
   {
     "species": "Voidling",
@@ -791,7 +791,7 @@
       "witherer",
       "double_strike"
     ],
-    "name": "the thing in the closet"
+    "name": "[Thing in the closet]"
   },
   {
     "species": "Nightcreep",
@@ -820,7 +820,7 @@
       "phoenix_dive",
       "tactical_retreat"
     ],
-    "name": "she arrived after [[6]]"
+    "name": "[Arrived after [[6]]]"
   },
   {
     "species": "Wraithfin",
@@ -849,7 +849,7 @@
       "eclipse_slash",
       "cursed_bond"
     ],
-    "name": "the surviving twin"
+    "name": "[Surviving twin]"
   },
   {
     "species": "Umbragale",
@@ -877,6 +877,6 @@
       "hex",
       "cursed_bond"
     ],
-    "name": "the house that visits her"
+    "name": "[House that visits her]"
   }
 ]
