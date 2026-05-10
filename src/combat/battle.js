@@ -1,4 +1,4 @@
-import { ABILITIES } from '../data.js';
+import { ABILITIES, STATUSES } from '../data.js';
 import { sleep } from '../rng.js';
 import { state, pushLog, TOTAL_WAVES } from '../state.js';
 import { displayName, gainXp, freshFighter } from '../creature.js';
@@ -313,7 +313,7 @@ export async function resolveAction(side, attacker, defender, ability, phaseIdx 
   await drainLog();
 
   // 2. Dazed check.
-  if (attacker.statuses && attacker.statuses.dazed && Math.random() < 0.5) {
+  if (attacker.statuses && attacker.statuses.dazed && Math.random() < (STATUSES.dazed?.skipChance ?? 0.5)) {
     pushLog(eventText('dazed_skip', { actor: lower(displayName(attacker.creature)) }), { cls: 'eff' });
     await drainLog();
     advanceQueue(attacker, ability, phaseIdx);

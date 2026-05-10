@@ -17,10 +17,10 @@
   },
   "soaking": {
     "name": "drained",
-    "desc": "Amplifies water-type damage taken.",
+    "desc": "Lowers attack by 50% for 4 turns.",
     "tickKind": "none",
     "turns": 4,
-    "stacks": 1,
+    "atkMult": 0.5,
     "stacking": "refresh"
   },
   "cursed": {
@@ -33,9 +33,10 @@
   },
   "dazed": {
     "name": "sedated",
-    "desc": "Removes priority from all actions.",
+    "desc": "50% chance each turn that the action is skipped after being chosen.",
     "tickKind": "none",
     "turns": 2,
+    "skipChance": 0.5,
     "stacking": "refresh"
   }
 }

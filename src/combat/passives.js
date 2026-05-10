@@ -329,6 +329,9 @@ function fire(f, triggerName, ctx) {
 export function applyStatMult(f, stat, m) {
   const ctx = { self: f, queryStat: stat, outMult: m };
   fire(f, 'stat_query', ctx);
+  if (stat === 'atk' && f.statuses && f.statuses.soaking) {
+    ctx.outMult *= f.statuses.soaking.atkMult ?? 0.5;
+  }
   return ctx.outMult;
 }
 
