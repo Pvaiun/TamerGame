@@ -1,6 +1,6 @@
 {
   "brutal": {
-    "name": "unmeasured",
+    "name": "Unmeasured",
     "desc": "+50% attack.",
     "triggers": [
       {
@@ -17,7 +17,7 @@
     ]
   },
   "swift": {
-    "name": "already moved",
+    "name": "Already moved",
     "desc": "+50% speed.",
     "triggers": [
       {
@@ -34,7 +34,7 @@
     ]
   },
   "thick_hide": {
-    "name": "brought weight",
+    "name": "Brought weight",
     "desc": "+50% hp at battle start.",
     "triggers": [
       {
@@ -47,7 +47,7 @@
     ]
   },
   "tide_guard": {
-    "name": "salt knows her",
+    "name": "Tide-known",
     "desc": "+50% defense.",
     "triggers": [
       {
@@ -64,7 +64,7 @@
     ]
   },
   "iron_grip": {
-    "name": "kept grip",
+    "name": "Kept grip",
     "desc": "+30% attack and +30% defense.",
     "triggers": [
       {
@@ -92,7 +92,7 @@
     ]
   },
   "glass_cannon": {
-    "name": "all forward",
+    "name": "All forward",
     "desc": "+75% attack, -25% defense.",
     "triggers": [
       {
@@ -120,7 +120,7 @@
     ]
   },
   "stone_skin": {
-    "name": "unregistered",
+    "name": "Unregistered",
     "desc": "Take 3 less damage from every hit (min 1).",
     "triggers": [
       {
@@ -133,7 +133,7 @@
     ]
   },
   "bulwark": {
-    "name": "unmoved",
+    "name": "Unmoved",
     "desc": "Take 30% less damage from non-element attacks.",
     "triggers": [
       {
@@ -146,7 +146,7 @@
     ]
   },
   "giant_form": {
-    "name": "larger today",
+    "name": "Larger today",
     "desc": "+20% attack, -20% speed.",
     "triggers": [
       {
@@ -174,7 +174,7 @@
     ]
   },
   "inferno_heart": {
-    "name": "kept hot inside",
+    "name": "Kept hot inside",
     "desc": "+50% damage with fire abilities.",
     "triggers": [
       {
@@ -190,7 +190,7 @@
     ]
   },
   "tide_blessed": {
-    "name": "salt-kept",
+    "name": "Salt-kept",
     "desc": "+50% damage with water abilities.",
     "triggers": [
       {
@@ -206,7 +206,7 @@
     ]
   },
   "verdant_soul": {
-    "name": "green-fed",
+    "name": "Green-fed",
     "desc": "+50% damage with grass abilities.",
     "triggers": [
       {
@@ -222,7 +222,7 @@
     ]
   },
   "sunforged": {
-    "name": "made bright",
+    "name": "Made bright",
     "desc": "+50% damage with light abilities.",
     "triggers": [
       {
@@ -238,7 +238,7 @@
     ]
   },
   "shadowforged": {
-    "name": "made unlit",
+    "name": "Made unlit",
     "desc": "+50% damage with dark abilities.",
     "triggers": [
       {
@@ -254,7 +254,7 @@
     ]
   },
   "predators_edge": {
-    "name": "soft-side knower",
+    "name": "Soft-side knower",
     "desc": "+50% damage when target is below 50% hp.",
     "triggers": [
       {
@@ -270,7 +270,7 @@
     ]
   },
   "tempo": {
-    "name": "unread meter",
+    "name": "Unread meter",
     "desc": "+25% damage while faster than opponent.",
     "triggers": [
       {
@@ -286,7 +286,7 @@
     ]
   },
   "lightbearer": {
-    "name": "ahead of glow",
+    "name": "Ahead of glow",
     "desc": "+25% all stats while above 80% hp.",
     "triggers": [
       {
@@ -302,7 +302,7 @@
     ]
   },
   "cornered": {
-    "name": "worse trapped",
+    "name": "Worse trapped",
     "desc": "+50% damage while below 30% hp.",
     "triggers": [
       {
@@ -318,7 +318,7 @@
     ]
   },
   "pristine": {
-    "name": "unmarked",
+    "name": "Unmarked",
     "desc": "First attack of battle deals double damage.",
     "triggers": [
       {
@@ -332,7 +332,7 @@
     ]
   },
   "photosynthesis": {
-    "name": "light-fed",
+    "name": "Light-fed",
     "desc": "Heal 6% max hp at start of every turn.",
     "triggers": [
       {
@@ -345,7 +345,7 @@
     ]
   },
   "soul_drain": {
-    "name": "takes a piece",
+    "name": "Takes a piece",
     "desc": "Heal 25% of damage you deal.",
     "triggers": [
       {
@@ -358,7 +358,7 @@
     ]
   },
   "blooming": {
-    "name": "flowers from wound",
+    "name": "Flowers from wound",
     "desc": "+50% effectiveness from any healing.",
     "triggers": [
       {
@@ -371,7 +371,7 @@
     ]
   },
   "vampire_touch": {
-    "name": "small drinker",
+    "name": "Small drinker",
     "desc": "Heals are +50% stronger and can overheal to 125% max hp.",
     "triggers": [
       {
@@ -391,7 +391,7 @@
     ]
   },
   "aquaveil": {
-    "name": "water-hidden",
+    "name": "Water-hidden",
     "desc": "Once per battle, when you would drop below 50% hp, heal to 50%.",
     "triggers": [
       {
@@ -408,7 +408,7 @@
     ]
   },
   "second_wind": {
-    "name": "stands once more",
+    "name": "Stands once more",
     "desc": "When swapping in, heal 15% max hp.",
     "triggers": [
       {
@@ -421,8 +421,8 @@
     ]
   },
   "warm_blood": {
-    "name": "warm-blooded",
-    "desc": "Immune to fevering.",
+    "name": "Warm-blooded",
+    "desc": "Immune to Fevering.",
     "triggers": [
       {
         "on": "status_block",
@@ -436,7 +436,7 @@
     ]
   },
   "riposte": {
-    "name": "strikes back",
+    "name": "Strikes back",
     "desc": "When hit, deal 25% of damage taken back.",
     "triggers": [
       {
@@ -449,8 +449,8 @@
     ]
   },
   "iron_will": {
-    "name": "unbending",
-    "desc": "Immune to drained, sedated, and broken.",
+    "name": "Unbending",
+    "desc": "Immune to Drained, Sedated, and Broken.",
     "triggers": [
       {
         "on": "status_block",
@@ -466,7 +466,7 @@
     ]
   },
   "hex_eater": {
-    "name": "swallows what is laid",
+    "name": "Swallows what is laid",
     "desc": "Cleanse one debuff at start of each turn.",
     "triggers": [
       {
@@ -479,7 +479,7 @@
     ]
   },
   "featherweight": {
-    "name": "weighs less than",
+    "name": "Weighs less than",
     "desc": "Win all speed and priority ties.",
     "triggers": [
       {
@@ -491,7 +491,7 @@
     ]
   },
   "adrenal_surge": {
-    "name": "opens at the wound",
+    "name": "Opens at the wound",
     "desc": "When taking a hit for 30%+ max hp, gain +30% attack for 3 turns.",
     "triggers": [
       {
@@ -510,7 +510,7 @@
     ]
   },
   "spite": {
-    "name": "dies louder",
+    "name": "Dies louder",
     "desc": "When you take a critical hit, gain +30% attack for 3 turns.",
     "triggers": [
       {
@@ -529,7 +529,7 @@
     ]
   },
   "reflective_aura": {
-    "name": "returns what is given",
+    "name": "Returns what is given",
     "desc": "Reflect 15% of all damage taken to the attacker.",
     "triggers": [
       {
@@ -542,7 +542,7 @@
     ]
   },
   "counterstance": {
-    "name": "waits for the strike",
+    "name": "Waits for the strike",
     "desc": "When bracing, reflect 50% of damage taken.",
     "triggers": [
       {
@@ -558,8 +558,8 @@
     ]
   },
   "pyromancer": {
-    "name": "fire listens",
-    "desc": "+50% damage to fevering targets.",
+    "name": "Fire listens",
+    "desc": "+50% damage to Fevering targets.",
     "triggers": [
       {
         "on": "power_query",
@@ -574,7 +574,7 @@
     ]
   },
   "frostbite": {
-    "name": "cold spreads",
+    "name": "Cold spreads",
     "desc": "On hit: target -10% speed (stacking).",
     "triggers": [
       {
@@ -589,8 +589,8 @@
     ]
   },
   "poisonous": {
-    "name": "leaves residue",
-    "desc": "On hit: 30% chance to apply 1 stack of drained.",
+    "name": "Leaves residue",
+    "desc": "On hit: 30% chance to apply 1 stack of Drained.",
     "triggers": [
       {
         "on": "hit_dealt",
@@ -604,8 +604,8 @@
     ]
   },
   "curse_weaver": {
-    "name": "speaks small wrongnesses",
-    "desc": "On hit: also apply 1 turn of sedated.",
+    "name": "Speaks small wrongnesses",
+    "desc": "On hit: also apply 1 turn of Sedated.",
     "triggers": [
       {
         "on": "hit_dealt",
@@ -618,7 +618,7 @@
     ]
   },
   "status_lord": {
-    "name": "deepens what she lays",
+    "name": "Deepens what they lay",
     "desc": "+30% damage for each unique status on the opponent.",
     "triggers": [
       {
@@ -631,7 +631,7 @@
     ]
   },
   "vanguard": {
-    "name": "first into the room",
+    "name": "First into the room",
     "desc": "On swap-in: gain +50% attack.",
     "triggers": [
       {
@@ -646,7 +646,7 @@
     ]
   },
   "sentinel": {
-    "name": "does not leave",
+    "name": "Does not leave",
     "desc": "While on bench, heal 5% max hp per turn.",
     "triggers": [
       {
@@ -659,7 +659,7 @@
     ]
   },
   "tag_out": {
-    "name": "takes the marks with her",
+    "name": "Takes the marks",
     "desc": "When this creature swaps out, the incoming ally is cleansed.",
     "triggers": [
       {
@@ -671,7 +671,7 @@
     ]
   },
   "rearguard": {
-    "name": "covers what cannot",
+    "name": "Covers what cannot",
     "desc": "On bench, gain +25% all stats.",
     "triggers": [
       {
@@ -687,7 +687,7 @@
     ]
   },
   "pivot_master": {
-    "name": "turns without warning",
+    "name": "Turns without warning",
     "desc": "Broken-on-swap damage is halved when this creature swaps out.",
     "triggers": [
       {
@@ -700,7 +700,7 @@
     ]
   },
   "spotter": {
-    "name": "sees the small ones",
+    "name": "Sees the small ones",
     "desc": "Bench ally takes 30% less damage from start-of-turn ticks.",
     "triggers": [
       {
@@ -716,7 +716,7 @@
     ]
   },
   "twin_soul": {
-    "name": "answers with two voices",
+    "name": "Answers with two voices",
     "desc": "Buffs you apply also apply 50% strength to the bench ally.",
     "triggers": [
       {
@@ -729,7 +729,7 @@
     ]
   },
   "dark_pact": {
-    "name": "spends what cannot be paid",
+    "name": "Spends what cannot be paid",
     "desc": "Lose 25% max hp at battle start. +50% attack for the rest of the battle.",
     "triggers": [
       {
@@ -753,7 +753,7 @@
     ]
   },
   "mortal_coil": {
-    "name": "knots around the strike",
+    "name": "Knots around the strike",
     "desc": "Below 25% hp: +50% attack and +50% speed.",
     "triggers": [
       {
@@ -783,7 +783,7 @@
     ]
   },
   "slow_burn": {
-    "name": "warms longer",
+    "name": "Warms longer",
     "desc": "Each turn you survive, +10% attack (stacking, max 5).",
     "triggers": [
       {
@@ -806,7 +806,7 @@
     ]
   },
   "berserker": {
-    "name": "worse the lower",
+    "name": "Worse the lower",
     "desc": "Cannot be healed by any source. +40% attack at all times.",
     "triggers": [
       {
@@ -829,7 +829,7 @@
     ]
   },
   "doubling_down": {
-    "name": "repeats what worked",
+    "name": "Repeats what worked",
     "desc": "Critical hits deal 3× instead of 1.6×, only while above 50% hp.",
     "triggers": [
       {
@@ -845,7 +845,7 @@
     ]
   },
   "misty_form": {
-    "name": "not where i look",
+    "name": "Not where they look",
     "desc": "25% chance to fully evade any attack.",
     "triggers": [
       {
@@ -858,7 +858,7 @@
     ]
   },
   "eldritch_sight": {
-    "name": "sees what should not",
+    "name": "Sees what should not",
     "desc": "Your attacks ignore the type chart — always 1× damage.",
     "triggers": [
       {
@@ -870,7 +870,7 @@
     ]
   },
   "reckless_heart": {
-    "name": "does not save herself",
+    "name": "Does not save themselves",
     "desc": "Self-damage from your own moves is reduced by 50%.",
     "triggers": [
       {
@@ -883,7 +883,7 @@
     ]
   },
   "zealot": {
-    "name": "believes too hard",
+    "name": "Believes too hard",
     "desc": "After using a buff, your next attack deals +50% damage.",
     "triggers": [
       {
@@ -896,7 +896,7 @@
     ]
   },
   "patient_hunter": {
-    "name": "waits longer than needed",
+    "name": "Waits longer than needed",
     "desc": "Each turn without attacking, your next attack hits 50% harder (max 3 stacks).",
     "triggers": [
       {
@@ -916,7 +916,7 @@
     ]
   },
   "scavenger": {
-    "name": "takes from the finished",
+    "name": "Takes from the finished",
     "desc": "When opponent uses a buff, you also gain a copy.",
     "triggers": [
       {
@@ -929,7 +929,7 @@
     ]
   },
   "echo_form": {
-    "name": "repeats the last sound",
+    "name": "Repeats the last sound",
     "desc": "Apply +25% attack and +25% defense to self every turn.",
     "triggers": [
       {
@@ -945,7 +945,7 @@
     ]
   },
   "dreadful": {
-    "name": "do not look at her",
+    "name": "Do not look at them",
     "desc": "On battle start: enemy active loses 15% max hp.",
     "triggers": [
       {
@@ -958,8 +958,8 @@
     ]
   },
   "prepared": {
-    "name": "knows what is coming",
-    "desc": "Enter battle with +1 stack of drained on the enemy active.",
+    "name": "Knows what is coming",
+    "desc": "Enter battle with +1 stack of Drained on the enemy active.",
     "triggers": [
       {
         "on": "battle_start",
@@ -972,8 +972,8 @@
     ]
   },
   "serene": {
-    "name": "shows nothing",
-    "desc": "Immune to sedated.",
+    "name": "Shows nothing",
+    "desc": "Immune to Sedated.",
     "triggers": [
       {
         "on": "status_block",
@@ -987,7 +987,7 @@
     ]
   },
   "lucky": {
-    "name": "the dice slip",
+    "name": "The dice slip",
     "desc": "Crit chance doubled (10% → 20%).",
     "triggers": [
       {
@@ -1000,7 +1000,7 @@
     ]
   },
   "savage": {
-    "name": "does not stop",
+    "name": "Does not stop",
     "desc": "Critical hits deal +50% extra damage.",
     "triggers": [
       {

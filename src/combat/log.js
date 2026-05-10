@@ -39,7 +39,7 @@ export async function drainLog() {
 }
 
 // ── voice composition ───────────────────────────────────────────────
-function name(f) { return displayName(f.creature).toLowerCase(); }
+function name(f) { return displayName(f.creature); }
 
 function fillTemplate(tmpl, vars) {
   return String(tmpl || '').replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? String(vars[k]) : `{${k}}`));
@@ -65,13 +65,13 @@ function effectVoice(kind) {
 // Compose the actor's "use" line. attacker is the fighter; ability is the data object.
 export function useLine(attacker, ability) {
   const v = abilityVoice(ability);
-  return fillTemplate(v.use, { actor: name(attacker), name: (ability.name || '').toLowerCase() });
+  return fillTemplate(v.use, { actor: name(attacker), name: ability.name || '' });
 }
 
 // Compose the defender's "hit" line.
 export function hitLine(attacker, defender, ability) {
   const v = abilityVoice(ability);
-  return fillTemplate(v.hit, { actor: name(attacker), target: name(defender), name: (ability.name || '').toLowerCase() });
+  return fillTemplate(v.hit, { actor: name(attacker), target: name(defender), name: ability.name || '' });
 }
 
 // Optional flavor beat — present only when the ability has authored flavor
@@ -83,8 +83,8 @@ export function flavorLine(attacker, ability) {
   const f = ability && ability.flavor;
   // Per-ability data field on the ability itself takes precedence over voice
   // overrides because flavor lives next to the gameplay data in abilities.json.
-  if (f) return fillTemplate(f, { actor: name(attacker), name: (ability.name || '').toLowerCase() });
-  if (v.flavor) return fillTemplate(v.flavor, { actor: name(attacker), name: (ability.name || '').toLowerCase() });
+  if (f) return fillTemplate(f, { actor: name(attacker), name: ability.name || '' });
+  if (v.flavor) return fillTemplate(v.flavor, { actor: name(attacker), name: ability.name || '' });
   return '';
 }
 

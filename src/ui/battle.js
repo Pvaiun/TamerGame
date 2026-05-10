@@ -62,7 +62,7 @@ function dossierColEl(active, bench, side) {
   // 1. name (large) — runs through parseProse so authored ~~strike~~ /
   // [[N]] / **gold** / !!red!! markup in the narrative name renders.
   const c = active.creature;
-  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c).toLowerCase()) }));
+  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c)) }));
 
   // 2. subtitle (one line of voice prose)
   col.appendChild(subtitleEl(c));
@@ -95,7 +95,7 @@ function benchInlineEl(f, side) {
   const c = f.creature;
   const g = el('span', { class: 'bench-glyph-inline' });
   g.innerHTML = renderGlyph(c.species);
-  const name = displayName(c).toLowerCase();
+  const name = displayName(c);
   const composure = composureWord(f);
   const hpPct = Math.max(0, f.hp / c.maxHp);
 
@@ -137,7 +137,7 @@ function subtitleEl(c) {
 
 function fieldNotesEl(c, side) {
   const wrap = el('div', { class: 'field-notes-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('field notes')));
+  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('Patient file')));
 
   const body = el('div', { class: 'field-notes-body ' + side });
   const glyph = el('div', { class: 'glyph-inline' });
@@ -235,7 +235,7 @@ function statBlockEl(f, side) {
 
 function afflictionsEl(f) {
   const wrap = el('div', { class: 'afflictions-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('afflictions')));
+  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('Afflictions')));
 
   const items = activeAfflictions(f);
   const inner = el('div', { class: 'afflictions-list' });
@@ -269,7 +269,7 @@ function activeAfflictions(f) {
 
 function passivesEl(c) {
   const wrap = el('div', { class: 'passives-block' });
-  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('passives')));
+  wrap.appendChild(el('div', { class: 'sec-label-doc' }, sectionLabel('Passives')));
 
   const list = (c.passives && c.passives.length) ? c.passives : [];
   if (list.length === 0) {
@@ -326,7 +326,7 @@ function narrativeEl() {
   const isTyping = (state.log.length - 1) === typingIdx;
   const line = el('div', { class: 'narr-line primary ' + (entry.cls || '') });
   const text = el('span', { class: 'narr-text' });
-  const html = parseProse(String(entry.text || '').toLowerCase());
+  const html = parseProse(String(entry.text || ''));
   if (isTyping) text.innerHTML = typewriterizeHTML(html, 22);
   else          text.innerHTML = html;
   line.appendChild(text);
@@ -388,7 +388,7 @@ function actionMenuEl() {
     const row = el('button', { class: 'action-row' + (i === 0 ? ' is-default' : '') });
     if (state.acting) row.disabled = true;
     row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
-    row.appendChild(el('span', { class: 'action-name' }, (a.name || '').toLowerCase()));
+    row.appendChild(el('span', { class: 'action-name' }, a.name || ''));
     const matchup = matchupTagEl(a);
     if (matchup) row.appendChild(matchup);
 
@@ -406,7 +406,7 @@ function actionMenuEl() {
   const swap = el('button', { class: 'action-row swap' + (canSwap ? '' : ' disabled') });
   swap.appendChild(el('span', { class: 'action-marker' }, '▸ '));
   swap.appendChild(el('span', { class: 'action-name' },
-    state.bf ? `step back · ${displayName(state.bf.creature).toLowerCase()} forward` : 'step back'));
+    state.bf ? `Step back · ${displayName(state.bf.creature)} forward` : 'Step back'));
   swap.appendChild(el('span', { class: 'action-tag swap' }, ' swap'));
   if (canSwap) swap.addEventListener('click', () => playerSwap());
   else swap.disabled = true;
@@ -432,12 +432,12 @@ function fillDetail(node, key) {
   node.innerHTML = '';
   if (a.effect) {
     const eff = el('div', { class: 'detail-effect' });
-    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+    eff.innerHTML = parseProse(String(a.effect));
     node.appendChild(eff);
   }
   if (a.flavor) {
     const fl = el('div', { class: 'detail-flavor' });
-    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    fl.innerHTML = parseProse(String(a.flavor));
     node.appendChild(fl);
   }
   if (a.phases && a.phases.length > 1) {
@@ -449,12 +449,12 @@ function fillDetail(node, key) {
 function fillSwapDetail(node) {
   node.innerHTML = '';
   if (!state.bf) {
-    node.appendChild(el('div', { class: 'detail-effect' }, 'no companion is ready.'));
+    node.appendChild(el('div', { class: 'detail-effect' }, 'No companion is ready.'));
     return;
   }
   const c = state.bf.creature;
   const eff = el('div', { class: 'detail-effect' });
-  eff.innerHTML = parseProse(`pass the turn. ${displayName(c).toLowerCase()} steps forward to take the next blow.`);
+  eff.innerHTML = parseProse(`Pass the turn. ${displayName(c)} steps forward to take the next blow.`);
   node.appendChild(eff);
 }
 
@@ -480,8 +480,8 @@ function queuedActionRow() {
   if (state.acting) row.disabled = true;
   row.appendChild(el('span', { class: 'action-marker' }, '▸ '));
   row.appendChild(el('span', { class: 'action-name' },
-    isLast ? `release · ${(a ? a.name : '?').toLowerCase()}`
-           : `continue · ${(a ? a.name : '?').toLowerCase()} (${q.phaseIdx + 1}/${total})`));
+    isLast ? `Release · ${a ? a.name : '?'}`
+           : `Continue · ${a ? a.name : '?'} (${q.phaseIdx + 1}/${total})`));
   attachLongPress(row,
     () => openAbilityTooltip(q.key),
     state.acting ? null : () => playerAct(null));
@@ -490,16 +490,16 @@ function queuedActionRow() {
   const detail = el('div', { class: 'action-detail' });
   if (a && a.effect) {
     const eff = el('div', { class: 'detail-effect' });
-    eff.innerHTML = parseProse(String(a.effect).toLowerCase());
+    eff.innerHTML = parseProse(String(a.effect));
     detail.appendChild(eff);
   }
   if (a && a.flavor) {
     const fl = el('div', { class: 'detail-flavor' });
-    fl.innerHTML = parseProse(String(a.flavor).toLowerCase());
+    fl.innerHTML = parseProse(String(a.flavor));
     detail.appendChild(fl);
   }
   detail.appendChild(el('div', { class: 'detail-phase' },
-    `phase ${q.phaseIdx + 1} of ${total}.`));
+    `Phase ${q.phaseIdx + 1} of ${total}.`));
 
   split.appendChild(list);
   split.appendChild(el('div', { class: 'action-split-rule' }));

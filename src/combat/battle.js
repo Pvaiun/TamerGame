@@ -18,7 +18,7 @@ import { spawnFloat, spawnCallout, shakeStage, playLunge, playRecoil } from '../
 import { render } from '../ui/render.js';
 import { drainLog, snapLog, useLine, hitLine, flavorLine, eventText } from './log.js';
 
-const lower = (s) => String(s || '').toLowerCase();
+const lower = (s) => String(s || '');
 
 // Self-swap helper. Used by the `swap` effect when target=self.
 // `swapEff` is the effect instance, which carries optional buffOnSwap/healOnSwap.

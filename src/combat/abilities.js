@@ -7,7 +7,7 @@ import { spawnFloat } from '../ui/animations.js';
 import { drainLog, affApply, eventText } from './log.js';
 import { VOICE } from '../data.js';
 
-const lower = (s) => String(s || '').toLowerCase();
+const lower = (s) => String(s || '');
 
 // Look up a per-effect-kind voice template (from voiceprose.effectDefaults)
 // with templating against the supplied vars. Falls back to a generic line.
@@ -121,7 +121,7 @@ async function handleEffect(eff, ctx) {
         .map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`);
       if (fighters.length && parts.length) {
         const isBuff = parts.some(p => p.includes('+'));
-        const base = effectLine(isBuff ? 'buff' : 'debuff', isBuff ? 'their grip ~~tightens~~ holds.' : 'they slip.');
+        const base = effectLine(isBuff ? 'buff' : 'debuff', isBuff ? 'Their grip ~~tightens~~ holds.' : 'They slip.');
         pushLog(`${base} ${parts.join(', ')}.`, { cls: 'eff' });
       }
       return;
@@ -134,7 +134,7 @@ async function handleEffect(eff, ctx) {
       for (const f of fighters) {
         const perTurn = Math.max(1, Math.round(f.creature.maxHp * percent));
         f.healing = { perTurn, turnsLeft: turns };
-        pushLog(effectLine('heal', 'the green keeps.', { actor: lower(displayName(f.creature)) }));
+        pushLog(effectLine('heal', 'The wound holds.', { actor: lower(displayName(f.creature)) }));
       }
       return;
     }
@@ -143,7 +143,7 @@ async function handleEffect(eff, ctx) {
       const fighters = targets.flatMap(tk => resolveTargets(tk, side, attacker, defender));
       for (const f of fighters) f.bracingThisTurn = true;
       if (fighters.length) {
-        pushLog(effectLine('brace', 'they brace against the next blow.', { actor: lower(displayName(fighters[0].creature)) }));
+        pushLog(effectLine('brace', 'They brace against the next blow.', { actor: lower(displayName(fighters[0].creature)) }));
       }
       return;
     }
@@ -161,7 +161,7 @@ async function handleEffect(eff, ctx) {
             if (doDebuffs && f.statMods[k] < 0) f.statMods[k] = 0;
           }
         }
-        pushLog(effectLine('cleanse', `what was on ${lower(displayName(f.creature))} lifts.`, { actor: lower(displayName(f.creature)) }));
+        pushLog(effectLine('cleanse', `What was on ${lower(displayName(f.creature))} lifts.`, { actor: lower(displayName(f.creature)) }));
       }
       return;
     }
@@ -169,7 +169,7 @@ async function handleEffect(eff, ctx) {
       const pct = effParam(eff, 'percentOfDamage') || 0;
       const healed = applyHeal(attacker, Math.round((lastDmg || 0) * pct));
       if (healed > 0) {
-        pushLog(`${lower(displayName(attacker.creature))} ~~feeds~~ drinks.`, {
+        pushLog(`${displayName(attacker.creature)} ~~feeds~~ drinks.`, {
           heal: healed,
           anim: () => spawnFloat(side, `+${healed}`, 'heal'),
         });
@@ -182,7 +182,7 @@ async function handleEffect(eff, ctx) {
       cost = Math.max(0, Math.round(applySelfDmgMult(attacker, cost)));
       attacker.hp = Math.max(1, attacker.hp - cost);
       if (cost > 0) {
-        pushLog(`${lower(displayName(attacker.creature))} pays in itself.`, {
+        pushLog(`${displayName(attacker.creature)} pays in themselves.`, {
           damage: cost,
           anim: () => spawnFloat(side, String(cost), 'dmg'),
         });
