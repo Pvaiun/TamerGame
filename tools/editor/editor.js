@@ -858,6 +858,8 @@ function statusFormHTML(key, sv) {
   const showPpt   = sv.tickKind === 'damage' || sv.tickKind === 'heal';
   const showSwap  = sv.percentOnSwap !== undefined;
   const showStacks = sv.stacks !== undefined;
+  const showAtkMult = sv.atkMult !== undefined;
+  const showSkip   = sv.skipChance !== undefined;
 
   // Voice prose for this status — { name, apply, tick } from voiceprose.afflictions.
   const aff = S.voice.afflictions[key] || {};
@@ -884,6 +886,8 @@ function statusFormHTML(key, sv) {
       <div class="form-row"><label>Duration (turns)</label><input type="number" data-sv-num="turns" value="${sv.turns ?? 0}" min="0"></div>
       ${showPpt ? `<div class="form-row"><label>% per turn</label><input type="number" data-sv-pct="percentPerTurn" value="${Math.round((sv.percentPerTurn ?? 0) * 1000) / 10}" step="0.1" min="0" max="100"></div>` : ''}
       ${showSwap ? `<div class="form-row"><label>% on swap-out</label><input type="number" data-sv-pct="percentOnSwap" value="${Math.round((sv.percentOnSwap ?? 0) * 1000) / 10}" step="0.1" min="0" max="100"></div>` : ''}
+      ${showAtkMult ? `<div class="form-row"><label>Attack multiplier</label><input type="number" data-sv-num="atkMult" value="${sv.atkMult ?? 1}" step="0.05" min="0"></div>` : ''}
+      ${showSkip ? `<div class="form-row"><label>% chance to skip turn</label><input type="number" data-sv-pct="skipChance" value="${Math.round((sv.skipChance ?? 0) * 1000) / 10}" step="0.1" min="0" max="100"></div>` : ''}
       ${showStacks ? `<div class="form-row"><label>Default stacks</label><input type="number" data-sv-num="stacks" value="${sv.stacks ?? 1}" min="1"></div>` : ''}
       <div class="form-row"><label>Stacking rule</label><select data-sv-field="stacking">${stackOpts}</select></div>
     </div>`;
