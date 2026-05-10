@@ -19,7 +19,7 @@ export function applyStatus(f, type, opts) {
     return true;
   }
   if (type === 'soaking') {
-    f.statuses.soaking = { turns, stacks: opts.stacks ?? def.stacks ?? 1 };
+    f.statuses.soaking = { turns, atkMult: opts.atkMult ?? def.atkMult ?? 0.5 };
     return true;
   }
   if (type === 'cursed') {
