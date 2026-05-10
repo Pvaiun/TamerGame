@@ -1,6 +1,6 @@
 {
   "_format": {
-    "note": "Voice-style placeholder prose for the dossier and battle log. Inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent. All prose is lowercase.",
+    "note": "Voice-style placeholder prose for the dossier and battle log. Inline markup: ~~strike~~ for double-strike, [[N]] for an N-char redaction bar, **gold** for the gold accent (rare, on charged words), !!text!! for blood-red text (common, on warnings / refusals / body confessions / institutional cold). All prose is lowercase.",
     "lookup": "Dossier reads: subtitles[species] || subtitles[type]; notes[species] || notes[type]. Battle log reads: actions[abilityKey].use || actionDefaults[element].use; same for hit/flavor. effectDefaults[kind] is consulted when an ability has no damage. afflictions[statusKey].apply / .tick are read on apply / per-turn-tick.",
     "templates": "{actor} = lowercased name of the doer. {target} = lowercased name of the receiver. {name} = ability display name (lowercased). {status} = lowercased affliction name."
   },
@@ -10,11 +10,11 @@
     "grass": "it has been waiting longer than i have.",
     "light": "it does not warm what it lights.",
     "dark": "i ~~saw~~ heard it move.",
-    "Emberkin": "i have been carrying it. i did not know.",
+    "Emberkin": "i have been carrying it. !!i did not know!!.",
     "Ashmaw": "it has been ~~hungry~~ patient.",
     "Cinderling": "no fuel observed. the heat continues.",
     "Pyrelord": "this has been its room.",
-    "Magmaw": "when it opens i hear another room.",
+    "Magmaw": "when it opens i hear !!another room!!.",
     "Soothlick": "it is ~~too~~ very gentle.",
     "Charnel": "i do not look at it for long.",
     "Tidewhelp": "it is dry. always dry.",
@@ -75,18 +75,18 @@
     ],
     "Ashmaw": [
       "i feed it the small things. it accepts them.",
-      "it watches the page while i write. it watches the smaller words first.",
+      "it watches the page while i write. it watches !!the smaller words!! first.",
       "i think it is **patient** with me."
     ],
     "Cinderling": [
-      "specimen lit at field site, brought through containment door.",
+      "specimen lit at !!field site!!, brought through containment door.",
       "no fuel ~~observed~~ permitted. the spark persists.",
       "specimen does not require ~~feeding~~ attention. specimen ~~has not~~ has not."
     ],
     "Pyrelord": [
       "this room has always been its room.",
       "the heat that has lived here is its heat.",
-      "i do not interrupt it. no one has."
+      "i do not interrupt it. !!no one has!!."
     ],
     "Magmaw": [
       "it opens once a day. less, lately.",
@@ -95,58 +95,58 @@
     ],
     "Soothlick": [
       "in its presence i feel **calm**.",
-      "it cleans the wounds first. it cleans the smaller things inside them after.",
+      "it cleans the wounds first. it cleans !!the smaller things inside them!! after.",
       "i forget the hour after it has gone."
     ],
     "Charnel": [
       "kept. kept after.",
       "the floor does not blacken. it is already.",
-      "i do not write what it ~~eats~~ takes."
+      "i do not write what it ~~eats~~ takes. !!do not write it!!."
     ],
     "Tidewhelp": [
       "it follows streams that are not in this building.",
       "i drink water and it watches.",
-      "i am beginning to drink the way it drinks. my throat is fine."
+      "i am beginning to drink the way it drinks. !!my throat is fine!!."
     ],
     "Rivergeist": [
       "rate of travel: not consistent.",
       "direction of travel: ~~consistent~~ repeatable.",
-      "i hear the building's water in the wrong direction."
+      "i hear the building's water in !!the wrong direction!!."
     ],
     "Brineback": [
       "the floor under it is white now.",
       "the brine does not leave it. the room does not leave it.",
-      "i was the second one to be assigned to it."
+      "i was the !!second!! one to be assigned to it. i have not asked about the first."
     ],
     "Mireling": [
       "i found it under what i had not lifted.",
       "the mud where it sleeps does not dry.",
-      "i do not know what it is small for."
+      "i do not know what it is !!small for!!."
     ],
     "Coralhusk": [
       "phase one: tissue ~~softens~~ has [[7]].",
       "phase two: what remains has edges.",
-      "i used my hand the once. the hand has [[5]]."
+      "i used my hand the once. the hand has [[5]]. !!file separately!!."
     ],
     "Frostfin": [
       "i do not remember catching it. i do not remember catching it.",
       "the room is colder where it sits.",
-      "i think it has been the same one. all of them."
+      "i think it has been the same one. !!all of them!!."
     ],
     "Deepmaw": [
-      "when i look at it, i look at something further down.",
+      "when i look at it, i look at something !!further down!!.",
       "i do not measure it.",
       "it has been **waiting**."
     ],
     "Loamback": [
       "it grows ~~quietly~~ patiently even when held.",
       "the ground misses it when it leaves the room.",
-      "when i set it down, the floor under it is darker."
+      "when i set it down, !!the floor under it is darker!!."
     ],
     "Sproutkin": [
       "it is opening. that is what it is doing.",
       "i do not know what is inside.",
-      "i should ~~stop~~ keep watching."
+      "i should ~~stop~~ !!keep watching!!."
     ],
     "Mosshorn": [
       "the place it sat is colder than the rest of the floor.",
@@ -155,18 +155,18 @@
     ],
     "Vinewyrm": [
       "i write while it moves. the page ~~tightens~~ holds.",
-      "i was sitting near the door. i am sitting near the wall now. i did not move.",
+      "i was sitting near the door. i am sitting near the wall now. !!i did not move!!.",
       "it knows where my chair is."
     ],
     "Bloomback": [
       "the flowers do not turn with the light. they turn with my chair.",
       "i ~~picked~~ took one. the rest noticed.",
-      "the smell is **sweet**. that is the worst part."
+      "the smell is **sweet**. !!that is the worst part!!."
     ],
     "Thornling": [
       "i tried. my hand ~~bled~~ remembered.",
       "it does not mean to. i think.",
-      "i can feel where it touched, three days later."
+      "i can feel where it touched, !!three days later!!."
     ],
     "Hollowoak": [
       "i can hear something inside it. there is nothing inside it.",
@@ -175,7 +175,7 @@
     ],
     "Lumenpup": [
       "it makes shadows on me. it does not cast its own.",
-      "it is warm. it should be warmer.",
+      "it is warm. !!it should be warmer!!.",
       "i cannot picture it when i ~~close my eyes~~ try to."
     ],
     "Aurabeast": [
@@ -184,43 +184,43 @@
       "i think it has been **writing me down**."
     ],
     "Dawnstag": [
-      "i have not seen the morning since it arrived.",
+      "i have not seen the morning !!since it arrived!!.",
       "i cannot tell if its antlers are growing. each time i look they are different.",
       "it does not sleep. it does not need to."
     ],
     "Halowyrm": [
       "it is longer than the room. i have ~~measured~~ counted.",
-      "looking at it hurts. i look anyway.",
+      "looking at it hurts. !!i look anyway!!.",
       "when it speaks i do not ~~hear~~ remember it."
     ],
     "Glimmerfox": [
       "it is faster than i am.",
-      "i am not certain it was ever here.",
+      "i am not certain it was !!ever here!!.",
       "i write its name and i think of someone ~~else~~ who is not."
     ],
     "Shadowmaw": [
       "it stays low to the floor.",
       "it has been listening for a long time.",
-      "i think it is waiting for me to ~~speak~~ say its name. i ~~have~~ have not."
+      "i think it is waiting for me to ~~speak~~ say its name. i ~~have~~ !!have not!!."
     ],
     "Voidling": [
-      "i can see what is behind it. it is not behind it.",
+      "i can see what is behind it. !!it is not behind it!!.",
       "it does not occupy a volume. the volume is occupied around it.",
       "i mark its **name** on the page so i remember it remains."
     ],
     "Nightcreep": [
       "it is closer than it was.",
-      "i did not see it move. nothing did.",
+      "i did not see it move. !!nothing did!!.",
       "i should ~~not~~ keep writing this down."
     ],
     "Wraithfin": [
       "it ~~is~~ has been here a moment longer than i have looked.",
       "i can see through it where i would prefer not to.",
-      "it does not breathe. it does not need to. ~~no~~"
+      "it does not breathe. !!it does not need to!!. ~~no~~"
     ],
     "Umbragale": [
       "the wind in this room has been wrong since it arrived.",
-      "i can hear another room when it is near. another.",
+      "i can hear another room when it is near. !!another!!.",
       "the page lifts when ~~i~~ it has not."
     ]
   },

@@ -11,7 +11,7 @@
       ]
     ],
     "effect": "deal 50 neutral damage.",
-    "flavor": "i hit it. there is no other word for what i did."
+    "flavor": "i hit it. !!there is no other word!! for what i did."
   },
   "heavy_blow": {
     "name": "press",
@@ -72,7 +72,7 @@
       ]
     ],
     "effect": "deal 90 neutral damage. cost 15% of max hp.",
-    "flavor": "i give it everything. some of what i give is mine."
+    "flavor": "i give it everything. !!some of what i give is mine!!."
   },
   "pyre": {
     "name": "kindle",
@@ -144,7 +144,7 @@
       ]
     ],
     "effect": "deal 75 fire damage. cost 25% of max hp.",
-    "flavor": "i feed it from my own. it eats and ~~gives back~~ takes more."
+    "flavor": "i feed it from my own. it eats and ~~gives back~~ !!takes more!!."
   },
   "cinder_burst": {
     "name": "spit ash",
@@ -189,7 +189,7 @@
       ]
     ],
     "effect": "deal 25 fire damage. apply burn.",
-    "flavor": "the heat comes after, slower than the strike."
+    "flavor": "the heat comes after, !!slower than the strike!!."
   },
   "phoenix_dive": {
     "name": "fold into fire",
@@ -208,7 +208,7 @@
       ]
     ],
     "effect": "deal 55 fire damage. heal 50% of damage dealt.",
-    "flavor": "i become heat. i drink what i strike."
+    "flavor": "i become heat. !!i drink what i strike!!."
   },
   "pyroclasm": {
     "name": "open the kiln",
@@ -264,7 +264,7 @@
       ]
     ],
     "effect": "deal 60 water damage.",
-    "flavor": "the water reaches places i did not know it could."
+    "flavor": "the water reaches !!places i did not know it could!!."
   },
   "maelstrom": {
     "name": "circle them",
@@ -508,7 +508,7 @@
       ]
     ],
     "effect": "deal 45 grass damage. deal up to 0.5\u00d7 more damage to wounded targets.",
-    "flavor": "the more open the wound, the deeper it ~~goes~~ reaches."
+    "flavor": "the more open the wound, !!the deeper it reaches!!."
   },
   "healing_wind": {
     "name": "let the green pass",
@@ -627,7 +627,7 @@
       ]
     ],
     "effect": "deal 35 light damage. apply dazed. priority +1.",
-    "flavor": "i strike before they have agreed to be here."
+    "flavor": "i strike !!before they have agreed to be here!!."
   },
   "glowing_mark": {
     "name": "name in light",
@@ -755,7 +755,7 @@
       ]
     ],
     "effect": "release: apply cursed.",
-    "flavor": "i write the wrong word for it. i let it wear it."
+    "flavor": "i write the wrong word for it. !!i let it wear it!!."
   },
   "soulrend": {
     "name": "take a piece",
@@ -774,7 +774,7 @@
       ]
     ],
     "effect": "deal 75 dark damage. cost 20% of max hp.",
-    "flavor": "i pay in my own. it pays in more."
+    "flavor": "i pay in my own. !!it pays in more!!."
   },
   "shadow_step": {
     "name": "step into gap",
@@ -1006,6 +1006,6 @@
       ]
     ],
     "effect": "self def +50%. priority +1.",
-    "flavor": "i steady. the room narrows around me."
+    "flavor": "i steady. !!the room narrows around me!!."
   }
 }
