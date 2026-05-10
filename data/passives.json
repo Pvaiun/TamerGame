@@ -450,7 +450,7 @@
   },
   "iron_will": {
     "name": "unbending",
-    "desc": "Immune to drained, sedated, and marked.",
+    "desc": "Immune to drained, sedated, and broken.",
     "triggers": [
       {
         "on": "status_block",
@@ -688,7 +688,7 @@
   },
   "pivot_master": {
     "name": "turns without warning",
-    "desc": "Marked-on-swap damage is halved when this creature swaps out.",
+    "desc": "Broken-on-swap damage is halved when this creature swaps out.",
     "triggers": [
       {
         "on": "swap_out",

@@ -313,9 +313,9 @@
       "tick": "{target} cannot lift."
     },
     "cursed": {
-      "name": "marked",
-      "apply": "Staff have flagged {target}.",
-      "tick": "{target} pays for the move."
+      "name": "broken",
+      "apply": "{target} has been broken.",
+      "tick": "Moving {target} reopens it."
     },
     "dazed": {
       "name": "sedated",
