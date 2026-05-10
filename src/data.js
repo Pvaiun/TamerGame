@@ -17,6 +17,7 @@ export const GLYPHS = {};
 export const VOICE = {
   subtitles: {},
   notes: {},
+  noteAppends: {},
   passives: {},
   afflictions: {},
   actions: {},
@@ -69,6 +70,7 @@ export async function loadData() {
   }
   Object.assign(VOICE.subtitles,      voice.subtitles      || {});
   Object.assign(VOICE.notes,          voice.notes          || {});
+  Object.assign(VOICE.noteAppends,    voice.noteAppends    || {});
   Object.assign(VOICE.passives,       voice.passives       || {});
   Object.assign(VOICE.afflictions,    voice.afflictions    || {});
   Object.assign(VOICE.actions,        voice.actions        || {});

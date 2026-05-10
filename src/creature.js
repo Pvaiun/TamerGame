@@ -1,6 +1,6 @@
 import { rand, pickN } from './rng.js';
-import { TYPE_PALETTE, TEMPLATES, GLOBALS } from './data.js';
-import { MAX_LEVEL, nextCreatureId } from './state.js';
+import { TYPE_PALETTE, TEMPLATES, GLOBALS, VOICE } from './data.js';
+import { MAX_LEVEL, nextCreatureId, state } from './state.js';
 
 export function makeCreature(template, level = 1, options = {}) {
   // Build stats from base, then apply per-level growth.
@@ -95,6 +95,20 @@ export function displayName(c) {
   if (c.customName) return c.customName;
   const t = TEMPLATES.find(x => x.species === c.species);
   return (t && t.name) || c.species;
+}
+
+// Field notes for the dossier, optionally augmented with wave-keyed appended
+// lines. The protagonist's file (species 'Lumenpup') gets new lines at waves
+// 3, 6, 9 — the file fills in as the run descends.
+export function getDossierNotes(c) {
+  const base = (VOICE.notes[c.species] || VOICE.notes[c.type] || ['—', '—', '—']).slice();
+  const appends = VOICE.noteAppends && VOICE.noteAppends[c.species];
+  if (appends) {
+    const wave = (state && state.wave) || 0;
+    const keys = Object.keys(appends).map(k => +k).sort((a, b) => a - b);
+    for (const w of keys) if (wave >= w) base.push(appends[String(w)]);
+  }
+  return base;
 }
 
 // In-battle wrapper around a creature. Holds mutable battle state (hp, statuses, mods)
