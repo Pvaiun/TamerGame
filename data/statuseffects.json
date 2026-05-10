@@ -20,7 +20,7 @@
     "desc": "Lowers attack by 50%.",
     "tickKind": "none",
     "turns": 4,
-    "stacks": 1,
+    "atkMult": 0.5,
     "stacking": "refresh"
   },
   "cursed": {
@@ -36,6 +36,7 @@
     "desc": "50% chance to skip turn.",
     "tickKind": "none",
     "turns": 2,
+    "skipChance": 0.5,
     "stacking": "refresh"
   }
 }
