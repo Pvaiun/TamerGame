@@ -17,14 +17,14 @@
   },
   "soaking": {
     "name": "drained",
-    "desc": "Lowers attack by 50% for 4 turns.",
+    "desc": "Lowers attack by 50%.",
     "tickKind": "none",
     "turns": 4,
     "atkMult": 0.5,
     "stacking": "refresh"
   },
   "cursed": {
-    "name": "marked",
+    "name": "broken",
     "desc": "Deals damage when swapping out.",
     "tickKind": "none",
     "turns": 99,
@@ -33,7 +33,7 @@
   },
   "dazed": {
     "name": "sedated",
-    "desc": "50% chance each turn that the action is skipped after being chosen.",
+    "desc": "50% chance to skip turn.",
     "tickKind": "none",
     "turns": 2,
     "skipChance": 0.5,

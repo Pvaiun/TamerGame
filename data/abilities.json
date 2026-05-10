@@ -754,7 +754,7 @@
         }
       ]
     ],
-    "effect": "Charge one turn. Release: apply marked.",
+    "effect": "Charge one turn. Release: apply broken.",
     "flavor": "i write the wrong word for it. !!i let it wear it.!!"
   },
   "soulrend": {
@@ -813,7 +813,7 @@
         }
       ]
     ],
-    "effect": "Apply marked to active and bench enemies.",
+    "effect": "Apply broken to active and bench enemies.",
     "flavor": "what happens to it ~~happens~~ has happened."
   },
   "eclipse_slash": {
@@ -840,7 +840,7 @@
         }
       ]
     ],
-    "effect": "Deal 50 damage. Apply marked. +50% damage to marked targets.",
+    "effect": "Deal 50 damage. Apply broken. +50% damage to broken targets.",
     "flavor": "the wound goes ~~dim~~ inward."
   },
   "witherer": {
@@ -869,7 +869,7 @@
         }
       ]
     ],
-    "effect": "Deal 45 damage. Apply marked. Apply drained.",
+    "effect": "Deal 45 damage. Apply broken. Apply drained.",
     "flavor": "i ~~kill~~ unmake the small parts."
   },
   "mend": {
