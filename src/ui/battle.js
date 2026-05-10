@@ -59,10 +59,10 @@ function dossierColEl(active, bench, side) {
   // bench sticker (top of column)
   col.appendChild(benchInlineEl(bench, side));
 
-  // 1. name (large)
+  // 1. name (large) — runs through parseProse so authored ~~strike~~ /
+  // [[N]] / **gold** / !!red!! markup in the narrative name renders.
   const c = active.creature;
-  const titleName = displayName(c).toLowerCase();
-  col.appendChild(el('div', { class: 'doc-title' }, titleName));
+  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c).toLowerCase()) }));
 
   // 2. subtitle (one line of voice prose)
   col.appendChild(subtitleEl(c));
@@ -100,7 +100,7 @@ function benchInlineEl(f, side) {
   const hpPct = Math.max(0, f.hp / c.maxHp);
 
   const text = el('span', { class: 'bench-text' });
-  text.appendChild(el('span', { class: 'bench-name-inline' }, name));
+  text.appendChild(el('span', { class: 'bench-name-inline', html: parseProse(name) }));
   text.appendChild(el('span', { class: 'bench-sep' }, ' · '));
   text.appendChild(el('span', { class: 'bench-tag' }, 'benched'));
 
