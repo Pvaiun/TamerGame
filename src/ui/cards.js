@@ -42,7 +42,7 @@ export function creatureCardEl(c, options = {}) {
   const body = el('div', { class: 'doc-card-body' });
 
   const head = el('div', { class: 'doc-card-head' });
-  head.appendChild(el('span', { class: 'doc-card-name', html: parseProse(displayName(c).toLowerCase()) }));
+  head.appendChild(el('span', { class: 'doc-card-name' }, displayName(c).toLowerCase()));
   head.appendChild(el('span', { class: 'doc-card-meta' },
     `${typeLabel(c.type)} · l${c.level} · #${pad4(c.id)}`));
   body.appendChild(head);
@@ -109,7 +109,7 @@ export function openInspectModal(c) {
   port.innerHTML = renderGlyph(c.species);
   head.appendChild(port);
   const headInfo = el('div', { class: 'doc-modal-headinfo' });
-  headInfo.appendChild(el('div', { class: 'doc-modal-name', html: parseProse(displayName(c).toLowerCase()) }));
+  headInfo.appendChild(el('div', { class: 'doc-modal-name' }, displayName(c).toLowerCase()));
   const subtitle = VOICE.subtitles[c.species] || VOICE.subtitles[c.type];
   if (subtitle) {
     const sub = el('div', { class: 'doc-modal-subtitle' });

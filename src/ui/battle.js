@@ -61,10 +61,8 @@ function dossierColEl(active, bench, side) {
 
   // 1. name (large)
   const c = active.creature;
-  // Names may carry corruption markup (~~strike~~, [[N]], **gold**, !!red!!) —
-  // render via parseProse so the document-as-testimony framing works on
-  // creature names too.
-  col.appendChild(el('div', { class: 'doc-title', html: parseProse(displayName(c).toLowerCase()) }));
+  const titleName = displayName(c).toLowerCase();
+  col.appendChild(el('div', { class: 'doc-title' }, titleName));
 
   // 2. subtitle (one line of voice prose)
   col.appendChild(subtitleEl(c));
@@ -102,7 +100,7 @@ function benchInlineEl(f, side) {
   const hpPct = Math.max(0, f.hp / c.maxHp);
 
   const text = el('span', { class: 'bench-text' });
-  text.appendChild(el('span', { class: 'bench-name-inline', html: parseProse(name) }));
+  text.appendChild(el('span', { class: 'bench-name-inline' }, name));
   text.appendChild(el('span', { class: 'bench-sep' }, ' · '));
   text.appendChild(el('span', { class: 'bench-tag' }, 'benched'));
 

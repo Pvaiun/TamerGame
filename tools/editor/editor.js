@@ -390,7 +390,7 @@ function monsterFormHTML(t) {
       ${noteRow(1)}
       ${noteRow(2)}
       <div class="voice-help">
-        Markup: <code>~~strike~~</code> · <code>[[6]]</code> redaction · <code>**gold**</code> · <code>!!red!!</code>
+        Markup: <code>~~strike~~</code> · <code>[[6]]</code> redaction · <code>**gold**</code>
       </div>
     </div>`;
 }
@@ -617,7 +617,7 @@ function abilityFormHTML(key, ab) {
       <div class="form-row"><label>Use line</label><input type="text" class="voice-subtitle" data-ab-voice="use" value="${escapeAttr(actVoice.use || '')}" placeholder="${escapeAttr(elemVoice.use || '{actor} uses {name}.')}"></div>
       <div class="form-row"><label>Hit line</label><input type="text" class="voice-subtitle" data-ab-voice="hit" value="${escapeAttr(actVoice.hit || '')}" placeholder="${escapeAttr(elemVoice.hit || 'they recoil.')}"></div>
       <div class="form-row"><label>Voice flavor</label><input type="text" class="voice-subtitle" data-ab-voice="flavor" value="${escapeAttr(actVoice.flavor || '')}" placeholder="optional in-combat flavor beat…"></div>
-      <div class="voice-help">Templates: <code>{actor}</code> <code>{target}</code> <code>{name}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      <div class="voice-help">Templates: <code>{actor}</code> <code>{target}</code> <code>{name}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Phases
@@ -673,7 +673,7 @@ function passiveFormHTML(key, pv) {
       <div class="form-row"><label>Display name</label><input type="text" data-pv-field="name" value="${escapeAttr(pv.name || '')}" placeholder="english-but-wrong phrase…"></div>
       <div class="form-row"><label>Mechanical desc</label><textarea data-pv-field="desc" rows="2">${escapeAttr(pv.desc || '')}</textarea></div>
       <div class="form-row"><label>Voice prose</label><input type="text" class="voice-subtitle" data-pv-voice value="${escapeAttr(voiceProse)}" placeholder="short evocative line shown above the mechanical desc…"></div>
-      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Triggers
@@ -874,7 +874,7 @@ function statusFormHTML(key, sv) {
       <div class="form-row"><label>Voice name</label><input type="text" class="voice-subtitle" data-aff-field="name" value="${escapeAttr(aff.name || '')}" placeholder="${escapeAttr(sv.name || 'lowercase noun…')}"></div>
       <div class="form-row"><label>Apply line</label><input type="text" class="voice-subtitle" data-aff-field="apply" value="${escapeAttr(aff.apply || '')}" placeholder="line shown when the status takes hold…"></div>
       <div class="form-row"><label>Tick line</label><input type="text" class="voice-subtitle" data-aff-field="tick" value="${escapeAttr(aff.tick || '')}" placeholder="line shown each tick (with damage/heal numeral on the right)…"></div>
-      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      <div class="voice-help">Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Mechanics</div>
