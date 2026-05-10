@@ -1,22 +1,22 @@
 {
   "burn": {
     "name": "fevering",
-    "desc": "Deals a percentage of max HP as damage each turn.",
+    "desc": "Deals damage each turn.",
     "tickKind": "damage",
     "turns": 4,
     "percentPerTurn": 0.05,
     "stacking": "refresh"
   },
   "bloom": {
-    "name": "opening",
-    "desc": "Restores a percentage of max HP each turn.",
+    "name": "mending",
+    "desc": "Restores hp each turn.",
     "tickKind": "heal",
     "turns": 4,
     "percentPerTurn": 0.05,
     "stacking": "refresh"
   },
   "soaking": {
-    "name": "weighted",
+    "name": "drained",
     "desc": "Amplifies water-type damage taken.",
     "tickKind": "none",
     "turns": 4,
@@ -24,15 +24,15 @@
     "stacking": "refresh"
   },
   "cursed": {
-    "name": "named",
-    "desc": "Deals a percentage of max HP as damage when swapping out.",
+    "name": "marked",
+    "desc": "Deals damage when swapping out.",
     "tickKind": "none",
     "turns": 99,
     "percentOnSwap": 0.3,
     "stacking": "refresh"
   },
   "dazed": {
-    "name": "still",
+    "name": "sedated",
     "desc": "Removes priority from all actions.",
     "tickKind": "none",
     "turns": 2,

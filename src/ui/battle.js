@@ -11,7 +11,7 @@ import { el, attachLongPress, app } from './dom.js';
 import { ABILITIES, PASSIVES, TYPE_CHART, VOICE } from '../data.js';
 import { affName as voiceAffName } from '../combat/log.js';
 import { state, TOTAL_WAVES } from '../state.js';
-import { displayName } from '../creature.js';
+import { displayName, getDossierNotes } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
 import { openInspectModal, openAbilityTooltip } from './cards.js';
 import { playerAct, playerSwap } from '../combat/battle.js';
@@ -144,7 +144,7 @@ function fieldNotesEl(c, side) {
   glyph.innerHTML = renderGlyph(c.species);
   attachLongPress(glyph, () => openInspectModal(c), null);
 
-  const lines = (VOICE.notes[c.species] || VOICE.notes[c.type] || ['—', '—', '—']);
+  const lines = getDossierNotes(c);
   const prose = el('div', { class: 'field-notes-prose' });
   for (const line of lines) {
     const lineEl = el('div', { class: 'fn-line' });

@@ -9,7 +9,7 @@ import { el, attachLongPress } from './dom.js';
 import { PASSIVES, ABILITIES, VOICE, TYPE_LABELS } from '../data.js';
 
 const typeLabel = (t) => (TYPE_LABELS && TYPE_LABELS[t]) || t;
-import { displayName, growthRank, rankColor, xpToNext } from '../creature.js';
+import { displayName, growthRank, rankColor, xpToNext, getDossierNotes } from '../creature.js';
 import { renderGlyph } from './glyphs.js';
 import { parseProse } from './textCorrupt.js';
 
@@ -121,8 +121,8 @@ export function openInspectModal(c) {
   head.appendChild(headInfo);
   m.appendChild(head);
 
-  // field notes (voice prose)
-  const noteLines = VOICE.notes[c.species] || VOICE.notes[c.type];
+  // field notes (voice prose, with wave-fill for the protagonist)
+  const noteLines = getDossierNotes(c);
   if (noteLines && noteLines.length) {
     m.appendChild(el('div', { class: 'sec-label-doc' }, '─ field notes ─'));
     const prose = el('div', { class: 'doc-modal-notes' });

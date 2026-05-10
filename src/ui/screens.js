@@ -24,7 +24,7 @@ export function renderHeader() {
     docStripPart(`descent ${pad2(state.wave)} of ${pad2(TOTAL_WAVES)}`),
     docStripPart(`with me · ${state.party.length}`),
     docStripPart(`behind · ${state.reserve.length}`),
-    docStripPart(next ? `next ritual · descent ${next}` : 'no ritual remaining'),
+    docStripPart(next ? `next writing · descent ${next}` : 'no writing remains'),
   ]);
 }
 
@@ -36,25 +36,27 @@ function nextBreed() {
 // ── start ────────────────────────────────────────────────────────────
 export function renderStart() {
   app().appendChild(el('div', { class: 'doc-version' }, `v${VERSION}`));
-  const page = docPage('// testimony · file [[6]] · entry 01');
+  const page = docPage('// admission · patient 0413 · day one');
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse([
-    'i ~~am~~ have been writing this down. i think i am supposed to.',
-    'i begin with two of them. the kind that will follow. they will not be the same when i finish.',
-    'i descend ten times. each engagement, one of the things i have ~~killed~~ stopped joins the line behind me. every third descent the line ~~asks~~ requires a sacrifice — two pairs, two offerings, two things written into the next page. the rest are released into [[8]].',
-    'the deepest line walks out at the tenth. the others do not walk out.',
+    'i found the address on a card i do not remember writing. the road ended at the building.',
+    'the nurse opened the door before i knocked. she said they were expecting me. she handed me a file. she said it had been waiting.',
+    'ten descents. one room at a time. on the third, the sixth, and the ninth, the line ~~asks~~ requires a sacrifice — two pairs, two offerings, two written into one. the rest are filed elsewhere.',
+    'the door at the top is locked from this side.',
   ].join('\n\n'));
   page.appendChild(intro);
 
   const note = el('div', { class: 'doc-prose dim' });
   note.innerHTML = parseProse(
-    'each thing i carry has a quality it does not lose. when two are chosen, the offspring keeps one quality from each parent. **nothing** comes back unchanged.'
+    'each patient holds something they do not let go of. when two are written into one, the offspring keeps a piece of each. **nothing** comes back unchanged.'
   );
   page.appendChild(note);
 
   page.appendChild(actionRow(
-    docButton('begin', () => {
+    docButton('accept the file', () => {
+      const protag = TEMPLATES.find(t => t.species === 'Lumenpup');
+      if (protag) state.party.push(makeCreature(protag, 1));
       state.starterPool = TEMPLATES.filter(t => t.starter).map(t => makeCreature(t, 1));
       state.screen = 'starter_pick';
       render();
@@ -67,13 +69,13 @@ export function renderStart() {
 export function renderStarterPick() {
   const idx = state.party.length;
   const total = 2;
-  const page = docPage(`// testimony · choosing the line · ${idx + 1} of ${total}`);
+  const page = docPage('// admission · the file is ~~asked~~ required');
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
     idx === 0
-      ? 'i pick the first of them. it will know my ~~name~~ scent before the others. it will be the one i ~~lose~~ keep first.'
-      : 'now the second. they do not always understand each other. i do not always understand them.'
+      ? 'the nurse opens a file across the desk. she says it is mine to keep. for now.'
+      : 'the nurse opens another file. she does not say whose it was. she says i will be its keeper.'
   );
   page.appendChild(intro);
 
@@ -96,10 +98,10 @@ export function renderStarterPick() {
 
 // ── bloodline ready ──────────────────────────────────────────────────
 export function renderBloodlineReady() {
-  const page = docPage('// testimony · the line is set');
+  const page = docPage('// admission · the line is set');
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
-    'two of them stand at the entrance with me. i hold each one long enough to ~~know~~ catalog it. i write what i can.'
+    'two files at the desk. mine, and the one she gave me. i hold each one long enough to ~~know~~ read it. the corridor is dark beyond the desk.'
   );
   page.appendChild(intro);
 
@@ -124,7 +126,7 @@ export function renderBloodlineReady() {
 export function renderPreBattle() {
   const isBoss = state.wave === TOTAL_WAVES;
   const tag = isBoss
-    ? '// engagement · the last descent · they are at the door'
+    ? '// engagement · the tenth · they are at the door'
     : `// engagement · descent ${pad2(state.wave)} · they approach`;
   const page = docPage(tag);
 
@@ -132,7 +134,7 @@ export function renderPreBattle() {
   intro.innerHTML = parseProse(
     isBoss
       ? 'they are at the door. all of them. i did not ~~choose~~ expect them this soon. the page ~~ends~~ thins where i am.'
-      : 'they come into the room. i count them. i write down what i can ~~hold~~ keep.'
+      : 'another room. another file across the desk. i count them. i write down what i can ~~hold~~ keep.'
   );
   page.appendChild(intro);
 
@@ -165,7 +167,7 @@ export function renderAftermath() {
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
-    `it is finished. each of them takes ${ev.xpGained} from what was ~~killed~~ left in the room.`
+    `the room is empty now. each of them takes ${ev.xpGained} from what was ~~killed~~ left here.`
   );
   page.appendChild(intro);
 
@@ -190,7 +192,7 @@ export function renderAftermath() {
 
   page.appendChild(el('div', { class: 'sec-label-doc' }, '─ one of them follows ─'));
   const chooseProse = el('div', { class: 'doc-prose dim' });
-  chooseProse.innerHTML = parseProse('i write one of them into the line behind me. the rest ~~die~~ fall out of the page.');
+  chooseProse.innerHTML = parseProse('i write one of them into the line behind me. the rest are ~~killed~~ filed elsewhere.');
   page.appendChild(chooseProse);
   const captureList = el('div', { class: 'doc-card-list' });
   for (const candidate of ev.capturedChoices) {
@@ -228,7 +230,7 @@ export function renderAftermath() {
 // ── breed ────────────────────────────────────────────────────────────
 export function renderBreed() {
   const bs = state.breedState;
-  const page = docPage('// ritual · the line is ~~asked~~ required');
+  const page = docPage('// ritual · the file is ~~asked~~ required');
 
   if (bs.stage === 'pick_pair_1' || bs.stage === 'pick_pair_2') {
     const pairIdx = bs.stage === 'pick_pair_1' ? 0 : 1;
@@ -238,7 +240,7 @@ export function renderBreed() {
 
     const intro = el('div', { class: 'doc-prose' });
     intro.innerHTML = parseProse(
-      `i pick the ${pairIdx === 0 ? 'first' : 'second'} pair. ~~two of them~~ two offerings (${currentPair.length}/2). they will be ~~killed~~ written into one. the unchosen are released into [[6]].`
+      `i pick the ${pairIdx === 0 ? 'first' : 'second'} pair. ~~two of them~~ two offerings (${currentPair.length}/2). they will be ~~killed~~ written into one. the unchosen are filed into [[6]].`
     );
     page.appendChild(intro);
 
@@ -379,18 +381,18 @@ export function renderBreed() {
 
 // ── victory ──────────────────────────────────────────────────────────
 export function renderVictory() {
-  const page = docPage('// testimony · the door · ~~closed~~ open');
+  const page = docPage('// admission · the door · ~~closed~~ open');
   const all = [...state.party, ...state.reserve];
   const maxLvl = all.reduce((a, c) => Math.max(a, c.level), 0);
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
-    `i ~~walked~~ wrote my way out at descent ${state.wave} of ${TOTAL_WAVES}. there are ${all.length} of them with me. the deepest is at l${maxLvl}. i ~~won~~ am still ~~alive~~ writing. the page ~~ends~~ does not end.`
+    `i wrote my way to the tenth. there are ${all.length} of them with me. the deepest is at l${maxLvl}. the door at the top is open.`
   );
   page.appendChild(intro);
 
   const note = el('div', { class: 'doc-prose dim' });
-  note.innerHTML = parseProse('this **document** will be ~~filed~~ kept. i will not be the one who ~~files~~ keeps it.');
+  note.innerHTML = parseProse('**someone is signing me out.** the hand is not the one i came in with. ~~the page ends~~ the page does not.');
   page.appendChild(note);
 
   page.appendChild(el('div', { class: 'sec-label-doc' }, '─ what came back with me ─'));
@@ -398,13 +400,13 @@ export function renderVictory() {
   for (const c of state.party) list.appendChild(creatureCardEl(c));
   page.appendChild(list);
 
-  page.appendChild(actionRow(docButton('write it again', () => { resetGame(); render(); })));
+  page.appendChild(actionRow(docButton('begin another admission', () => { resetGame(); render(); })));
   app().appendChild(page);
 }
 
 // ── gameover ─────────────────────────────────────────────────────────
 export function renderGameover() {
-  const page = docPage('// testimony · ~~ends~~ stops here');
+  const page = docPage('// admission · ~~ends~~ stops here');
 
   const intro = el('div', { class: 'doc-prose' });
   intro.innerHTML = parseProse(
@@ -413,10 +415,10 @@ export function renderGameover() {
   page.appendChild(intro);
 
   const note = el('div', { class: 'doc-prose dim' });
-  note.innerHTML = parseProse('someone will ~~find~~ write the next account. it will not be me. it ~~may~~ will be near to me.');
+  note.innerHTML = parseProse('another file has been opened. **0413 was already taken.** someone else will take what i could not.');
   page.appendChild(note);
 
-  page.appendChild(actionRow(docButton('begin a new account', () => { resetGame(); render(); })));
+  page.appendChild(actionRow(docButton('begin another admission', () => { resetGame(); render(); })));
   app().appendChild(page);
 }
 
