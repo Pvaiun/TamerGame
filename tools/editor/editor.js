@@ -142,6 +142,7 @@ function renderTabs() {
     { key: 'abilities', label: 'Abilities',        dirty: S.dirty.abilities },
     { key: 'passives',  label: 'Passives',         dirty: S.dirty.passives },
     { key: 'statuses',  label: 'Status Effects',   dirty: S.dirty.statuses },
+    { key: 'voice',     label: 'Voice Tables',     dirty: S.dirty.voice || S.dirty.types },
     { key: 'globals',   label: 'Global Variables', dirty: S.dirty.globals },
   ];
   el.innerHTML = tabs.map(t =>
@@ -157,7 +158,7 @@ function renderTabs() {
 // Per-tab scroll positions for the list panel — preserved across re-renders
 // triggered by selection, search, sort, etc. Tab switches still surface the
 // last scroll position for the new tab.
-const scrollPositions = { monsters: 0, abilities: 0, passives: 0, statuses: 0, globals: 0 };
+const scrollPositions = { monsters: 0, abilities: 0, passives: 0, statuses: 0, voice: 0, globals: 0 };
 
 function renderContent() {
   const el = document.getElementById('content');
@@ -171,6 +172,7 @@ function renderContent() {
   if (S.tab === 'abilities') el.innerHTML = abilitiesTabHTML();
   if (S.tab === 'passives')  el.innerHTML = passivesTabHTML();
   if (S.tab === 'statuses')  el.innerHTML = statusEffectsTabHTML();
+  if (S.tab === 'voice')     el.innerHTML = voiceTablesTabHTML();
   if (S.tab === 'globals')   el.innerHTML = globalsTabHTML();
   el.dataset.scrollTab = S.tab;
   const newList = el.querySelector('.list-items');
@@ -893,6 +895,175 @@ function statusFormHTML(key, sv) {
 // the new boundaries. The grade dropdown on the monster form is a one-way
 // shortcut for "snap value to grade midpoint"; nothing stores the grade.
 
+// ─── Voice Tables Tab ────────────────────────────────────────────────────────
+// Edits the global voice maps that don't fit per-entity forms:
+//   · TYPE_LABELS — per-element display label (fire→ember, etc.)
+//   · actionDefaults — per-element use/hit combat-log templates
+//   · effectDefaults — per-non-damage-effect-kind use/hit templates
+//   · events — short event templates (faint, swap_out, evade, …)
+//
+// All four are simple key→value maps. UI is a flat list of editable rows
+// per section. Markup help line on each section. Empty inputs delete the
+// entry from the source object.
+
+function voiceTablesTabHTML() {
+  // ── TYPE_LABELS ──────────────────────────────────────────────────
+  const typeRows = (S.types || []).map(t => `
+    <div class="form-row" data-tl-row="${t}">
+      <label style="min-width:80px;">${t}</label>
+      <input type="text" class="voice-subtitle" data-tl-key="${t}" value="${escapeAttr(S.typeLabels[t] || '')}" placeholder="display label…">
+    </div>`).join('');
+
+  // ── actionDefaults ───────────────────────────────────────────────
+  // Per-element use/hit templates. Keys: fire / water / grass / light / dark / neutral.
+  const actionElements = ['fire', 'water', 'grass', 'light', 'dark', 'neutral'];
+  const actionRows = actionElements.map(elem => {
+    const v = S.voice.actionDefaults[elem] || {};
+    return `
+      <div class="form-section" style="background:var(--bg2);padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);">
+        <div style="font-size:11px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px;">${elem}</div>
+        <div class="form-row">
+          <label>Use line</label>
+          <input type="text" class="voice-subtitle" data-action-default="${elem}" data-action-field="use" value="${escapeAttr(v.use || '')}" placeholder="{actor} verbs with {name}.">
+        </div>
+        <div class="form-row">
+          <label>Hit line</label>
+          <input type="text" class="voice-subtitle" data-action-default="${elem}" data-action-field="hit" value="${escapeAttr(v.hit || '')}" placeholder="they recoil.">
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── effectDefaults ───────────────────────────────────────────────
+  // Per-effect-kind use/hit templates for non-damage effects.
+  const effectKinds = ['heal', 'buff', 'debuff', 'swap', 'status', 'cleanse', 'brace', 'noop'];
+  const effectRows = effectKinds.map(kind => {
+    const v = S.voice.effectDefaults[kind] || {};
+    return `
+      <div class="form-section" style="background:var(--bg2);padding:8px 10px;margin-bottom:6px;border:1px solid var(--border);">
+        <div style="font-size:11px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px;">${kind}</div>
+        <div class="form-row">
+          <label>Use line</label>
+          <input type="text" class="voice-subtitle" data-effect-default="${kind}" data-effect-field="use" value="${escapeAttr(v.use || '')}" placeholder="{actor} steadies itself.">
+        </div>
+        <div class="form-row">
+          <label>Hit line</label>
+          <input type="text" class="voice-subtitle" data-effect-default="${kind}" data-effect-field="hit" value="${escapeAttr(v.hit || '')}" placeholder="(optional)">
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── events ───────────────────────────────────────────────────────
+  // Each entry is a short string keyed by event name.
+  const knownEventOrder = [
+    'battle_open', 'phase_prepare', 'phase_continue', 'phase_unleash',
+    'super', 'resist', 'crit_tag',
+    'evade', 'dazed_skip', 'ability_fizzle', 'faint', 'step_in',
+    'swap_out', 'swap_in', 'swap_yanked', 'swap_none', 'swap_curse',
+    'swap_arrives_buffed', 'swap_arrives_healed',
+  ];
+  const presentKeys = Object.keys(S.voice.events || {});
+  const orderedKeys = [...new Set([...knownEventOrder, ...presentKeys])];
+  const eventRows = orderedKeys.map(k => `
+    <div class="form-row" data-event-row="${k}">
+      <label style="min-width:160px;">${k}</label>
+      <input type="text" class="voice-subtitle" data-event-key="${k}" value="${escapeAttr(S.voice.events[k] || '')}" placeholder="template…">
+    </div>`).join('');
+
+  return `
+    <div class="detail-panel" style="flex:1;overflow:auto;">
+      <div class="form-section">
+        <div class="form-section-title">Type Labels
+          <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+            (display label per element key — shown to the player wherever the type appears)</span>
+        </div>
+        ${typeRows}
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Action Defaults
+          <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+            (combat-log templates per element; consumed when an ability has no per-id voice override)</span>
+        </div>
+        ${actionRows}
+        <div class="voice-help">Templates: <code>{actor}</code> <code>{target}</code> <code>{name}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Effect Defaults
+          <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+            (combat-log templates for non-damage effects — heal / buff / swap / status / cleanse / brace)</span>
+        </div>
+        ${effectRows}
+        <div class="voice-help">Templates: <code>{actor}</code> <code>{status}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Events
+          <span style="color:var(--text-muted);font-size:10px;font-weight:400">
+            (short atmospheric templates for swap / faint / evade / etc.)</span>
+        </div>
+        ${eventRows}
+        <div class="voice-help">Templates: <code>{actor}</code> <code>{target}</code> <code>{name}</code> <code>{enemies}</code>. Markup: <code>~~strike~~</code> <code>[[6]]</code> <code>**gold**</code> <code>!!red!!</code></div>
+      </div>
+    </div>`;
+}
+
+function bindVoiceTablesEvents() {
+  // Type labels — empty input deletes the key so the raw type name shows.
+  document.querySelectorAll('[data-tl-key]').forEach(el => {
+    el.addEventListener('change', () => {
+      const k = el.dataset.tlKey;
+      const v = el.value.trim();
+      if (v) S.typeLabels[k] = v;
+      else delete S.typeLabels[k];
+      S.dirty.types = true;
+      renderHeader(); renderTabs();
+    });
+  });
+
+  // actionDefaults — per-element { use, hit }
+  document.querySelectorAll('[data-action-default]').forEach(el => {
+    el.addEventListener('change', () => {
+      const elem = el.dataset.actionDefault;
+      const field = el.dataset.actionField;
+      const v = el.value.trim();
+      const cur = S.voice.actionDefaults[elem] || {};
+      if (v) cur[field] = v; else delete cur[field];
+      if (Object.keys(cur).length === 0) delete S.voice.actionDefaults[elem];
+      else S.voice.actionDefaults[elem] = cur;
+      S.dirty.voice = true;
+      renderHeader(); renderTabs();
+    });
+  });
+
+  // effectDefaults — per-kind { use, hit }
+  document.querySelectorAll('[data-effect-default]').forEach(el => {
+    el.addEventListener('change', () => {
+      const kind = el.dataset.effectDefault;
+      const field = el.dataset.effectField;
+      const v = el.value.trim();
+      const cur = S.voice.effectDefaults[kind] || {};
+      if (v) cur[field] = v; else delete cur[field];
+      if (Object.keys(cur).length === 0) delete S.voice.effectDefaults[kind];
+      else S.voice.effectDefaults[kind] = cur;
+      S.dirty.voice = true;
+      renderHeader(); renderTabs();
+    });
+  });
+
+  // events — flat key→string map
+  document.querySelectorAll('[data-event-key]').forEach(el => {
+    el.addEventListener('change', () => {
+      const k = el.dataset.eventKey;
+      const v = el.value.trim();
+      if (v) S.voice.events[k] = v;
+      else delete S.voice.events[k];
+      S.dirty.voice = true;
+      renderHeader(); renderTabs();
+    });
+  });
+}
+
 function globalsTabHTML() {
   const list = growthGradeList();
   const warnings = [];
@@ -1079,6 +1250,7 @@ function bindContentEvents() {
   if (S.tab === 'abilities' && S.ability) bindAbilityFormEvents();
   if (S.tab === 'passives' && S.passive) bindPassiveFormEvents();
   if (S.tab === 'statuses' && S.status) bindStatusFormEvents();
+  if (S.tab === 'voice') bindVoiceTablesEvents();
   if (S.tab === 'globals') bindGlobalsFormEvents();
 }
 
